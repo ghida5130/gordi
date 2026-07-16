@@ -1,2 +1,2 @@
-# Gordi
+# 고르디(Gordi)
 
