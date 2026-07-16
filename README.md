@@ -1,2 +1,2 @@
-\# Gordi
+# Gordi
 
