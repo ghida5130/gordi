@@ -1,19 +1,10 @@
-# Gordi Frontend
+# Frontend Service
 
-React, Vite, TypeScript 기반 프론트엔드입니다. `vite.config.ts`가 모노레포 루트의 `.env`를 읽으므로 `VITE_` 접두사가 붙은 값만 브라우저 코드에 공개됩니다.
+본 모노레포의 프론트엔드 서비스 파트입니다.
 
-## 실행
+## 테스트 설명
+* `main` 브랜치로 push하더라도, 백엔드 전용 Jenkins 파이프라인(`gordi-backend`)에서는 **`changeset` 조건에 의해 빌드가 Skip**되어야 합니다.
 
-```powershell
-pnpm install
-pnpm dev
-```
-
-기본 주소는 `http://localhost:5173`입니다.
-
-## 명령어
-
-- `pnpm dev`: 개발 서버
-- `pnpm build`: 타입 검사 및 운영 빌드
-- `pnpm lint`: ESLint 검사
-- `pnpm preview`: 운영 빌드 미리보기
+## 실행 가이드
+* Target Branch: `main`
+* Trigger Path: `frontend/**`
