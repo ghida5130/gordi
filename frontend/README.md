@@ -2,13 +2,6 @@
 
 React, Vite, TypeScript 기반 프론트엔드입니다. `vite.config.ts`가 모노레포 루트의 `.env`를 읽으므로 `VITE_` 접두사가 붙은 값만 브라우저 코드에 공개됩니다.
 
-## 실행
-
-```powershell
-pnpm install
-pnpm dev
-```
-
 ## 명령어
 
 - `pnpm dev`: 개발 서버
