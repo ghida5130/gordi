@@ -9,8 +9,6 @@ pnpm install
 pnpm dev
 ```
 
-기본 주소는 `http://localhost:5173`입니다.
-
 ## 명령어
 
 - `pnpm dev`: 개발 서버
