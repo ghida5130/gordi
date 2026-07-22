@@ -29,7 +29,7 @@ pipeline {
                         docker run -d \
                           --name spring-backend \
                           --network app-network \
-                          --env-file /jenkins_home/workspace/gordi-backend/.env \
+                          --env-file /home/ubuntu/env/.backend.env \
                           -p 8080:8080 \
                           spring-backend:latest
                     '''
