@@ -38,6 +38,7 @@ pipeline {
                             --name spring-backend \
                             --network app-network \
                             --env-file "$BACKEND_ENV_FILE" \
+                            -e MYSQL_HOST=gordi-mysql \
                             -p 8080:8080 \
                             spring-backend:latest
                         '''
