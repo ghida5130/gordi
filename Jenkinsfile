@@ -21,20 +21,10 @@ pipeline {
                         set -e
                         set +x
 
-                        docker stop spring-backend || true
-                        docker rm spring-backend || true
-
-                        docker build -t spring-backend:latest .
-
                         docker network inspect app-network >/dev/null 2>&1 \
                         || docker network create app-network
 
-                        docker run -d \
-                        --name spring-backend \
-                        --network app-network \
-                        --env-file /home/ubuntu/env/backend.env \
-                        -p 8080:8080 \
-                        spring-backend:latest
+                        docker compose up -d --build spring-backend
                     '''
                 }
             }
