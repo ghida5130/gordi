@@ -17,21 +17,27 @@ pipeline {
                 dir('backend') {
                     echo '2. Docker 이미지 빌드 및 컨테이너 실행'
                     
-                    // 기존 실행 중인 백엔드 컨테이너가 있다면 중지 및 삭제 (오류 무시 || true)
-                    sh 'docker stop spring-backend || true'
-                    sh 'docker rm spring-backend || true'
-                    
-                    // Docker 이미지 빌드
-                    sh 'docker build -t spring-backend:latest .'
-                    
-                    // 동일한 app-network 상에서 컨테이너 실행
                     sh '''
+                        set -e
+                        set +x
+
+                        echo "환경변수 파일 존재 여부 확인"
+                        test -f "$BACKEND_ENV_FILE"
+
+                        docker stop spring-backend || true
+                        docker rm spring-backend || true
+
+                        docker build -t spring-backend:latest .
+
+                        docker network inspect app-network >/dev/null 2>&1 \
+                        || docker network create app-network
+
                         docker run -d \
-                          --name spring-backend \
-                          --network app-network \
-                          --env-file /home/ubuntu/env/.backend.env \
-                          -p 8080:8080 \
-                          spring-backend:latest
+                        --name spring-backend \
+                        --network app-network \
+                        --env-file "$BACKEND_ENV_FILE" \
+                        -p 8080:8080 \
+                        spring-backend:latest
                     '''
                 }
             }
