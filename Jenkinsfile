@@ -29,7 +29,7 @@ pipeline {
                         docker run -d \
                           --name spring-backend \
                           --network app-network \
-                          --env-file ../.env \
+                          --env-file $WORKSPACE/.env \
                           -p 8080:8080 \
                           spring-backend:latest
                     '''
