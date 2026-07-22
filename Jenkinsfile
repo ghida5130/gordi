@@ -7,7 +7,6 @@ pipeline {
                 dir('backend') {
                     echo '1. Spring Boot Gradle 빌드 시작 (Java 21)'
                     sh 'chmod +x ./gradlew'
-                    // 테스트 제외하고 빌드 (.jar 생성)
                     sh './gradlew clean build -x test'
                 }
             }
