@@ -3,9 +3,9 @@ name: ${COMPOSE_PROJECT_NAME:-gordi}-app
 services:
   backend:
     build:
-      context: ./backen
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: ${COMPOSE_PROJECT_NAME:-gordi}-backend
+    container_name: gordi-backend
     restart: unless-stopped
     ports:
       - "8080:8080"
