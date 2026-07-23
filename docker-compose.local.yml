@@ -1,0 +1,24 @@
+name: ${COMPOSE_PROJECT_NAME:-gordi}-app
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gordi-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=gordi-mysql # infra에서 떠있는 DB 컨테이너 이름
+      - REDIS_HOST=gordi-redis
+      - RABBITMQ_HOST=gordi-rabbitmq
+    networks:
+      - app-network
+
+networks:
+  app-network:
+      external: true
