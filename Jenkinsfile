@@ -27,6 +27,7 @@ pipeline {
                             docker-compose -f docker-compose.prod.yml down || true
 
                             # 💡 $BACKEND_ENV_FILE을 빌드 위치의 .env 파일로 복사
+                            rm -f .env
                             cp "$BACKEND_ENV_FILE" .env
 
                             echo "2. backend 전용 Docker Compose 실행"
