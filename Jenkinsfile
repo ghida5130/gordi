@@ -24,7 +24,7 @@ pipeline {
 
                             echo "2. backend 전용 Docker Compose 실행"
                             
-                            docker compose --env-file "$BACKEND_ENV_FILE" -f docker-compose.prod.yml up -d --build
+                            docker-compose --env-file "$BACKEND_ENV_FILE" -f docker-compose.prod.yml up -d --build
                         '''
                     }
                 }
