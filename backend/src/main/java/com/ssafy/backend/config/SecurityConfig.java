@@ -1,12 +1,11 @@
 package com.ssafy.backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.backend.filter.JWTFilter;
 import com.ssafy.backend.filter.LoginFilter;
 import com.ssafy.backend.handler.LoginSuccessHandler;
 import com.ssafy.backend.handler.LogoutSuccessHandler;
 import com.ssafy.backend.service.JwtService;
-
+import com.ssafy.backend.util.JWTUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,27 +31,30 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
-    private final LoginSuccessHandler loginSuccessHandler;
+    private final LoginSuccessHandler loginSuccessHandler; // 단일 주입으로 정리
     private final JwtService jwtService;
-    private final ObjectMapper objectMapper;
+    private final JWTUtil jwtUtil;
+    private final ObjectMapper objectMapper = new ObjectMapper(); // ObjectMapper 직접 생성 또는 주입
 
     public SecurityConfig(
             AuthenticationConfiguration authenticationConfiguration,
             LoginSuccessHandler loginSuccessHandler,
             JwtService jwtService,
-            ObjectMapper objectMapper
+            JWTUtil jwtUtil
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
         this.jwtService = jwtService;
-        this.objectMapper = objectMapper;
+        this.jwtUtil = jwtUtil;
     }
 
+    // 비밀번호 단방향 암호화용 빈
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 로그인 필터 AuthenticationManager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
@@ -60,32 +63,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        // 1. CSRF, FormLogin, BasicHttp 비활성화
+        // CSRF, 기본 폼로그인, Basic 인증 비활성화
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable);
 
-        // 2. 세션 정책: STATELESS
+        // 세션 필터 설정 (STATELESS)
         http
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // 3. 인가(URL별 권한) 설정 (현재 프로젝트 요구사항에 맞게 엔드포인트 수정)
+        // 인가 설정
         http
                 .authorizeHttpRequests(auth -> auth
-                        // 인증 없이 접근 허용
-                        .requestMatchers("/api/v1/auth/**", "/jwt/exchange", "/jwt/refresh").permitAll()
+                        .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/user/exist", "/user").permitAll()
                         .requestMatchers("/error").permitAll()
-                        // USER 권한 필요
                         .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/user").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/user").hasRole("USER")
-                        .anyRequest().authenticated()
-                );
+                        .anyRequest().authenticated());
 
-        // 4. 인증 실패(401) 예외 처리
+        // 예외 처리 (401 Unauthorized)
         http
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((request, response, authException) -> {
@@ -98,19 +98,23 @@ public class SecurityConfig {
                         })
                 );
 
-        // 5. 커스텀 필터 및 로그아웃 핸들러 추가
-        http
-                .addFilterBefore(new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JWTFilter(jwtService), LogoutFilter.class);
+        // 커스텀 로그인 필터 등록
+        http.addFilterBefore(
+                new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
+                UsernamePasswordAuthenticationFilter.class
+        );
 
-        http
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .addLogoutHandler(new LogoutSuccessHandler(jwtService))
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                        })
-                );
+        // JWT 인가 필터 등록 (JWTUtil static 접근이므로 기본 생성자로 생성)
+        http.addFilterBefore(new JWTFilter(jwtUtil), LogoutFilter.class);
+
+        // 로그아웃 핸들러 등록
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .addLogoutHandler(new LogoutSuccessHandler(jwtService, jwtUtil))
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                })
+        );
 
         return http.build();
     }
