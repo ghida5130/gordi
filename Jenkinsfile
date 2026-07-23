@@ -22,12 +22,15 @@ pipeline {
                             set -e
                             set +x
 
+                            echo "환경변수 파일 존재 여부 확인"
+                            test -f "$BACKEND_ENV_FILE"
+
                             echo "2. 기존 backend 서비스 안전하게 중지 및 삭제"
                             # 기존 컨테이너를 먼저 내립니다. (오류가 나도 계속 진행하도록 || true 추가)
                             docker-compose -f docker-compose.prod.yml down || true
 
                             echo "2. backend 전용 Docker Compose 실행"
-                            docker-compose --env-file "$BACKEND_ENV_FILE" -f docker-compose.prod.yml up -d --build
+                            docker compose -f docker-compose.prod.yml --env-file "$BACKEND_ENV_FILE" up -d --build
                         '''
                     }
                 }
