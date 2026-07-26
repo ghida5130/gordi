@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// 컨트롤러 실행 과정에서 발생한 예외 처리
+// 컨트롤러 실행 과정에서 발생한 예외 처리 ( GlobalExceptionHandler )
 @RestControllerAdvice
 public class CustomControllerAdvice {
 
