@@ -1,5 +1,7 @@
 package com.ssafy.backend.filter;
 
+import com.ssafy.backend.common.error.ApiErrorResponseWriter;
+import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,9 +21,11 @@ import java.util.List;
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTUtil jwtUtil;
+    private final ApiErrorResponseWriter errorResponseWriter;
 
-    public JWTFilter(JWTUtil jwtUtil) {
+    public JWTFilter(JWTUtil jwtUtil, ApiErrorResponseWriter errorResponseWriter) {
         this.jwtUtil = jwtUtil;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -41,7 +45,7 @@ public class JWTFilter extends OncePerRequestFilter {
 
         String accessToken = authorization.split(" ")[1];
 
-        // Access Token 유효성 검증
+        // Access Token 유효성 검증 _ 만료 여부 확인
         if (jwtUtil.isValid(accessToken, true)) {
             String loginId = jwtUtil.getLoginId(accessToken);
             String role = jwtUtil.getRole(accessToken);
@@ -53,11 +57,11 @@ public class JWTFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             filterChain.doFilter(request, response);
-        } else {
-            // 토큰이 유효하지 않거나 만료된 경우 401 응답 후 종료
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"message\":\"토큰 만료 또는 유효하지 않은 토큰\"}");
+        } else { // 토큰이 유효하지 않은 경우 TOKEN_EXPIRED
+            ErrorCode errorCode = jwtUtil.isExpired(accessToken)
+                    ? ErrorCode.TOKEN_EXPIRED
+                    : ErrorCode.INVALID_TOKEN;
+            errorResponseWriter.write(request, response, errorCode);
         }
     }
 }

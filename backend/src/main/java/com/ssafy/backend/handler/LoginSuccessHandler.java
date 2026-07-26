@@ -1,5 +1,6 @@
 package com.ssafy.backend.handler;
 
+import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.service.JwtService;
 import com.ssafy.backend.util.JWTUtil;
 import jakarta.servlet.ServletException;
@@ -58,7 +59,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         tokenMap.put("accessToken", accessToken);
         tokenMap.put("refreshToken", refreshToken);
 
-        response.getWriter().write(objectMapper.writeValueAsString(tokenMap));
+        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.success(tokenMap)));
         response.getWriter().flush();
     }
 }

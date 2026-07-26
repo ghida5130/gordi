@@ -1,5 +1,6 @@
 package com.ssafy.backend.controller;
 
+import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.dto.JWTResponseDTO;
 import com.ssafy.backend.dto.RefreshRequestDTO;
 import com.ssafy.backend.service.JwtService;
@@ -23,17 +24,17 @@ public class JwtController {
     }
 
     @PostMapping(value = "/exchange", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public JWTResponseDTO jwtExchangeApi(
+    public ApiResponse<JWTResponseDTO> jwtExchangeApi(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        return jwtService.cookie2Header(request, response);
+        return ApiResponse.success(jwtService.cookie2Header(request, response));
     }
 
     @PostMapping(value = "/refresh", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public JWTResponseDTO jwtRefreshApi(
+    public ApiResponse<JWTResponseDTO> jwtRefreshApi(
             @Validated @RequestBody RefreshRequestDTO dto
     ) {
-        return jwtService.refreshRotate(dto);
+        return ApiResponse.success(jwtService.refreshRotate(dto));
     }
 }

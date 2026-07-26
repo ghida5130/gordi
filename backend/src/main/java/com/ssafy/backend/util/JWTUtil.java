@@ -1,6 +1,7 @@
 package com.ssafy.backend.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -75,6 +76,20 @@ public class JWTUtil {
 
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean isExpired(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return false;
+        } catch (ExpiredJwtException exception) {
+            return true;
+        } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }
     }
