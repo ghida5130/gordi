@@ -86,6 +86,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/user").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/user").hasRole("USER")
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
                         .anyRequest().authenticated());
 
         // 예외 처리 (401 Unauthorized)
