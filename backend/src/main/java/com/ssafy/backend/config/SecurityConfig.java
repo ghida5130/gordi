@@ -32,7 +32,6 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler; // 단일 주입으로 정리
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
-    private final ObjectMapper objectMapper;
     private final ApiErrorResponseWriter errorResponseWriter;
 
     public SecurityConfig(
@@ -40,14 +39,12 @@ public class SecurityConfig {
             LoginSuccessHandler loginSuccessHandler,
             JwtService jwtService,
             JWTUtil jwtUtil,
-            ObjectMapper objectMapper,
             ApiErrorResponseWriter errorResponseWriter
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
-        this.objectMapper = objectMapper;
         this.errorResponseWriter = errorResponseWriter;
     }
 
