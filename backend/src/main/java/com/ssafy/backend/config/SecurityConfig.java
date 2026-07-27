@@ -117,9 +117,7 @@ public class SecurityConfig {
                 .logoutUrl("/logout")
                 .addLogoutHandler(new LogoutSuccessHandler(
                         jwtService,
-                        jwtUtil,
-                        objectMapper,
-                        errorResponseWriter
+                        jwtUtil
                 ))
                 .logoutSuccessHandler((request, response, authentication) -> {
                     if (!response.isCommitted()) {

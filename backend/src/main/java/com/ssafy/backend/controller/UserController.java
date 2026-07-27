@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/v1/user")
 public class UserController {
 
     private final UserService userService;
@@ -29,16 +29,6 @@ public class UserController {
             @Validated(UserRequestDTO.existGroup.class) @RequestBody UserRequestDTO dto
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.existUser(dto)));
-    }
-
-    // 회원가입
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Map<String, Long>>> joinApi(
-            @Validated(UserRequestDTO.addGroup.class) @RequestBody UserRequestDTO dto
-    ) {
-        Long id = userService.addUser(dto);
-        Map<String, Long> responseBody = Collections.singletonMap("userId", id);
-        return ResponseEntity.status(201).body(ApiResponse.success(responseBody));
     }
 
     // 유저 정보 조회
