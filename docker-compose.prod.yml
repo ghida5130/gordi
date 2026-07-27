@@ -1,0 +1,23 @@
+name: ${COMPOSE_PROJECT_NAME:-gordi}-app
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gordi-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    # Credentials에서 주입한 .env 파일의 환경변수를 자동으로 불러옵니다.
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - MYSQL_HOST=gordi-mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true # infra(DB/Redis)가 이미 만든 네트워크에 참여
