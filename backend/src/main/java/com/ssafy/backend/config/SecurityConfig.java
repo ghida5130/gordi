@@ -80,12 +80,10 @@ public class SecurityConfig {
         // 인가 설정
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/user/exist", "/user").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/exchange").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
-                        .requestMatchers(HttpMethod.PUT, "/user").hasRole("USER")
-                        .requestMatchers(HttpMethod.DELETE, "/user").hasRole("USER")
+                        .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -120,12 +118,10 @@ public class SecurityConfig {
 
         // 로그아웃 핸들러 등록
         http.logout(logout -> logout
-                .logoutUrl("/logout")
+                .logoutUrl("/api/v1/auth/logout")
                 .addLogoutHandler(new LogoutSuccessHandler(
                         jwtService,
-                        jwtUtil,
-                        objectMapper,
-                        errorResponseWriter
+                        jwtUtil
                 ))
                 .logoutSuccessHandler((request, response, authentication) -> {
                     if (!response.isCommitted()) {

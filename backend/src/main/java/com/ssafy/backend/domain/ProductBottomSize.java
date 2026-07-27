@@ -1,6 +1,5 @@
 package com.ssafy.backend.domain;
 
-import com.ssafy.backend.dto.UserRequestDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,46 +17,46 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "product_bottom_sizes")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class ProductBottomSize {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "products_id", nullable = false)
+    private Product product;
 
-    @Column(name = "password", nullable = false, length = 255)
-    private String password;
+    @Column(name = "size_name", nullable = false, length = 50)
+    private String sizeName;
 
-    @Column(name = "nickname", nullable = false, length = 100)
-    private String nickname;
+    @Column(name = "total_length", precision = 8, scale = 2)
+    private BigDecimal totalLength;
 
-    @Column(name = "provider", length = 30)
-    private String provider;
+    @Column(name = "waist_width", precision = 8, scale = 2)
+    private BigDecimal waistWidth;
 
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
+    @Column(name = "hip_width", precision = 8, scale = 2)
+    private BigDecimal hipWidth;
+
+    @Column(name = "thigh_width", precision = 8, scale = 2)
+    private BigDecimal thighWidth;
+
+    @Column(name = "rise", precision = 8, scale = 2)
+    private BigDecimal rise;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
-
-    public void updateUser(UserRequestDTO dto) {
-        this.nickname = dto.getNickname();
-    }
 }

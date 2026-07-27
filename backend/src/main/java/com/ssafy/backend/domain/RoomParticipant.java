@@ -1,6 +1,5 @@
 package com.ssafy.backend.domain;
 
-import com.ssafy.backend.dto.UserRequestDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,43 +20,38 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "room_participants")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class RoomParticipant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
-    private String email;
-
-    @Column(name = "password", nullable = false, length = 255)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "room_id", nullable = false)
+    private Room room;
 
     @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
 
-    @Column(name = "provider", length = 30)
-    private String provider;
+    @Builder.Default
+    @Column(name = "role", nullable = false, length = 50)
+    private String role = "GUEST";
 
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
+    @Builder.Default
+    @Column(name = "membership_status", nullable = false, length = 50)
+    private String membershipStatus = "ACTIVE";
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "joined_at", nullable = false, updatable = false)
+    private LocalDateTime joinedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
-
-    public void updateUser(UserRequestDTO dto) {
-        this.nickname = dto.getNickname();
-    }
+    @Column(name = "left_at")
+    private LocalDateTime leftAt;
 }
