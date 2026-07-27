@@ -54,7 +54,7 @@ public class UserService implements UserDetailsService {
                 .nickname(dto.getNickname())
                 .build();
 
-        return userRepository.save(user).getUserId();
+        return userRepository.save(user).getId();
     }
 
     // Spring Security 사용자 인증 정보 로드
@@ -85,7 +85,7 @@ public class UserService implements UserDetailsService {
 
         user.updateUser(dto);
 
-        return userRepository.save(user).getUserId();
+        return userRepository.save(user).getId();
     }
 
     // 자체 유저 정보 조회

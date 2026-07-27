@@ -2,9 +2,9 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.domain.RefreshToken;
 import com.ssafy.backend.dto.JWTResponseDTO;
 import com.ssafy.backend.dto.RefreshRequestDTO;
-import com.ssafy.backend.util.RefreshEntity;
 import com.ssafy.backend.repository.RefreshRepository;
 import com.ssafy.backend.util.JWTUtil;
 import org.springframework.stereotype.Service;
@@ -62,8 +62,8 @@ public class JwtService {
         String newAccessToken = jwtUtil.createJWT(email, role, true);
         String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
-        RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .email(email)
+        RefreshToken newRefreshEntity = RefreshToken.builder()
+                .loginId(email)
                 .refresh(newRefreshToken)
                 .build();
 
@@ -110,8 +110,8 @@ public class JwtService {
         // 4. 기존 Refresh 토큰 삭제 및 신규 Refresh 토큰 DB 저장
         removeRefresh(refreshToken);
 
-        RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .email(email)
+        RefreshToken newRefreshEntity = RefreshToken.builder()
+                .loginId(email)
                 .refresh(newRefreshToken)
                 .build();
 
@@ -123,8 +123,8 @@ public class JwtService {
     // JWT Refresh 토큰 저장
     @Transactional
     public void addRefresh(String email, String refreshToken) {
-        RefreshEntity entity = RefreshEntity.builder()
-                .email(email)
+        RefreshToken entity = RefreshToken.builder()
+                .loginId(email)
                 .refresh(refreshToken)
                 .build();
 
@@ -146,7 +146,7 @@ public class JwtService {
     // 특정 유저의 모든 Refresh 토큰 삭제 (로그아웃 / 탈퇴 시 사용)
     @Transactional
     public void removeRefreshUser(String email) {
-        refreshRepository.deleteByEmail(email);
+        refreshRepository.deleteByLoginId(email);
     }
 
     private ApiException tokenException(String token) {
