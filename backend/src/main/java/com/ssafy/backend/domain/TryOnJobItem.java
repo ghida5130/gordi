@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,13 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "try_on_job_items",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_try_on_job_items_slot",
-                columnNames = {"try_on_job_id", "slot"}
-        )
-)
+@Table(name = "try_on_job_items")
 @Getter
 @Setter
 @Builder
@@ -49,7 +42,7 @@ public class TryOnJobItem {
     @JoinColumn(name = "room_item_id")
     private RoomItem roomItem;
 
-    @Column(name = "slot", nullable = false, length = 20)
+    @Column(name = "slot", nullable = false, length = 50)
     private String slot;
 
     @Column(name = "position", nullable = false)

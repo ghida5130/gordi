@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,19 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "recommendation_moods",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_recommendation_moods_code",
-                        columnNames = {"recommendation_id", "mood_code"}
-                ),
-                @UniqueConstraint(
-                        name = "uk_recommendation_moods_position",
-                        columnNames = {"recommendation_id", "position"}
-                )
-        }
-)
+@Table(name = "recommendation_moods")
 @Getter
 @Setter
 @Builder
@@ -47,7 +34,7 @@ public class RecommendationMood {
     @JoinColumn(name = "recommendation_id", nullable = false)
     private Recommendation recommendation;
 
-    @Column(name = "mood_code", nullable = false, length = 30)
+    @Column(name = "mood_code", nullable = false, length = 50)
     private String moodCode;
 
     @Column(name = "position", nullable = false)

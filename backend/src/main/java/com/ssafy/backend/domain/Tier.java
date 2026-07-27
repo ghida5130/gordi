@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,13 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "tiers",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_tiers_room_position",
-                columnNames = {"room_id", "position"}
-        )
-)
+@Table(name = "tiers")
 @Getter
 @Setter
 @Builder
@@ -41,7 +34,7 @@ public class Tier {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @Column(name = "name", nullable = false, length = 30)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @Column(name = "position", nullable = false)

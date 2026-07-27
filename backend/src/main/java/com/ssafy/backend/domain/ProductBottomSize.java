@@ -6,7 +6,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,10 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "product_bottom_sizes",
-        indexes = @Index(name = "ix_product_bottom_sizes_product", columnList = "products_id")
-)
+@Table(name = "product_bottom_sizes")
 @Getter
 @Setter
 @Builder
@@ -45,19 +41,19 @@ public class ProductBottomSize {
     @Column(name = "size_name", nullable = false, length = 50)
     private String sizeName;
 
-    @Column(name = "total_length", precision = 5, scale = 1)
+    @Column(name = "total_length", precision = 8, scale = 2)
     private BigDecimal totalLength;
 
-    @Column(name = "waist_width", precision = 5, scale = 1)
+    @Column(name = "waist_width", precision = 8, scale = 2)
     private BigDecimal waistWidth;
 
-    @Column(name = "hip_width", precision = 5, scale = 1)
+    @Column(name = "hip_width", precision = 8, scale = 2)
     private BigDecimal hipWidth;
 
-    @Column(name = "thigh_width", precision = 5, scale = 1)
+    @Column(name = "thigh_width", precision = 8, scale = 2)
     private BigDecimal thighWidth;
 
-    @Column(name = "rise", precision = 5, scale = 1)
+    @Column(name = "rise", precision = 8, scale = 2)
     private BigDecimal rise;
 
     @CreationTimestamp
