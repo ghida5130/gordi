@@ -15,8 +15,8 @@ public class RefreshEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "loginId", nullable = false)
-    private String loginId;
+    @Column(name = "email", nullable = false)
+    private String email;
 
     @Column(name = "refresh", nullable = false, length = 512)
     private String refresh;
@@ -30,15 +30,15 @@ public class RefreshEntity {
     }
 
     // 편의 생성자
-    public RefreshEntity(String loginId, String refresh) {
-        this.loginId = loginId;
+    public RefreshEntity(String email, String refresh) {
+        this.email = email;
         this.refresh = refresh;
     }
 
     // 전체 필드 생성자
-    public RefreshEntity(Long id, String loginId, String refresh, LocalDateTime createdDate) {
+    public RefreshEntity(Long id, String email, String refresh, LocalDateTime createdDate) {
         this.id = id;
-        this.loginId = loginId;
+        this.email = email;
         this.refresh = refresh;
         this.createdDate = createdDate;
     }
@@ -46,7 +46,7 @@ public class RefreshEntity {
     // Builder 패턴용 전용 생성자
     private RefreshEntity(Builder builder) {
         this.id = builder.id;
-        this.loginId = builder.loginId;
+        this.email = builder.email;
         this.refresh = builder.refresh;
         this.createdDate = builder.createdDate;
     }
@@ -56,8 +56,8 @@ public class RefreshEntity {
         return id;
     }
 
-    public String getLoginId() {
-        return loginId;
+    public String getEmail() {
+        return email;
     }
 
     public String getRefresh() {
@@ -73,8 +73,8 @@ public class RefreshEntity {
         this.id = id;
     }
 
-    public void setLoginId(String loginId) {
-        this.loginId = loginId;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setRefresh(String refresh) {
@@ -92,7 +92,7 @@ public class RefreshEntity {
 
     public static class Builder {
         private Long id;
-        private String loginId;
+        private String email;
         private String refresh;
         private LocalDateTime createdDate;
 
@@ -101,8 +101,8 @@ public class RefreshEntity {
             return this;
         }
 
-        public Builder loginId(String loginId) {
-            this.loginId = loginId;
+        public Builder email(String email) {
+            this.email = email;
             return this;
         }
 

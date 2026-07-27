@@ -10,6 +10,6 @@ import com.ssafy.backend.util.RefreshEntity;
 public interface RefreshRepository extends JpaRepository<RefreshEntity, Long> {
     Boolean existsByRefresh(String refreshToken);
     void deleteByRefresh(String refresh);
-    void deleteByLoginId(String loginId);
+    void deleteByEmail(String email);
     void deleteByCreatedDateBefore(LocalDateTime createdDate);
 }

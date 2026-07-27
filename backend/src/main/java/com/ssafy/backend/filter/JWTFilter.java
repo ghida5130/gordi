@@ -47,13 +47,13 @@ public class JWTFilter extends OncePerRequestFilter {
 
         // Access Token 유효성 검증 _ 만료 여부 확인
         if (jwtUtil.isValid(accessToken, true)) {
-            String loginId = jwtUtil.getLoginId(accessToken);
+            String email = jwtUtil.getEmail(accessToken);
             String role = jwtUtil.getRole(accessToken);
 
             List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
 
             // SecurityContext에 인증 객체 저장
-            Authentication auth = new UsernamePasswordAuthenticationToken(loginId, null, authorities);
+            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             filterChain.doFilter(request, response);

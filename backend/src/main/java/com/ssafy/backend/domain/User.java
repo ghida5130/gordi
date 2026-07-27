@@ -17,7 +17,7 @@ public class User {
     private Long userId;
 
     @Column(unique = true, nullable = false)
-    private String loginId; // 로그인용 아이디
+    private String email; // 로그인용 아이디
 
     private String password;
 
@@ -34,8 +34,8 @@ public class User {
     }
 
     // 편의 생성자
-    public User(String loginId, String password, String nickname, String fcmToken) {
-        this.loginId = loginId;
+    public User(String email, String password, String nickname, String fcmToken) {
+        this.email = email;
         this.password = password;
         this.nickname = nickname;
         this.fcmToken = fcmToken;
@@ -43,7 +43,7 @@ public class User {
 
     // Builder 전용 생성자
     private User(Builder builder) {
-        this.loginId = builder.loginId;
+        this.email = builder.email;
         this.password = builder.password;
         this.nickname = builder.nickname;
         this.fcmToken = builder.fcmToken;
@@ -59,8 +59,8 @@ public class User {
         return userId;
     }
 
-    public String getLoginId() {
-        return loginId;
+    public String getEmail() {
+        return email;
     }
 
     public String getPassword() {
@@ -84,8 +84,8 @@ public class User {
         this.userId = userId;
     }
 
-    public void setLoginId(String loginId) {
-        this.loginId = loginId;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setPassword(String password) {
@@ -110,7 +110,7 @@ public class User {
     }
 
     public static final class Builder {
-        private String loginId;
+        private String email;
         private String password;
         private String nickname;
         private String fcmToken;
@@ -118,8 +118,8 @@ public class User {
         private Builder() {
         }
 
-        public Builder loginId(String loginId) {
-            this.loginId = loginId;
+        public Builder email(String email) {
+            this.email = email;
             return this;
         }
 
@@ -138,8 +138,8 @@ public class User {
             return this;
         }
 
-        public String getLoginId() {
-            return loginId;
+        public String getLEmail() {
+            return email;
         }
 
         public String getPassword() {

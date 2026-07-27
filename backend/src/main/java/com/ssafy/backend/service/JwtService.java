@@ -56,14 +56,14 @@ public class JwtService {
         }
 
         // 2. 토큰 정보 추출 및 신규 토큰 발급
-        String loginId = jwtUtil.getLoginId(refreshToken);
+        String email = jwtUtil.getEmail(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
 
-        String newAccessToken = jwtUtil.createJWT(loginId, role, true);
-        String newRefreshToken = jwtUtil.createJWT(loginId, role, false);
+        String newAccessToken = jwtUtil.createJWT(email, role, true);
+        String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
         RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .loginId(loginId)
+                .email(email)
                 .refresh(newRefreshToken)
                 .build();
 
@@ -101,17 +101,17 @@ public class JwtService {
         }
 
         // 3. 기존 토큰 정보 추출 및 신규 토큰 생성
-        String loginId = jwtUtil.getLoginId(refreshToken);
+        String email = jwtUtil.getEmail(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
 
-        String newAccessToken = jwtUtil.createJWT(loginId, role, true);
-        String newRefreshToken = jwtUtil.createJWT(loginId, role, false);
+        String newAccessToken = jwtUtil.createJWT(email, role, true);
+        String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
         // 4. 기존 Refresh 토큰 삭제 및 신규 Refresh 토큰 DB 저장
         removeRefresh(refreshToken);
 
         RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .loginId(loginId)
+                .email(email)
                 .refresh(newRefreshToken)
                 .build();
 
@@ -122,9 +122,9 @@ public class JwtService {
 
     // JWT Refresh 토큰 저장
     @Transactional
-    public void addRefresh(String loginId, String refreshToken) {
+    public void addRefresh(String email, String refreshToken) {
         RefreshEntity entity = RefreshEntity.builder()
-                .loginId(loginId)
+                .email(email)
                 .refresh(refreshToken)
                 .build();
 
@@ -145,8 +145,8 @@ public class JwtService {
 
     // 특정 유저의 모든 Refresh 토큰 삭제 (로그아웃 / 탈퇴 시 사용)
     @Transactional
-    public void removeRefreshUser(String loginId) {
-        refreshRepository.deleteByLoginId(loginId);
+    public void removeRefreshUser(String email) {
+        refreshRepository.deleteByEmail(email);
     }
 
     private ApiException tokenException(String token) {

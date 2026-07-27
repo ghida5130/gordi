@@ -27,11 +27,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-// /login 요청 처리 -> 추후 uri 변경 & 인증객체 안의 loginId -> email로 바꾸기!
+// /login 요청 처리 -> 추후 uri 변경 & 인증객체 안의 email -> email로 바꾸기!
 public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
     // 클라이언트 JSON 데이터에서 아이디를 꺼내올 Key를 의미
-    public static final String SPRING_SECURITY_FORM_USERNAME_KEY = "loginId";
+    public static final String SPRING_SECURITY_FORM_USERNAME_KEY = "email";
     public static final String SPRING_SECURITY_FORM_PASSWORD_KEY = "password";
 
     private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults()
@@ -79,13 +79,13 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
             throw new AuthenticationServiceException("요청 본문을 읽을 수 없습니다.", e); // -> AuthenticationFailureHandler가 받음
         }
 
-        String loginId = loginMap.get(usernameParameter);
-        loginId = (loginId != null) ? loginId.trim() : "";
+        String email = loginMap.get(usernameParameter);
+        email = (email != null) ? email.trim() : "";
 
         String password = loginMap.get(passwordParameter);
         password = (password != null) ? password : "";
 
-        UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(loginId, password);
+        UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(email, password);
         setDetails(request, authRequest);
 
         return this.getAuthenticationManager().authenticate(authRequest); // Authentication Manager에게 전달

@@ -10,12 +10,12 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     // 회원가입 시 로그인 아이디 중복 검증
-    Boolean existsByLoginId(String loginId);
+    Boolean existsByEmail(String email);
 
     // 로그인 및 회원정보 조회/수정 시 아이디로 유저 검색
-    Optional<User> findByLoginId(String loginId);
+    Optional<User> findByEmail(String email);
 
     // 회원 탈퇴 시 아이디 기준 삭제
-    void deleteByLoginId(String loginId);
+    void deleteByEmail(String email);
 
 }
