@@ -1,5 +1,7 @@
 package com.ssafy.backend.handler;
 
+import com.ssafy.backend.common.error.ApiErrorResponseWriter;
+import com.ssafy.backend.common.error.ErrorCode;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.ssafy.backend.service.JwtService;
@@ -19,11 +21,19 @@ public class LogoutSuccessHandler implements LogoutHandler {
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+    private final ApiErrorResponseWriter errorResponseWriter;
 
-    public LogoutSuccessHandler(JwtService jwtService, JWTUtil jwtUtil) {
+    public LogoutSuccessHandler(
+            JwtService jwtService,
+            JWTUtil jwtUtil,
+            ObjectMapper objectMapper,
+            ApiErrorResponseWriter errorResponseWriter
+    ) {
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
+        this.objectMapper = objectMapper;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -38,7 +48,14 @@ public class LogoutSuccessHandler implements LogoutHandler {
                     .lines().reduce("", String::concat);
 
             if (!StringUtils.hasText(body)) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                errorResponseWriter.write(
+                        request,
+                        response,
+                        ErrorCode.BAD_REQUEST,
+                        "Refresh Token이 필요합니다.",
+                        java.util.Map.of("field", "refreshToken")
+                );
+                response.flushBuffer();
                 return;
             }
 
@@ -48,7 +65,11 @@ public class LogoutSuccessHandler implements LogoutHandler {
 
             // 3. 토큰 유효성 검증 (null 체크 및 JWT 서명/만료 확인)
             if (refreshToken == null || !jwtUtil.isValid(refreshToken, false)) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                ErrorCode errorCode = refreshToken != null && jwtUtil.isExpired(refreshToken)
+                        ? ErrorCode.TOKEN_EXPIRED
+                        : ErrorCode.INVALID_TOKEN;
+                errorResponseWriter.write(request, response, errorCode);
+                response.flushBuffer();
                 return;
             }
 
@@ -57,10 +78,7 @@ public class LogoutSuccessHandler implements LogoutHandler {
                 jwtService.removeRefresh(refreshToken);
             }
 
-            // 5. 로그아웃 완료 응답 반환
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"message\":\"성공적으로 로그아웃 되었습니다.\"}");
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 
         } catch (IOException e) {
             throw new RuntimeException("로그아웃 처리 중 리프레시 토큰 읽기에 실패했습니다.", e);

@@ -1,5 +1,7 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.error.ApiException;
+import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.dto.JWTResponseDTO;
 import com.ssafy.backend.dto.RefreshRequestDTO;
 import com.ssafy.backend.util.RefreshEntity;
@@ -10,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -30,7 +34,7 @@ public class JwtService {
     ) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
-            throw new RuntimeException("쿠키가 존재하지 않습니다.");
+            throw invalidToken("Refresh Token 쿠키가 없습니다.");
         }
 
         String refreshToken = null;
@@ -42,13 +46,13 @@ public class JwtService {
         }
 
         if (refreshToken == null) {
-            throw new RuntimeException("refreshToken 쿠키가 없습니다.");
+            throw invalidToken("Refresh Token 쿠키가 없습니다.");
         }
 
         // 1. 토큰 유효성 검증 (인스턴스 메서드 호출)
         Boolean isValid = jwtUtil.isValid(refreshToken, false);
         if (!isValid) {
-            throw new RuntimeException("유효하지 않은 refreshToken입니다.");
+            throw tokenException(refreshToken);
         }
 
         // 2. 토큰 정보 추출 및 신규 토큰 발급
@@ -88,12 +92,12 @@ public class JwtService {
         // 1. 토큰 유효성 및 타입 검증
         Boolean isValid = jwtUtil.isValid(refreshToken, false);
         if (!isValid) {
-            throw new RuntimeException("유효하지 않거나 만료된 refreshToken입니다.");
+            throw tokenException(refreshToken);
         }
 
         // 2. DB 존재 여부 확인 (이미 사용되거나 폐기된 토큰 방지)
         if (!existsRefresh(refreshToken)) {
-            throw new RuntimeException("DB에 존재하지 않는 refreshToken입니다.");
+            throw invalidToken("폐기되었거나 존재하지 않는 Refresh Token입니다.");
         }
 
         // 3. 기존 토큰 정보 추출 및 신규 토큰 생성
@@ -143,5 +147,20 @@ public class JwtService {
     @Transactional
     public void removeRefreshUser(String loginId) {
         refreshRepository.deleteByLoginId(loginId);
+    }
+
+    private ApiException tokenException(String token) {
+        if (jwtUtil.isExpired(token)) {
+            return new ApiException(ErrorCode.TOKEN_EXPIRED);
+        }
+        return invalidToken(ErrorCode.INVALID_TOKEN.getMessage());
+    }
+
+    private ApiException invalidToken(String message) {
+        return new ApiException(
+                ErrorCode.INVALID_TOKEN,
+                message,
+                Map.of("field", "refreshToken")
+        );
     }
 }

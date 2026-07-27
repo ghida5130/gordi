@@ -1,5 +1,8 @@
 package com.ssafy.backend.filter;
 
+import com.ssafy.backend.common.error.ApiErrorResponseWriter;
+import com.ssafy.backend.common.error.ErrorCode;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -24,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+// /login 요청 처리 -> 추후 uri 변경 & 인증객체 안의 loginId -> email로 바꾸기!
 public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
     // 클라이언트 JSON 데이터에서 아이디를 꺼내올 Key를 의미
@@ -34,8 +38,6 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
             .matcher(HttpMethod.POST, "/api/v1/auth/login");
 
 
-    
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final String usernameParameter = SPRING_SECURITY_FORM_USERNAME_KEY;
@@ -43,9 +45,19 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
 
     // 자체 로그인 필터에서 성공 핸들러 등록
-    public LoginFilter(AuthenticationManager authenticationManager, AuthenticationSuccessHandler authenticationSuccessHandler) {
+    public LoginFilter(
+            AuthenticationManager authenticationManager,
+            AuthenticationSuccessHandler authenticationSuccessHandler,
+            ApiErrorResponseWriter errorResponseWriter // 로그인 인증 실패시 Spring Security 응답 대신 정해진 오류 응답 반환
+    ) {
         super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
         this.authenticationSuccessHandler = authenticationSuccessHandler;
+        setAuthenticationFailureHandler((request, response, exception) -> { // 인증 실패시 AuthenticationFailureHandler 실행
+            ErrorCode errorCode = exception instanceof AuthenticationServiceException // 예외 종류에 따라 ErrorCode 선택
+                    ? ErrorCode.BAD_REQUEST
+                    : ErrorCode.INVALID_CREDENTIALS;
+            errorResponseWriter.write(request, response, errorCode); // ErrorResponseWriter가 JSON 오류 응답 작성
+        });
     }
 
     @Override
@@ -64,7 +76,7 @@ public class LoginFilter extends AbstractAuthenticationProcessingFilter {
 
             loginMap = OBJECT_MAPPER.readValue(messageBody, new TypeReference<>() {});
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AuthenticationServiceException("요청 본문을 읽을 수 없습니다.", e); // -> AuthenticationFailureHandler가 받음
         }
 
         String loginId = loginMap.get(usernameParameter);
