@@ -2,6 +2,7 @@ package com.ssafy.backend.handler;
 
 import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.service.JwtService;
+import com.ssafy.backend.util.CookieUtil;
 import com.ssafy.backend.util.JWTUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,13 +52,15 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 3. Refresh 토큰 저장소(Redis 또는 DB)에 기록
         jwtService.addRefresh(email, refreshToken);
 
+        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(refreshToken));
+
         // 4. JSON 응답 전송
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
         Map<String, String> tokenMap = new HashMap<>();
         tokenMap.put("accessToken", accessToken);
-        tokenMap.put("refreshToken", refreshToken);
+//        tokenMap.put("refreshToken", refreshToken);
 
         response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.success(tokenMap)));
         response.getWriter().flush();
