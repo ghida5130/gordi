@@ -6,11 +6,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,14 +20,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "room_items",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_room_items_room_product",
-                columnNames = {"room_id", "product_id"}
-        ),
-        indexes = @Index(name = "ix_room_items_tier_position", columnList = "tier_id,position")
-)
+@Table(name = "room_items")
 @Getter
 @Setter
 @Builder

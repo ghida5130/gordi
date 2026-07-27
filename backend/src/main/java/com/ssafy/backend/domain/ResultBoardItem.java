@@ -6,11 +6,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,17 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "result_board_items",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_result_board_items_source",
-                columnNames = {"result_id", "source_room_item_id"}
-        ),
-        indexes = @Index(
-                name = "ix_result_board_items_tier_position",
-                columnList = "result_id,result_tier_id,position"
-        )
-)
+@Table(name = "result_board_items")
 @Getter
 @Setter
 @Builder

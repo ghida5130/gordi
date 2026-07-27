@@ -6,7 +6,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -21,13 +20,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "room_participants",
-        indexes = {
-                @Index(name = "ix_room_participants_room", columnList = "room_id"),
-                @Index(name = "ix_room_participants_user", columnList = "user_id")
-        }
-)
+@Table(name = "room_participants")
 @Getter
 @Setter
 @Builder
@@ -44,19 +37,15 @@ public class RoomParticipant {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
 
     @Builder.Default
-    @Column(name = "role", nullable = false, length = 20)
+    @Column(name = "role", nullable = false, length = 50)
     private String role = "GUEST";
 
     @Builder.Default
-    @Column(name = "membership_status", nullable = false, length = 20)
+    @Column(name = "membership_status", nullable = false, length = 50)
     private String membershipStatus = "ACTIVE";
 
     @CreationTimestamp
