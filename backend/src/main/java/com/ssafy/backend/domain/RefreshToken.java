@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,13 +17,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "refresh_token",
-        indexes = {
-                @Index(name = "ix_refresh_token_login_id", columnList = "login_id"),
-                @Index(name = "ix_refresh_token_refresh", columnList = "refresh")
-        }
-)
+@Table(name = "refresh_token")
 @Getter
 @Setter
 @Builder
@@ -40,7 +33,7 @@ public class RefreshToken {
     @Column(name = "login_id", nullable = false, length = 255)
     private String loginId;
 
-    @Column(name = "refresh", nullable = false, length = 512)
+    @Column(name = "refresh", nullable = false, length = 1000)
     private String refresh;
 
     @CreationTimestamp

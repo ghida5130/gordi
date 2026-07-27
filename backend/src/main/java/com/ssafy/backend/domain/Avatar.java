@@ -5,9 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,17 +18,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "avatars",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_avatars_preset_version",
-                columnNames = {"gender_presentation", "body_build", "body_proportion", "version"}
-        ),
-        indexes = @Index(
-                name = "ix_avatars_active_filter",
-                columnList = "gender_presentation,is_active,is_default"
-        )
-)
+@Table(name = "avatars")
 @Getter
 @Setter
 @Builder
@@ -43,16 +31,16 @@ public class Avatar {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "gender_presentation", nullable = false, length = 20)
+    @Column(name = "gender_presentation", nullable = false, length = 50)
     private String genderPresentation;
 
-    @Column(name = "body_build", nullable = false, length = 20)
+    @Column(name = "body_build", nullable = false, length = 50)
     private String bodyBuild;
 
-    @Column(name = "body_proportion", nullable = false, length = 20)
+    @Column(name = "body_proportion", nullable = false, length = 50)
     private String bodyProportion;
 
-    @Column(name = "image_url", nullable = false, length = 1000)
+    @Column(name = "image_url", nullable = false, length = 2048)
     private String imageUrl;
 
     @Builder.Default

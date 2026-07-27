@@ -7,11 +7,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,18 +21,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
-                @UniqueConstraint(name = "uk_users_nickname", columnNames = "nickname"),
-                @UniqueConstraint(
-                        name = "uk_users_provider_provider_id",
-                        columnNames = {"provider", "provider_id"}
-                )
-        },
-        indexes = @Index(name = "ix_users_avatar_id", columnList = "avatar_id")
-)
+@Table(name = "users")
 @Getter
 @Setter
 @Builder
@@ -53,7 +40,7 @@ public class User {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
 
     @Column(name = "provider", length = 30)
@@ -66,8 +53,8 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "avatar_id", nullable = false)
     private Avatar avatar;
 
     public void updateUser(UserRequestDTO dto) {

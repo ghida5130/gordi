@@ -298,4 +298,4 @@ try {
 - Security 필터 오류에 `ApiErrorResponseWriter`를 사용했는가?
 - `details`와 로그에 비밀번호·토큰 등 민감정보가 포함되지 않았는가?
 - 에러 코드와 HTTP 상태를 테스트로 검증했는가?
->>>>>>> be/feat/login
+>>>>>>> 

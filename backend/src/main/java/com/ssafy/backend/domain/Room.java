@@ -8,9 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -23,10 +21,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "rooms",
-        uniqueConstraints = @UniqueConstraint(name = "uk_rooms_room_code", columnNames = "room_code")
-)
+@Table(name = "rooms")
 @Getter
 @Setter
 @Builder
@@ -39,7 +34,7 @@ public class Room {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "room_code", nullable = false, length = 32)
+    @Column(name = "room_code", nullable = false, length = 64)
     private String roomCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -54,7 +49,7 @@ public class Room {
     private Long recommendationVersion;
 
     @Builder.Default
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 50)
     private String status = "WAITING";
 
     @Builder.Default
@@ -65,10 +60,6 @@ public class Room {
     @Builder.Default
     @Column(name = "version", nullable = false)
     private Long version = 0L;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "confirmed_try_on_job_id", unique = true)
-    private TryOnJob confirmedTryOnJob;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

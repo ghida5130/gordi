@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,19 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "recommendation_items",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_recommendation_items_rank",
-                        columnNames = {"recommendation_id", "recommendation_version", "rank"}
-                ),
-                @UniqueConstraint(
-                        name = "uk_recommendation_items_product",
-                        columnNames = {"recommendation_id", "recommendation_version", "product_id"}
-                )
-        }
-)
+@Table(name = "recommendation_items")
 @Getter
 @Setter
 @Builder
@@ -61,7 +48,7 @@ public class RecommendationItem {
     @Column(name = "rank", nullable = false)
     private Integer rank;
 
-    @Column(name = "score", precision = 10, scale = 6)
+    @Column(name = "score", precision = 10, scale = 4)
     private BigDecimal score;
 
     @CreationTimestamp
