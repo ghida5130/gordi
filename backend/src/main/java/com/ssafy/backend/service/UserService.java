@@ -37,26 +37,6 @@ public class UserService implements UserDetailsService {
         return userRepository.existsByEmail(dto.getEmail());
     }
 
-    // 자체 로그인 회원 가입
-    @Transactional
-    public Long addUser(UserRequestDTO dto) {
-        if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new ApiException(
-                    ErrorCode.BAD_REQUEST,
-                    "이미 사용 중인 아이디입니다.",
-                    Map.of("field", "email")
-            );
-        }
-
-        User user = User.builder()
-                .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .nickname(dto.getNickname())
-                .build();
-
-        return userRepository.save(user).getId();
-    }
-
     // Spring Security 사용자 인증 정보 로드
     @Transactional(readOnly = true)
     @Override
