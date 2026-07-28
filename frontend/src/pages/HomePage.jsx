@@ -21,6 +21,8 @@ const STACK_ITEMS = [
 
 // 초기 설정 완료 여부를 확인할 수 있는 기본 화면
 function HomePage() {
+  const tempMessage = import.meta.env.VITE_TEMP_MESSAGE
+
   return (
     <PageContainer className="py-16 sm:py-24">
       <section className="max-w-3xl">
@@ -33,6 +35,15 @@ function HomePage() {
         <p className="mt-6 text-lg leading-8 text-slate-600">
           라우팅, 서버 상태, 전역 상태, API 요청, 스타일 시스템의 기본 구성을
           연결했습니다.
+        </p>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-brand-500/20 bg-brand-50 p-5">
+        <p className="text-sm font-semibold text-brand-600">
+          임시 환경변수 확인
+        </p>
+        <p className="mt-2 break-words font-mono text-sm text-slate-700">
+          {tempMessage}
         </p>
       </section>
 

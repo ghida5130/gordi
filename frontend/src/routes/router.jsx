@@ -1,15 +1,16 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter } from "react-router-dom";
 
-import RootLayout from '@/layouts/RootLayout'
-import ApiExamplePage from '@/pages/ApiExamplePage'
-import HomePage from '@/pages/HomePage'
-import NotFoundPage from '@/pages/NotFoundPage'
-import RouteErrorPage from '@/pages/RouteErrorPage'
+import RootLayout from "@/layouts/RootLayout";
+import ApiExamplePage from "@/pages/ApiExamplePage";
+import HomePage from "@/pages/HomePage";
+import NotFoundPage from "@/pages/NotFoundPage";
+import RouteErrorPage from "@/pages/RouteErrorPage";
+import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <RootLayout />,
     errorElement: <RouteErrorPage />,
     children: [
@@ -18,13 +19,17 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: 'examples/api',
+        path: "examples/api",
         element: <ApiExamplePage />,
       },
       {
-        path: '*',
+        path: "tierm",
+        element: <TierMakerRoomPage />,
+      },
+      {
+        path: "*",
         element: <NotFoundPage />,
       },
     ],
   },
-])
+]);
