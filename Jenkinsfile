@@ -24,6 +24,9 @@ pipeline {
                             set -e
                             set +x
 
+                            export DOCKER_BUILDKIT=0
+                            export COMPOSE_DOCKER_CLI_BUILD=0
+
                             echo "2. 기존 backend 서비스 안전하게 중지 및 삭제"
                             # 기존 컨테이너를 먼저 내립니다. (오류가 나도 계속 진행하도록 || true 추가)
                             docker-compose -f docker-compose.prod.yml down || true
