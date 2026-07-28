@@ -1,6 +1,8 @@
 package com.ssafy.backend.handler;
 
+import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.service.JwtService;
+import com.ssafy.backend.util.CookieUtil;
 import com.ssafy.backend.util.JWTUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,19 +38,21 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             Authentication authentication
     ) throws IOException, ServletException {
 
-        // 1. 인증된 사용자의 loginId 및 Role 추출
-        String loginId = authentication.getName();
+        // 1. 인증된 사용자의 email 및 Role 추출
+        String email = authentication.getName();
         String role = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
                 .orElse("ROLE_USER");
 
         // 2. JWT 토큰 생성 (Access / Refresh)
-        String accessToken = jwtUtil.createJWT(loginId, role, true);
-        String refreshToken = jwtUtil.createJWT(loginId, role, false);
+        String accessToken = jwtUtil.createJWT(email, role, true);
+        String refreshToken = jwtUtil.createJWT(email, role, false);
 
         // 3. Refresh 토큰 저장소(Redis 또는 DB)에 기록
-        jwtService.addRefresh(loginId, refreshToken);
+        jwtService.addRefresh(email, refreshToken);
+
+        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(refreshToken));
 
         // 4. JSON 응답 전송
         response.setContentType("application/json");
@@ -56,9 +60,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         Map<String, String> tokenMap = new HashMap<>();
         tokenMap.put("accessToken", accessToken);
-        tokenMap.put("refreshToken", refreshToken);
+//        tokenMap.put("refreshToken", refreshToken);
 
-        response.getWriter().write(objectMapper.writeValueAsString(tokenMap));
+        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.success(tokenMap)));
         response.getWriter().flush();
     }
 }

@@ -1,6 +1,5 @@
 package com.ssafy.backend.domain;
 
-import com.ssafy.backend.dto.UserRequestDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,48 +17,41 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "recommendation_items")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class RecommendationItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "recommendation_id", nullable = false)
+    private Recommendation recommendation;
 
-    @Column(name = "password", nullable = false, length = 255)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
-    @Column(name = "nickname", nullable = false, length = 100)
-    private String nickname;
+    @Column(name = "recommendation_version", nullable = false)
+    private Long recommendationVersion;
 
-    /** 소셜 로그인 제공자 (LOCAL, KAKAO, GOOGLE ...). 추후 소셜 로그인 연동용 */
-    @Column(name = "provider", length = 30)
-    private String provider;
+    @Column(name = "`rank`", nullable = false)
+    private Integer rank;
 
-    /** 소셜 로그인 제공자가 발급한 사용자 식별자. 추후 소셜 로그인 연동용 */
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
+    @Column(name = "score", precision = 10, scale = 4)
+    private BigDecimal score;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
-
-    public void updateUser(UserRequestDTO dto) {
-        this.nickname = dto.getNickname();
-    }
 }

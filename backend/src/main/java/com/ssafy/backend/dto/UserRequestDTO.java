@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public class UserRequestDTO {
 
     // Validation Group 인터페이스
-    public interface existGroup {}    // 회원 가입 시 loginId 존재 확인
+    public interface existGroup {}    // 회원 가입 시 email 존재 확인
     public interface addGroup {}      // 회원 가입 시
     public interface passwordGroup {} // 비밀번호 변경 시
     public interface updateGroup {}   // 회원 수정 시
@@ -22,8 +22,9 @@ public class UserRequestDTO {
             message = "아이디는 4자 이상 20자 이하로 입력해야 합니다.",
             groups = {existGroup.class, addGroup.class, updateGroup.class, deleteGroup.class}
     )
-    private String loginId;
+    private String email;
 
+    @NotBlank(groups = {addGroup.class, passwordGroup.class}, message = "비밀번호는 필수 입력 항목입니다.")
     @Pattern(
             regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,20}$",
             message = "비밀번호는 8자 이상 20자 이하, 영문 대소문자, 숫자, 특수문자를 모두 포함해야 합니다.",
@@ -42,15 +43,15 @@ public class UserRequestDTO {
     }
 
     // 전체 생성자
-    public UserRequestDTO(String loginId, String password, String nickname) {
-        this.loginId = loginId;
+    public UserRequestDTO(String email, String password, String nickname) {
+        this.email = email;
         this.password = password;
         this.nickname = nickname;
     }
 
     // Getter
-    public String getLoginId() {
-        return loginId;
+    public String getEmail() {
+        return email;
     }
 
     public String getPassword() {
@@ -62,8 +63,8 @@ public class UserRequestDTO {
     }
 
     // Setter
-    public void setLoginId(String loginId) {
-        this.loginId = loginId;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setPassword(String password) {

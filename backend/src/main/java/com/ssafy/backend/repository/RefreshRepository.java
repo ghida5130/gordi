@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ssafy.backend.util.RefreshEntity;
+import com.ssafy.backend.domain.RefreshToken;
 
-public interface RefreshRepository extends JpaRepository<RefreshEntity, Long> {
+public interface RefreshRepository extends JpaRepository<RefreshToken, Long> {
     Boolean existsByRefresh(String refreshToken);
     void deleteByRefresh(String refresh);
     void deleteByLoginId(String loginId);

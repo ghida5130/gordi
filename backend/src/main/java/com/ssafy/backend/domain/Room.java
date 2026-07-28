@@ -1,6 +1,5 @@
 package com.ssafy.backend.domain;
 
-import com.ssafy.backend.dto.UserRequestDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,45 +21,49 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "rooms")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
-    private String email;
+    @Column(name = "room_code", nullable = false, length = 64)
+    private String roomCode;
 
-    @Column(name = "password", nullable = false, length = 255)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "host_user_id", nullable = false)
+    private User hostUser;
 
-    @Column(name = "nickname", nullable = false, length = 100)
-    private String nickname;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "recommendation_id", nullable = false)
+    private Recommendation recommendation;
 
-    /** 소셜 로그인 제공자 (LOCAL, KAKAO, GOOGLE ...). 추후 소셜 로그인 연동용 */
-    @Column(name = "provider", length = 30)
-    private String provider;
+    @Column(name = "recommendation_version", nullable = false)
+    private Long recommendationVersion;
 
-    /** 소셜 로그인 제공자가 발급한 사용자 식별자. 추후 소셜 로그인 연동용 */
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
+    @Builder.Default
+    @Column(name = "status", nullable = false, length = 50)
+    private String status = "WAITING";
+
+    @Version
+    @Builder.Default
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
-
-    public void updateUser(UserRequestDTO dto) {
-        this.nickname = dto.getNickname();
-    }
+    @Column(name = "finished_at")
+    private LocalDateTime finishedAt;
 }

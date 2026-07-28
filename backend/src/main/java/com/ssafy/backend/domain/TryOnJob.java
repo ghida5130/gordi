@@ -1,6 +1,5 @@
 package com.ssafy.backend.domain;
 
-import com.ssafy.backend.dto.UserRequestDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,45 +20,32 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "try_on_jobs")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class TryOnJob {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
 
-    @Column(name = "password", nullable = false, length = 255)
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "avatar_id", nullable = false)
+    private Avatar avatar;
 
-    @Column(name = "nickname", nullable = false, length = 100)
-    private String nickname;
-
-    /** 소셜 로그인 제공자 (LOCAL, KAKAO, GOOGLE ...). 추후 소셜 로그인 연동용 */
-    @Column(name = "provider", length = 30)
-    private String provider;
-
-    /** 소셜 로그인 제공자가 발급한 사용자 식별자. 추후 소셜 로그인 연동용 */
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
+    @Column(name = "result_image_url", length = 2048)
+    private String resultImageUrl;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
-
-    public void updateUser(UserRequestDTO dto) {
-        this.nickname = dto.getNickname();
-    }
 }

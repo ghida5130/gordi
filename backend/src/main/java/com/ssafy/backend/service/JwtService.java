@@ -1,15 +1,19 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.error.ApiException;
+import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.domain.RefreshToken;
 import com.ssafy.backend.dto.JWTResponseDTO;
-import com.ssafy.backend.dto.RefreshRequestDTO;
-import com.ssafy.backend.util.RefreshEntity;
 import com.ssafy.backend.repository.RefreshRepository;
+import com.ssafy.backend.util.CookieUtil;
 import com.ssafy.backend.util.JWTUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -30,7 +34,7 @@ public class JwtService {
     ) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
-            throw new RuntimeException("쿠키가 존재하지 않습니다.");
+            throw invalidToken("Refresh Token 쿠키가 없습니다.");
         }
 
         String refreshToken = null;
@@ -42,24 +46,24 @@ public class JwtService {
         }
 
         if (refreshToken == null) {
-            throw new RuntimeException("refreshToken 쿠키가 없습니다.");
+            throw invalidToken("Refresh Token 쿠키가 없습니다.");
         }
 
         // 1. 토큰 유효성 검증 (인스턴스 메서드 호출)
         Boolean isValid = jwtUtil.isValid(refreshToken, false);
         if (!isValid) {
-            throw new RuntimeException("유효하지 않은 refreshToken입니다.");
+            throw tokenException(refreshToken);
         }
 
         // 2. 토큰 정보 추출 및 신규 토큰 발급
-        String loginId = jwtUtil.getLoginId(refreshToken);
+        String email = jwtUtil.getEmail(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
 
-        String newAccessToken = jwtUtil.createJWT(loginId, role, true);
-        String newRefreshToken = jwtUtil.createJWT(loginId, role, false);
+        String newAccessToken = jwtUtil.createJWT(email, role, true);
+        String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
-        RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .loginId(loginId)
+        RefreshToken newRefreshEntity = RefreshToken.builder()
+                .loginId(email)
                 .refresh(newRefreshToken)
                 .build();
 
@@ -81,13 +85,15 @@ public class JwtService {
 
     // Refresh 토큰으로 Access/Refresh 토큰 재발급 (Refresh Token Rotation - RTR)
     @Transactional
-    public JWTResponseDTO refreshRotate(RefreshRequestDTO dto) {
+    public JWTResponseDTO refreshRotate(HttpServletRequest request, HttpServletResponse response) {
 
-        String refreshToken = dto.getRefreshToken();
+        String refreshToken = CookieUtil.extractRefreshToken(request);
+        if (refreshToken == null) {
+            throw new RuntimeException("refreshToken 쿠키가 없습니다.");
+        }
 
         // 1. 토큰 유효성 및 타입 검증
-        Boolean isValid = jwtUtil.isValid(refreshToken, false);
-        if (!isValid) {
+        if (!jwtUtil.isValid(refreshToken, false)) {
             throw new RuntimeException("유효하지 않거나 만료된 refreshToken입니다.");
         }
 
@@ -96,31 +102,33 @@ public class JwtService {
             throw new RuntimeException("DB에 존재하지 않는 refreshToken입니다.");
         }
 
+
         // 3. 기존 토큰 정보 추출 및 신규 토큰 생성
-        String loginId = jwtUtil.getLoginId(refreshToken);
+        String email = jwtUtil.getEmail(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
 
-        String newAccessToken = jwtUtil.createJWT(loginId, role, true);
-        String newRefreshToken = jwtUtil.createJWT(loginId, role, false);
+        String newAccessToken = jwtUtil.createJWT(email, role, true);
+        String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
         // 4. 기존 Refresh 토큰 삭제 및 신규 Refresh 토큰 DB 저장
         removeRefresh(refreshToken);
+        refreshRepository.save(
+                RefreshToken.builder()
+                        .loginId(email)
+                        .refresh(newRefreshToken)
+                        .build()
+        );
 
-        RefreshEntity newRefreshEntity = RefreshEntity.builder()
-                .loginId(loginId)
-                .refresh(newRefreshToken)
-                .build();
+        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(newRefreshToken));
 
-        refreshRepository.save(newRefreshEntity);
-
-        return new JWTResponseDTO(newAccessToken, newRefreshToken);
+        return new JWTResponseDTO(newAccessToken, null);
     }
 
     // JWT Refresh 토큰 저장
     @Transactional
-    public void addRefresh(String loginId, String refreshToken) {
-        RefreshEntity entity = RefreshEntity.builder()
-                .loginId(loginId)
+    public void addRefresh(String email, String refreshToken) {
+        RefreshToken entity = RefreshToken.builder()
+                .loginId(email)
                 .refresh(refreshToken)
                 .build();
 
@@ -141,7 +149,22 @@ public class JwtService {
 
     // 특정 유저의 모든 Refresh 토큰 삭제 (로그아웃 / 탈퇴 시 사용)
     @Transactional
-    public void removeRefreshUser(String loginId) {
-        refreshRepository.deleteByLoginId(loginId);
+    public void removeRefreshUser(String email) {
+        refreshRepository.deleteByLoginId(email);
+    }
+
+    private ApiException tokenException(String token) {
+        if (jwtUtil.isExpired(token)) {
+            return new ApiException(ErrorCode.TOKEN_EXPIRED);
+        }
+        return invalidToken(ErrorCode.INVALID_TOKEN.getMessage());
+    }
+
+    private ApiException invalidToken(String message) {
+        return new ApiException(
+                ErrorCode.INVALID_TOKEN,
+                message,
+                Map.of("field", "refreshToken")
+        );
     }
 }

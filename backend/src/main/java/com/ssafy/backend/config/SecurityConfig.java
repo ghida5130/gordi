@@ -1,12 +1,13 @@
 package com.ssafy.backend.config;
 
+import com.ssafy.backend.common.error.ApiErrorResponseWriter;
+import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.filter.JWTFilter;
 import com.ssafy.backend.filter.LoginFilter;
 import com.ssafy.backend.handler.LoginSuccessHandler;
 import com.ssafy.backend.handler.LogoutSuccessHandler;
 import com.ssafy.backend.service.JwtService;
 import com.ssafy.backend.util.JWTUtil;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,9 +24,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -34,18 +32,20 @@ public class SecurityConfig {
     private final LoginSuccessHandler loginSuccessHandler; // 단일 주입으로 정리
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
-    private final ObjectMapper objectMapper = new ObjectMapper(); // ObjectMapper 직접 생성 또는 주입
+    private final ApiErrorResponseWriter errorResponseWriter;
 
     public SecurityConfig(
             AuthenticationConfiguration authenticationConfiguration,
             LoginSuccessHandler loginSuccessHandler,
             JwtService jwtService,
-            JWTUtil jwtUtil
+            JWTUtil jwtUtil,
+            ApiErrorResponseWriter errorResponseWriter
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     // 비밀번호 단방향 암호화용 빈
@@ -77,42 +77,53 @@ public class SecurityConfig {
         // 인가 설정
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/jwt/exchange", "/jwt/refresh").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/user/exist", "/user").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/exchange").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
-                        .requestMatchers(HttpMethod.PUT, "/user").hasRole("USER")
-                        .requestMatchers(HttpMethod.DELETE, "/user").hasRole("USER")
+                        .requestMatchers("/api/v1/users/**").hasRole("USER")
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
                         .anyRequest().authenticated());
 
         // 예외 처리 (401 Unauthorized)
         http
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            Map<String, String> errorResponse = new HashMap<>();
-                            errorResponse.put("message", "인증 정보가 유효하지 않습니다");
-                            String jsonResult = objectMapper.writeValueAsString(errorResponse);
-                            response.getWriter().write(jsonResult);
+                            errorResponseWriter.write(request, response, ErrorCode.UNAUTHORIZED);
                         })
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                errorResponseWriter.write(request, response, ErrorCode.FORBIDDEN)
+                        )
                 );
 
         // 커스텀 로그인 필터 등록
         http.addFilterBefore(
-                new LoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler),
+                new LoginFilter(
+                        authenticationManager(authenticationConfiguration),
+                        loginSuccessHandler,
+                        errorResponseWriter
+                ),
                 UsernamePasswordAuthenticationFilter.class
         );
 
         // JWT 인가 필터 등록 (JWTUtil static 접근이므로 기본 생성자로 생성)
-        http.addFilterBefore(new JWTFilter(jwtUtil), LogoutFilter.class);
+        http.addFilterBefore(new JWTFilter(jwtUtil, errorResponseWriter), LogoutFilter.class);
 
         // 로그아웃 핸들러 등록
         http.logout(logout -> logout
-                .logoutUrl("/logout")
-                .addLogoutHandler(new LogoutSuccessHandler(jwtService, jwtUtil))
+                .logoutUrl("/api/v1/auth/logout")
+                .addLogoutHandler(new LogoutSuccessHandler(
+                        jwtService,
+                        jwtUtil
+                ))
                 .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(HttpServletResponse.SC_OK);
+                    if (!response.isCommitted()) {
+                        response.setStatus(204);
+                    }
                 })
         );
 

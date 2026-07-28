@@ -1,6 +1,7 @@
 package com.ssafy.backend.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -28,8 +29,8 @@ public class JWTUtil {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn;
     }
 
-    // JWT 클레임 loginId (Subject) 파싱
-    public String getLoginId(String token) {
+    // JWT 클레임 email (Subject) 파싱
+    public String getEmail(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
@@ -79,14 +80,28 @@ public class JWTUtil {
         }
     }
 
+    public boolean isExpired(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return false;
+        } catch (ExpiredJwtException exception) {
+            return true;
+        } catch (JwtException | IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
     // JWT(Access/Refresh) 생성
-    public String createJWT(String loginId, String role, Boolean isAccess) {
+    public String createJWT(String email, String role, Boolean isAccess) {
         long now = System.currentTimeMillis();
         long expiry = isAccess ? accessTokenExpiresIn : refreshTokenExpiresIn;
         String type = isAccess ? "access" : "refresh";
 
         return Jwts.builder()
-                .subject(loginId)
+                .subject(email)
                 .claim("role", role)
                 .claim("type", type)
                 .issuedAt(new Date(now))
