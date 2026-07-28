@@ -3,6 +3,35 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { signup } from '@/api/auth';
 
+// 약관 및 정책 텍스트 정의
+const TERMS_TEXT = `제1조 (목적)
+본 약관은 서비스 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조 (회원의 의무)
+① 회원은 가입 시 정확한 정보를 기재해야 합니다.
+② 회원은 타인의 정보를 도용하여 가입할 수 없습니다.
+
+제3조 (서비스의 제공)
+회사는 회원에게 원활한 서비스를 제공하기 위해 최선을 다합니다.`;
+
+const PRIVACY_TEXT = `1. 수집하는 개인정보 항목
+- 필수항목: 이메일, 비밀번호, 닉네임
+- 선택항목: 서비스 이용 기록
+
+2. 개인정보의 수집 및 이용 목적
+- 회원 가입 의사 확인, 회원제 서비스 제공에 따른 본인 식별 및 인증
+- 서비스 부정이용 방지 및 비인가 사용 방지
+
+3. 개인정보의 보유 및 이용 기간
+- 원칙적으로 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다.`;
+
+const MARKETING_TEXT = `1. 마케팅 및 광고에의 활용
+- 신규 서비스(제품) 개발 및 맞춤 서비스 제공
+- 이벤트 및 참여 기회 제공, 광고성 정보 제공
+
+2. 수신 동의 거부
+- 회원은 언제든지 마케팅 정보 수신 동의를 거부할 수 있으며, 거부 시에도 기본 서비스 이용에는 제한이 없습니다.`;
+
 export default function SignupPage() {
   const navigate = useNavigate();
 
@@ -18,6 +47,13 @@ export default function SignupPage() {
     privacy: false,
     marketing: false,
   });
+  
+  // 팝업창(모달) 상태 관리
+  const [modalContent, setModalContent] = useState(null);
+
+  const openModal = (title, content) => {
+    setModalContent({ title, content });
+  };
 
   // 정규식 (유효성 검사)
   const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*?_]).{8,}$/;
@@ -28,7 +64,7 @@ export default function SignupPage() {
     mutationFn: signup,
     onSuccess: () => {
       alert('회원가입이 완료되었습니다! 로그인해주세요.');
-      navigate('/login'); // 가입 성공 시 로그인 페이지로 이동
+      navigate('/login');
     },
     onError: (error) => {
       console.error('회원가입 실패:', error);
@@ -73,7 +109,6 @@ export default function SignupPage() {
       return;
     }
 
-    // 백엔드로 보낼 데이터
     mutate({
       email,
       password,
@@ -88,7 +123,7 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 py-10">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-sm border border-gray-100">
         
-        {/* 상단 탭 (회원가입 활성화) */}
+        {/* 상단 탭 */}
         <div className="flex p-1 bg-gray-50 rounded-full border border-gray-200">
           <Link to="/login" className="w-1/2 py-2 text-sm font-medium text-center text-gray-500 rounded-full hover:bg-gray-100 transition">로그인</Link>
           <div className="w-1/2 py-2 text-sm font-bold text-center text-white bg-black rounded-full shadow">회원가입</div>
@@ -98,63 +133,30 @@ export default function SignupPage() {
           <div className="space-y-4 p-4 border border-gray-100 rounded-lg bg-white">
             <h3 className="text-xs font-bold text-gray-400">계정 정보</h3>
             
-            {/* 이메일 */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">이메일</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@example.com"
-                required
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition" />
               <p className="text-[10px] text-gray-400 mt-1">로그인에 사용됩니다</p>
             </div>
 
-            {/* 비밀번호 */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">비밀번호</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
-              />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition" />
               <p className="text-[10px] text-gray-400 mt-1">영문+숫자+특수문자 8자리 이상</p>
             </div>
 
-            {/* 비밀번호 확인 */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">비밀번호 확인</label>
-              <input
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
-              />
+              <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition" />
             </div>
 
-            {/* 닉네임 */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">닉네임</label>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="앱에서 사용되는 이름"
-                required
-                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
-              />
+              <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="앱에서 사용되는 이름" required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition" />
               <p className="text-[10px] text-gray-400 mt-1">2~12글자, 특수문자 제외</p>
             </div>
           </div>
 
-          {/* 약관 동의 */}
           <div className="p-4 border border-gray-100 rounded-lg bg-white space-y-3">
             <h3 className="text-xs font-bold text-gray-400 mb-2">약관 동의</h3>
             
@@ -169,7 +171,8 @@ export default function SignupPage() {
                   <input type="checkbox" name="terms" checked={agreements.terms} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[필수] 이용약관</span>
                 </div>
-                <button type="button" className="text-blue-500 hover:underline">보기</button>
+                {/* onClick 이벤트가 추가 */}
+                <button type="button" onClick={() => openModal('이용약관', TERMS_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
               
               <label className="flex items-center justify-between text-xs cursor-pointer">
@@ -177,7 +180,8 @@ export default function SignupPage() {
                   <input type="checkbox" name="privacy" checked={agreements.privacy} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[필수] 개인정보 처리방침</span>
                 </div>
-                <button type="button" className="text-blue-500 hover:underline">보기</button>
+                {/* onClick 이벤트가 추가 */}
+                <button type="button" onClick={() => openModal('개인정보 처리방침', PRIVACY_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
               
               <label className="flex items-center justify-between text-xs cursor-pointer">
@@ -185,17 +189,13 @@ export default function SignupPage() {
                   <input type="checkbox" name="marketing" checked={agreements.marketing} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[선택] 마케팅 정보 수신 동의</span>
                 </div>
-                <button type="button" className="text-blue-500 hover:underline">보기</button>
+                {/*  onClick 이벤트가 추가 */}
+                <button type="button" onClick={() => openModal('마케팅 정보 수신 동의', MARKETING_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
             </div>
           </div>
 
-          {/* 가입 버튼 */}
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full py-3 mt-4 text-sm font-bold text-white bg-black rounded-lg hover:bg-gray-800 disabled:bg-gray-300 transition"
-          >
+          <button type="submit" disabled={isPending} className="w-full py-3 mt-4 text-sm font-bold text-white bg-black rounded-lg hover:bg-gray-800 disabled:bg-gray-300 transition">
             {isPending ? '처리 중...' : '회원가입 완료'}
           </button>
         </form>
@@ -204,6 +204,27 @@ export default function SignupPage() {
           이미 계정이 있으신가요? <Link to="/login" className="text-blue-500 hover:underline ml-1">로그인</Link>
         </div>
       </div>
+
+      {/*  팝업창(모달)을 화면에 그려주는 코드가 추가 */}
+      {modalContent && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{modalContent.title}</h3>
+            
+            <div className="h-40 overflow-y-auto text-sm text-gray-600 mb-6 p-3 bg-gray-50 rounded border border-gray-100 whitespace-pre-wrap">
+              {modalContent.content}
+            </div>
+            
+            <button
+              onClick={() => setModalContent(null)}
+              className="w-full py-2 bg-black text-white rounded-lg font-bold hover:bg-gray-800 transition"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }
