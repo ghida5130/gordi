@@ -18,6 +18,18 @@ services:
     networks:
       - app-network
 
+      
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gordi-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - app-network
+
 networks:
   app-network:
     external: true # infra(DB/Redis)가 이미 만든 네트워크에 참여
