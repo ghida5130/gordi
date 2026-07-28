@@ -33,8 +33,8 @@ pipeline {
                             rm -f .env
                             cp "$BACKEND_ENV_FILE" .env
 
-                            rm -f ./frontend/.env
-                            cp "$FRONTEND_ENV_FILE" ./frontend/.env
+                            # rm -f ./frontend/.env
+                            # cp "$FRONTEND_ENV_FILE" ./frontend/.env
 
                             echo "2. backend 전용 Docker Compose 실행"
                             docker-compose -f docker-compose.prod.yml up -d --build
