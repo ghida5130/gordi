@@ -18,8 +18,7 @@ pipeline {
                     echo '2. Docker 이미지 빌드 및 Docker Compose 배포'
                     
                     withCredentials([
-                        file(credentialsId: 'backend-env-file', variable: 'BACKEND_ENV_FILE'),
-                        file(credentialsId: 'frontend-env-file', variable: 'FRONTEND_ENV_FILE')
+                        file(credentialsId: 'backend-env-file', variable: 'BACKEND_ENV_FILE')
                     ]) {
                         sh '''
                             set -e
