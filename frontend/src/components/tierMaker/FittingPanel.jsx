@@ -1,0 +1,194 @@
+import { useState } from 'react'
+
+import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
+import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
+
+function Mannequin({ generatedItems }) {
+  const upperItem =
+    generatedItems.find((item) => item.category === 'outer') ??
+    generatedItems.find((item) => item.category === 'top')
+  const bottomItem = generatedItems.find(
+    (item) => item.category === 'bottom',
+  )
+  const shoesItem = generatedItems.find((item) => item.category === 'shoes')
+
+  return (
+    <div className="relative mx-auto h-64 w-44">
+      <div className="absolute left-1/2 top-3 size-12 -translate-x-1/2 rounded-full bg-[#e9ded2] shadow-inner" />
+      <div className="absolute left-1/2 top-[58px] h-4 w-5 -translate-x-1/2 rounded bg-[#e9ded2]" />
+      <div
+        className="absolute left-1/2 top-[69px] h-[91px] w-[75px] -translate-x-1/2 rounded-[28px_28px_20px_20px] bg-[#e9ded2] shadow-sm"
+        style={
+          upperItem ? { backgroundColor: upperItem.fittingColor } : undefined
+        }
+      />
+      <div className="absolute left-[35px] top-[76px] h-[99px] w-[18px] rotate-[8deg] rounded-full bg-[#e9ded2]" />
+      <div className="absolute right-[35px] top-[76px] h-[99px] w-[18px] -rotate-[8deg] rounded-full bg-[#e9ded2]" />
+      <div
+        className="absolute bottom-[14px] left-[54px] h-[105px] w-[29px] rounded-[12px_12px_14px_14px] bg-[#ded1c4]"
+        style={
+          bottomItem ? { backgroundColor: bottomItem.fittingColor } : undefined
+        }
+      />
+      <div
+        className="absolute bottom-[14px] right-[54px] h-[105px] w-[29px] rounded-[12px_12px_14px_14px] bg-[#ded1c4]"
+        style={
+          bottomItem ? { backgroundColor: bottomItem.fittingColor } : undefined
+        }
+      />
+      <div
+        className="absolute bottom-1 left-[41px] h-4 w-11 rounded-full bg-slate-700"
+        style={
+          shoesItem ? { backgroundColor: shoesItem.fittingColor } : undefined
+        }
+      />
+      <div
+        className="absolute bottom-1 right-[41px] h-4 w-11 rounded-full bg-slate-700"
+        style={
+          shoesItem ? { backgroundColor: shoesItem.fittingColor } : undefined
+        }
+      />
+      <div className="absolute left-1/2 top-[36px] flex -translate-x-1/2 gap-3">
+        <span className="size-1 rounded-full bg-slate-600" />
+        <span className="size-1 rounded-full bg-slate-600" />
+      </div>
+      <div className="absolute left-1/2 top-[46px] h-1.5 w-3 -translate-x-1/2 rounded-b-full border-b border-slate-500" />
+    </div>
+  )
+}
+
+function FittingPanel({
+  candidates,
+  onDropCandidate,
+  onRemoveCandidate,
+  onDragStart,
+}) {
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedItems, setGeneratedItems] = useState([])
+
+  const handleDrop = (event) => {
+    event.preventDefault()
+    setIsDraggingOver(false)
+    onDropCandidate(event.dataTransfer.getData('text/plain'))
+  }
+
+  const handleGenerate = () => {
+    if (candidates.length === 0 || isGenerating) return
+
+    setIsGenerating(true)
+    window.setTimeout(() => {
+      setGeneratedItems(candidates)
+      setIsGenerating(false)
+    }, 900)
+  }
+
+  return (
+    <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+      <div className="border-b border-slate-100 px-4 py-4">
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <TierMakerIcon name="sparkles" size={18} />
+          </span>
+          <div>
+            <h2 className="font-bold text-slate-900">AI 가상 피팅</h2>
+            <p className="text-xs text-slate-500">나만의 착장을 미리 확인하세요</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div
+          onDragOver={(event) => {
+            event.preventDefault()
+            setIsDraggingOver(true)
+          }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          onDrop={handleDrop}
+          className={`relative overflow-hidden rounded-2xl border transition ${
+            isDraggingOver
+              ? 'border-violet-400 bg-violet-50 ring-4 ring-violet-100'
+              : 'border-slate-200 bg-gradient-to-b from-[#f5f2ff] to-[#f8fafc]'
+          }`}
+        >
+          <div className="absolute inset-x-8 bottom-3 h-8 rounded-[50%] bg-slate-300/25 blur-sm" />
+          <div className="relative flex min-h-[292px] items-center justify-center pt-3">
+            {isGenerating ? (
+              <div className="flex flex-col items-center">
+                <span className="size-12 animate-spin rounded-full border-4 border-violet-100 border-t-violet-600" />
+                <p className="mt-4 text-sm font-semibold text-violet-700">
+                  착장을 만들고 있어요
+                </p>
+              </div>
+            ) : (
+              <Mannequin generatedItems={generatedItems} />
+            )}
+          </div>
+          {generatedItems.length === 0 && !isGenerating && (
+            <p className="absolute inset-x-0 bottom-3 text-center text-[11px] text-slate-400">
+              의상을 놓고 아바타를 생성해 보세요
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-700">피팅 후보</p>
+            <span className="text-[11px] text-slate-400">
+              카테고리별 1개
+            </span>
+          </div>
+          <div
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={handleDrop}
+            className={`mt-2 grid min-h-[74px] grid-cols-4 gap-2 rounded-xl border border-dashed p-2 ${
+              isDraggingOver
+                ? 'border-violet-300 bg-violet-50'
+                : 'border-slate-200 bg-slate-50'
+            }`}
+          >
+            {candidates.length > 0 ? (
+              candidates.map((item) => (
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={(event) => onDragStart(event, item.id)}
+                  className="group relative cursor-grab"
+                >
+                  <ClothingArtwork
+                    item={item}
+                    className="aspect-square rounded-lg border border-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onRemoveCandidate(item.id)}
+                    className="absolute -right-1 -top-1 hidden size-5 items-center justify-center rounded-full bg-slate-800 text-white group-hover:flex"
+                    aria-label={`${item.name} 피팅 후보에서 제거`}
+                  >
+                    <TierMakerIcon name="close" size={11} />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-4 flex items-center justify-center text-[11px] text-slate-400">
+                의상을 이곳으로 드래그하세요
+              </div>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={candidates.length === 0 || isGenerating}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+        >
+          <TierMakerIcon name="sparkles" size={17} />
+          {isGenerating ? '생성 중...' : '아바타 생성하기'}
+        </button>
+      </div>
+    </aside>
+  )
+}
+
+export default FittingPanel
