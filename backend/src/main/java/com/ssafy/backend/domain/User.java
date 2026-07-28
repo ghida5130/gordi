@@ -43,9 +43,11 @@ public class User {
     @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
 
+    /** 소셜 로그인 제공자 (LOCAL, KAKAO, GOOGLE ...). 추후 소셜 로그인 연동용 */
     @Column(name = "provider", length = 30)
     private String provider;
 
+    /** 소셜 로그인 제공자가 발급한 사용자 식별자. 추후 소셜 로그인 연동용 */
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
