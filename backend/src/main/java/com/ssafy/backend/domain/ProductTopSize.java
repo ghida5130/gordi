@@ -15,10 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_top_sizes")
@@ -52,8 +50,4 @@ public class ProductTopSize {
 
     @Column(name = "sleeve_length", precision = 8, scale = 2)
     private BigDecimal sleeveLength;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 }

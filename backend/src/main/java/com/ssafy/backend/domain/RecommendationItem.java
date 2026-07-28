@@ -45,7 +45,7 @@ public class RecommendationItem {
     @Column(name = "recommendation_version", nullable = false)
     private Long recommendationVersion;
 
-    @Column(name = "rank", nullable = false)
+    @Column(name = "`rank`", nullable = false)
     private Integer rank;
 
     @Column(name = "score", precision = 10, scale = 4)

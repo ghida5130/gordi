@@ -44,10 +44,6 @@ public class RoomParticipant {
     @Column(name = "role", nullable = false, length = 50)
     private String role = "GUEST";
 
-    @Builder.Default
-    @Column(name = "membership_status", nullable = false, length = 50)
-    private String membershipStatus = "ACTIVE";
-
     @CreationTimestamp
     @Column(name = "joined_at", nullable = false, updatable = false)
     private LocalDateTime joinedAt;

@@ -52,10 +52,6 @@ public class Room {
     @Column(name = "status", nullable = false, length = 50)
     private String status = "WAITING";
 
-    @Builder.Default
-    @Column(name = "max_participants", nullable = false)
-    private Integer maxParticipants = 4;
-
     @Version
     @Builder.Default
     @Column(name = "version", nullable = false)

@@ -24,6 +24,7 @@ public class UserRequestDTO {
     )
     private String email;
 
+    @NotBlank(groups = {addGroup.class, passwordGroup.class}, message = "비밀번호는 필수 입력 항목입니다.")
     @Pattern(
             regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,20}$",
             message = "비밀번호는 8자 이상 20자 이하, 영문 대소문자, 숫자, 특수문자를 모두 포함해야 합니다.",

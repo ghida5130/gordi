@@ -15,10 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_bottom_sizes")
@@ -55,8 +53,4 @@ public class ProductBottomSize {
 
     @Column(name = "rise", precision = 8, scale = 2)
     private BigDecimal rise;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 }
