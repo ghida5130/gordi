@@ -1,6 +1,6 @@
-## 고르디(Gordi)
+# 고르디(Gordi)
 
-### 프로젝트 폴더 구조
+## 프로젝트 폴더 구조
 ```
 S15P11D105/
 ├── docs/
@@ -16,3 +16,48 @@ S15P11D105/
 ├── backend/                 
 └── README.md                
 ```
+
+## 로컬 Docker 실행 방법
+
+> Docker 빌드에는 시간이 다소 걸릴 수 있습니다.  
+> 개발 중에는 로컬 서버를 사용하고, 최종 확인이 필요할 때 Docker 환경을 실행하는 것을 권장합니다.
+
+### 1. 데이터베이스 실행
+
+프로젝트 루트에서 다음 명령어를 실행합니다.
+
+```bash
+docker compose up -d
+```
+
+기본 `docker-compose.yml`을 사용해 데이터베이스 컨테이너를 실행합니다.
+
+### 2. 프론트엔드 및 백엔드 실행
+
+기존 컨테이너를 먼저 종료합니다.
+
+```bash
+docker compose -f docker-compose.local.yml down
+```
+
+이미지를 새로 빌드한 후 프론트엔드와 백엔드 컨테이너를 실행합니다.
+
+```bash
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+### 3. 접속 주소
+
+| 서비스 | URL |
+| --- | --- |
+| 프론트엔드 | http://localhost/ |
+| 백엔드 API | http://localhost/api/ |
+| Swagger UI | http://localhost/api/swagger-ui/index.html |
+
+### 주의사항
+
+- Docker 이미지 빌드에는 시간이 다소 걸릴 수 있습니다.
+- 평소에는 로컬 서버에서 개발하고, 필요한 경우 Docker 환경에서 최종 확인하는 것을 권장합니다.
+- 로컬 서버와 Docker 컨테이너를 동시에 실행하면 포트 충돌이 발생할 수 있으므로 둘 중 하나만 실행해 주세요.
+
+
