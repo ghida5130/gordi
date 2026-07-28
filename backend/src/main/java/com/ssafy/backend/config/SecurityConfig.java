@@ -82,10 +82,10 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml"
+                                "/api/swagger-ui.html",
+                                "/api/swagger-ui/**",
+                                "/api/v3/api-docs/**",
+                                "/api/v3/api-docs.yaml"
                         ).permitAll()
                         .anyRequest().authenticated());
 
