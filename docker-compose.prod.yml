@@ -8,7 +8,7 @@ services:
     container_name: gordi-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     # Credentials에서 주입한 .env 파일의 환경변수를 자동으로 불러옵니다.
     env_file:
       - .env
@@ -26,7 +26,7 @@ services:
     container_name: gordi-frontend
     restart: unless-stopped
     ports:
-      - "80"
+      - "27.0.0.1:8081:80"
     networks:
       - app-network
 
