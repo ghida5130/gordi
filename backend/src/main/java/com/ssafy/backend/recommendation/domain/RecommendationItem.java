@@ -1,5 +1,6 @@
-package com.ssafy.backend.domain;
+package com.ssafy.backend.recommendation.domain;
 
+import com.ssafy.backend.domain.Product;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: str = "local"
     api_prefix: str = "/api/v1"
+    internal_api_prefix: str = "/internal/v1"
+
+    # 서비스 간 내부 호출 검증 키 (미설정이면 검증하지 않음)
+    internal_api_key: str | None = None
 
     ai_host: str = "0.0.0.0"
     ai_port: int = 8000
