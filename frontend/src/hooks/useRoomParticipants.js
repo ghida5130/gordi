@@ -11,7 +11,7 @@ function createWebSocketUrl(webSocketPath) {
   }
 
   const apiUrl = new URL(
-    "http://localhost/api",
+    "https://i15d105.p.ssafy.io/api",
     window.location.origin,
   );
   const webSocketUrl = new URL(webSocketPath, apiUrl.origin);
