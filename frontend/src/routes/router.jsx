@@ -9,6 +9,8 @@ import RoomLobbyPage from "@/pages/RoomLobbyPage";
 import RoomPage from "@/pages/RoomPage";
 import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
+import LoginPage from "@/pages/LoginPage";
+import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
@@ -21,6 +23,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: "login",
+        element: <LoginPage />,
       },
       {
         path: "signup",
@@ -45,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: "tierm",
         element: <TierMakerRoomPage />,
+      },
+      {
+        path: "avatar/setup",
+        element: <AvatarSetupPage />,
       },
       {
         path: "*",
