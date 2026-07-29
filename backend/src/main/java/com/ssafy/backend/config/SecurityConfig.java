@@ -79,6 +79,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/exchange").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rooms/*/join").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers(
