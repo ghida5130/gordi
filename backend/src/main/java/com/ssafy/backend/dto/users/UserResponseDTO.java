@@ -1,4 +1,4 @@
-package com.ssafy.backend.dto;
+package com.ssafy.backend.dto.users;
 
 public record UserResponseDTO (
         String email,
