@@ -11,5 +11,5 @@ export function signup(userInformation) {
 
 // 저장된 액세스 토큰을 포함하는 로그아웃 요청
 export function logout() {
-  return authApi.post('auth/logout')
+  return authApi.post('v1/auth/logout')
 }
