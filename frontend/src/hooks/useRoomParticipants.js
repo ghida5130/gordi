@@ -11,7 +11,7 @@ function createWebSocketUrl(webSocketPath) {
   }
 
   const apiUrl = new URL(
-    import.meta.env.VITE_API_BASE_URL,
+    "https://i15d105.p.ssafy.io/api",
     window.location.origin,
   );
   const webSocketUrl = new URL(webSocketPath, apiUrl.origin);
@@ -25,8 +25,7 @@ function getInitialParticipant(roomSession) {
   return {
     participantId: roomSession.participantId,
     nickname:
-      roomSession.nickname ??
-      (roomSession.role === "HOST" ? "방장" : "참여자"),
+      roomSession.nickname ?? (roomSession.role === "HOST" ? "방장" : "참여자"),
     role: roomSession.role,
   };
 }
@@ -44,10 +43,7 @@ function updateParticipants(currentParticipants, event) {
     return payload.participants;
   }
 
-  if (
-    eventType === "PARTICIPANT_JOINED" ||
-    eventType === "PARTICIPANT_JOIN"
-  ) {
+  if (eventType === "PARTICIPANT_JOINED" || eventType === "PARTICIPANT_JOIN") {
     const participant = payload.participant ?? payload;
     return [
       ...currentParticipants.filter(
@@ -57,10 +53,7 @@ function updateParticipants(currentParticipants, event) {
     ];
   }
 
-  if (
-    eventType === "PARTICIPANT_LEFT" ||
-    eventType === "PARTICIPANT_LEAVE"
-  ) {
+  if (eventType === "PARTICIPANT_LEFT" || eventType === "PARTICIPANT_LEAVE") {
     const participantId =
       payload.participantId ?? payload.participant?.participantId;
     return currentParticipants.filter(
@@ -91,9 +84,7 @@ export function useRoomParticipants(roomSession) {
 
     // 참여자 이벤트 구독 및 연결 생명주기 관리
     const client = new Client({
-      brokerURL: createWebSocketUrl(
-        roomSession.webSocketUrl ?? "/ws/v1",
-      ),
+      brokerURL: createWebSocketUrl(roomSession.webSocketUrl ?? "/ws/v1"),
       connectHeaders: {
         Authorization: `Bearer ${roomSession.roomToken}`,
       },
@@ -109,9 +100,7 @@ export function useRoomParticipants(roomSession) {
           (message) => {
             try {
               const event = JSON.parse(message.body);
-              setParticipants((current) =>
-                updateParticipants(current, event),
-              );
+              setParticipants((current) => updateParticipants(current, event));
             } catch {
               setConnectionError("참여자 이벤트를 해석하지 못했습니다.");
             }
