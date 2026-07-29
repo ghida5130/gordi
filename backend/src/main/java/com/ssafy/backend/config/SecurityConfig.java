@@ -79,7 +79,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/exchange").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rooms/*/join").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // WebSocket 핸드셰이크는 열어두고, 인증은 STOMP CONNECT 인터셉터에서 수행
+                        .requestMatchers("/ws/v1/**").permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers(
                                 "/api/swagger-ui.html",

@@ -1,4 +1,4 @@
-const ACCESS_TOKEN_KEY = "accessToken";
+const ACCESS_TOKEN_KEY = "at";
 
 // 저장된 액세스 토큰 조회
 export function getAccessToken() {
