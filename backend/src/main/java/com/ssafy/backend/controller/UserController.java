@@ -1,17 +1,16 @@
 package com.ssafy.backend.controller;
 
 import com.ssafy.backend.common.response.ApiResponse;
-import com.ssafy.backend.dto.UserRequestDTO;
-import com.ssafy.backend.dto.UserResponseDTO;
+import com.ssafy.backend.dto.users.NicknameRequestDTO;
+import com.ssafy.backend.dto.users.UserRequestDTO;
+import com.ssafy.backend.dto.users.UserResponseDTO;
 import com.ssafy.backend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException; // 파일 시스템 예외가 아닌 Spring Security 예외로 변경
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -31,10 +30,11 @@ public class UserController {
 
     // 닉네임 수정 (부분 수정 -> PATCH)
     @PatchMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ApiResponse<Long> updateMe(
-            @Validated(UserRequestDTO.updateGroup.class) @RequestBody UserRequestDTO dto
-    ) throws AccessDeniedException {
-        return ApiResponse.success(userService.updateUser(dto));
+    public ResponseEntity<Void> updateMe(
+            @Valid @RequestBody NicknameRequestDTO dto
+    ) {
+        userService.updateNickname(dto.nickname());
+        return ResponseEntity.noContent().build();
     }
 
     // 유저 존재 확인
