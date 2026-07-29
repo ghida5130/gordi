@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "rooms")
+@Table(
+        name = "rooms",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_rooms_room_code", columnNames = "room_code"),
+                @UniqueConstraint(
+                        name = "uk_rooms_host_idempotency_key",
+                        columnNames = {"host_user_id", "idempotency_key"}
+                )
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -35,7 +45,7 @@ public class Room {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "room_code", nullable = false, length = 64)
+    @Column(name = "room_code", nullable = false, length = 6)
     private String roomCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -48,6 +58,12 @@ public class Room {
 
     @Column(name = "recommendation_version", nullable = false)
     private Long recommendationVersion;
+
+    @Column(name = "max_participants", nullable = false)
+    private Integer maxParticipants;
+
+    @Column(name = "idempotency_key", nullable = false, length = 36)
+    private String idempotencyKey;
 
     @Builder.Default
     @Column(name = "status", nullable = false, length = 50)

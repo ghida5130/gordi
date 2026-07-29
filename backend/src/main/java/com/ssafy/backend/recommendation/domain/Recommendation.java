@@ -53,7 +53,7 @@ public class Recommendation {
 
     @Builder.Default
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "READY";
+    private String status = "READY"; // READY, EMPTY
 
     @Builder.Default
     @Column(name = "version", nullable = false)
