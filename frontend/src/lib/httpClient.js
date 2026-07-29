@@ -7,8 +7,10 @@ import {
   removeAccessToken,
 } from '@/utils/tokenStorage'
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
+
 const clientConfig = {
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: apiBaseUrl,
   timeout: 10_000,
 }
 
