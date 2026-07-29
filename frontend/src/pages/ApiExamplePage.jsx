@@ -84,7 +84,7 @@ function ApiExamplePage() {
             <div>
               <h2 className="text-xl font-semibold">인증 요청</h2>
               <p className="mt-1 text-sm text-slate-500">
-                POST /auth/login · POST /auth/logout
+                POST /auth/login · POST /api/v1/auth/logout
               </p>
             </div>
             <span

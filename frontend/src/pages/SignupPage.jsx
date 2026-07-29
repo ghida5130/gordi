@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { signup } from '@/api/auth';
+// 💡 프로젝트에 맞는 토큰 저장 함수 경로로 맞추어 주석을 해제하고 사용하세요.
+// import { setAccessToken } from '@/utils/tokenStorage';
 
 // 약관 및 정책 텍스트 정의
 const TERMS_TEXT = `제1조 (목적)
@@ -59,16 +61,34 @@ export default function SignupPage() {
   const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*?_]).{8,}$/;
   const nicknameRegex = /^[a-zA-Z가-힣0-9]{2,12}$/; // 특수문자 제외 2~12자
 
-  // React-Query 회원가입 요청
+  // ⭐️ 수정됨: React-Query 회원가입 요청 (최신 API 명세서 반영)
   const { mutate, isPending } = useMutation({
     mutationFn: signup,
-    onSuccess: () => {
-      alert('회원가입이 완료되었습니다! 로그인해주세요.');
-      navigate('/login');
+    onSuccess: (response) => {
+      const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
+      const refreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
+      
+      if (accessToken) {
+        // setAccessToken(accessToken);
+      }
+      if (refreshToken) {
+        // 리프레시 토큰 저장 함수가 있다면 사용
+      }
+
+      alert('회원가입이 완료되었습니다!');
+      // 가입 즉시 토큰이 발급되므로 홈 화면으로 이동합니다.
+      navigate('/'); 
     },
     onError: (error) => {
-      console.error('회원가입 실패:', error);
-      alert('회원가입에 실패했습니다. 다시 시도해주세요.');
+      const status = error.response?.status;
+      if (status === 409) {
+        alert('이미 가입된 이메일이거나 중복된 닉네임입니다.');
+      } else if (status === 400) {
+        alert('입력하신 정보의 형식이 올바르지 않습니다.');
+      } else {
+        console.error('회원가입 실패:', error);
+        alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
   });
 
@@ -109,11 +129,11 @@ export default function SignupPage() {
       return;
     }
 
+    // ⭐️ 수정됨: 백엔드 명세서에 맞게 3가지 데이터만 전송
     mutate({
       email,
       password,
       nickname,
-      marketing_agreed: agreements.marketing,
     });
   };
 
@@ -171,7 +191,6 @@ export default function SignupPage() {
                   <input type="checkbox" name="terms" checked={agreements.terms} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[필수] 이용약관</span>
                 </div>
-                {/* onClick 이벤트가 추가 */}
                 <button type="button" onClick={() => openModal('이용약관', TERMS_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
               
@@ -180,7 +199,6 @@ export default function SignupPage() {
                   <input type="checkbox" name="privacy" checked={agreements.privacy} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[필수] 개인정보 처리방침</span>
                 </div>
-                {/* onClick 이벤트가 추가 */}
                 <button type="button" onClick={() => openModal('개인정보 처리방침', PRIVACY_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
               
@@ -189,7 +207,6 @@ export default function SignupPage() {
                   <input type="checkbox" name="marketing" checked={agreements.marketing} onChange={handleSingleCheck} className="rounded text-black focus:ring-black" />
                   <span className="text-gray-600">[선택] 마케팅 정보 수신 동의</span>
                 </div>
-                {/*  onClick 이벤트가 추가 */}
                 <button type="button" onClick={() => openModal('마케팅 정보 수신 동의', MARKETING_TEXT)} className="text-blue-500 hover:underline">보기</button>
               </label>
             </div>
@@ -205,7 +222,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/*  팝업창(모달)을 화면에 그려주는 코드가 추가 */}
+      {/* 팝업창(모달) */}
       {modalContent && (
         <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
