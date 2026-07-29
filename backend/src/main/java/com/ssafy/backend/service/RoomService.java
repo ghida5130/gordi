@@ -22,7 +22,9 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
+import com.ssafy.backend.websocket.ParticipantJoinedEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,7 @@ public class RoomService {
     private final RecommendationItemRepository recommendationItemRepository;
     private final UserRepository userRepository;
     private final RoomTokenProvider roomTokenProvider;
+    private final ApplicationEventPublisher eventPublisher;
     private final long roomExpirationMillis;
 
     public RoomService(
@@ -67,6 +70,7 @@ public class RoomService {
             RecommendationItemRepository recommendationItemRepository,
             UserRepository userRepository,
             RoomTokenProvider roomTokenProvider,
+            ApplicationEventPublisher eventPublisher,
             @Value("${room.expiration:7200000}") long roomExpirationMillis
     ) {
         this.roomRepository = roomRepository;
@@ -77,6 +81,7 @@ public class RoomService {
         this.recommendationItemRepository = recommendationItemRepository;
         this.userRepository = userRepository;
         this.roomTokenProvider = roomTokenProvider;
+        this.eventPublisher = eventPublisher;
         if (roomExpirationMillis <= 0) {
             throw new IllegalArgumentException("room.expiration은 0보다 커야 합니다.");
         }
@@ -176,6 +181,7 @@ public class RoomService {
                 .role(PARTICIPANTS)
                 .build());
 
+        publishParticipantJoined(room, participant);
         return joinResponse(room, participant);
     }
 
@@ -190,7 +196,20 @@ public class RoomService {
         }
         participant.setNickname(nickname);
         roomParticipantRepository.save(participant);
+        publishParticipantJoined(room, participant);
         return joinResponse(room, participant);
+    }
+
+    // - 인자: 참여 대상 방과 저장된 참여자
+    // - 동작: 커밋 후 브로드캐스트될 PARTICIPANT_JOINED 도메인 이벤트 발행
+    private void publishParticipantJoined(Room room, RoomParticipant participant) {
+        eventPublisher.publishEvent(new ParticipantJoinedEvent(
+                room.getId(),
+                room.getVersion(),
+                participant.getId(),
+                participant.getNickname(),
+                participant.getRole()
+        ));
     }
 
     private void validateRecommendation(Recommendation recommendation, Long requestedVersion) {
