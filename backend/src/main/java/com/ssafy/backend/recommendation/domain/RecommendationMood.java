@@ -1,4 +1,4 @@
-package com.ssafy.backend.domain;
+package com.ssafy.backend.recommendation.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
