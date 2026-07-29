@@ -1,14 +1,19 @@
 package com.ssafy.backend.controller;
 
 import com.ssafy.backend.common.response.ApiResponse;
+import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
+import com.ssafy.backend.dto.avatar.AvatarSelectRequestDTO;
+import com.ssafy.backend.dto.avatar.UserAvatarResponseDTO;
 import com.ssafy.backend.dto.users.NicknameRequestDTO;
 import com.ssafy.backend.dto.users.UserRequestDTO;
 import com.ssafy.backend.dto.users.UserResponseDTO;
+import com.ssafy.backend.service.AvatarService;
 import com.ssafy.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException; // 파일 시스템 예외가 아닌 Spring Security 예외로 변경
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +22,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final AvatarService avatarService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AvatarService avatarService) {
         this.userService = userService;
+        this.avatarService = avatarService;
     }
 
     // 내 정보 조회
@@ -66,5 +73,21 @@ public class UserController {
     ) throws AccessDeniedException {
         userService.deleteUser(dto);
         return ResponseEntity.ok(ApiResponse.success(true));
+    }
+
+    /** 나의 아바타 조회 */
+    @GetMapping("/me/avatar")
+    public ApiResponse<AvatarResponseDTO> readMyAvatar(Authentication authentication) {
+        return ApiResponse.success(avatarService.readMyAvatar(authentication.getName()));
+    }
+
+    /** 아바타 프리셋 선택·변경 */
+    @PutMapping(value = "/me/avatar", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ApiResponse<UserAvatarResponseDTO> selectAvatar(
+            @RequestBody @Valid AvatarSelectRequestDTO request,
+            Authentication authentication
+    ) {
+        return ApiResponse.success(
+                avatarService.selectAvatar(authentication.getName(), request.avatarId()));
     }
 }
