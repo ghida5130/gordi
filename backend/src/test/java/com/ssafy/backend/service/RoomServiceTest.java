@@ -22,12 +22,14 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
+import com.ssafy.backend.websocket.ParticipantJoinedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,6 +64,8 @@ class RoomServiceTest {
     private UserRepository userRepository;
     @Mock
     private RoomTokenProvider roomTokenProvider;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private RoomService roomService;
 
@@ -76,6 +80,7 @@ class RoomServiceTest {
                 recommendationItemRepository,
                 userRepository,
                 roomTokenProvider,
+                eventPublisher,
                 7_200_000L
         );
     }
@@ -317,6 +322,31 @@ class RoomServiceTest {
                 ArgumentCaptor.forClass(RoomParticipant.class);
         verify(roomParticipantRepository).save(participantCaptor.capture());
         assertThat(participantCaptor.getValue().getUser()).isNull();
+
+        ArgumentCaptor<ParticipantJoinedEvent> eventCaptor =
+                ArgumentCaptor.forClass(ParticipantJoinedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        ParticipantJoinedEvent event = eventCaptor.getValue();
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.participantId()).isEqualTo(42L);
+        assertThat(event.nickname()).isEqualTo("친구1");
+        assertThat(event.role()).isEqualTo("PARTICIPANTS");
+    }
+
+    @Test
+    void 정원_초과로_참여_실패시_이벤트를_발행하지_않는다() {
+        Room room = waitingRoom(31L, 2);
+        when(roomRepository.findByRoomCodeForUpdate("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.countByRoomIdAndLeftAtIsNull(room.getId()))
+                .thenReturn(2L);
+
+        assertThatThrownBy(() -> roomService.join(
+                "A7K9Q2",
+                new RoomJoinRequestDTO("게스트"),
+                null
+        )).isInstanceOf(ApiException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(ParticipantJoinedEvent.class));
     }
 
     @Test

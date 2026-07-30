@@ -4,7 +4,7 @@ import { AuthRequiredError } from "@/api/errors";
 import { useUserStore } from "@/stores/useUserStore";
 import { getAccessToken, removeAccessToken } from "@/utils/tokenStorage";
 
-const apiBaseUrl = "https://i15d105.p.ssafy.io/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api";
 
 const clientConfig = {
   baseURL: apiBaseUrl,

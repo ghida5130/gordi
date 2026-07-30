@@ -23,6 +23,20 @@ services:
       dockerfile: Dockerfile
     container_name: gordi-frontend
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env
+    networks:
+      - app-network
+
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: gordi-ai
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=prod
+      - API_PREFIX=/ai/v1
     networks:
       - app-network
 

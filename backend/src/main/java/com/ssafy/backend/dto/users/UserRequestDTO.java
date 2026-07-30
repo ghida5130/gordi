@@ -1,5 +1,6 @@
-package com.ssafy.backend.dto;
+package com.ssafy.backend.dto.users;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -18,8 +19,15 @@ public class UserRequestDTO {
             message = "아이디는 필수 입력 항목입니다."
     )
     @Size(
-            min = 4, max = 20,
-            message = "아이디는 4자 이상 20자 이하로 입력해야 합니다.",
+            min = 4, max = 30,
+            message = "이메일는 4자 이상 30자 이하로 입력해야 합니다.",
+            groups = {existGroup.class, addGroup.class, updateGroup.class, deleteGroup.class}
+    )
+
+    // 💡 이메일 형식 검증 추가
+    @Email(
+            regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$",
+            message = "올바른 이메일 형식이 아닙니다.",
             groups = {existGroup.class, addGroup.class, updateGroup.class, deleteGroup.class}
     )
     private String email;
