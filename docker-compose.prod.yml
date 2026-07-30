@@ -23,6 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: gordi-frontend
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env
     networks:
       - app-network
 

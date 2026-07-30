@@ -3,7 +3,7 @@ package com.ssafy.backend.service;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.domain.User;
-import com.ssafy.backend.dto.UserRequestDTO;
+import com.ssafy.backend.dto.users.UserRequestDTO;
 import com.ssafy.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -1,70 +1,131 @@
-import PageContainer from '@/components/common/PageContainer'
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
-const STACK_ITEMS = [
-  {
-    title: 'React Router',
-    description: '중첩 라우트와 공통 레이아웃 구성',
-  },
-  {
-    title: 'TanStack Query',
-    description: '서버 상태 캐싱과 요청 상태 관리',
-  },
-  {
-    title: 'Zustand',
-    description: '작고 명확한 클라이언트 상태 관리',
-  },
-  {
-    title: 'Axios',
-    description: '일관된 REST API 요청 처리',
-  },
-]
+import { login } from "@/api/auth";
+import PageContainer from "@/components/common/PageContainer";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { setAccessToken } from "@/utils/tokenStorage";
 
-// 초기 설정 완료 여부를 확인할 수 있는 기본 화면
 function HomePage() {
-  const tempMessage = import.meta.env.VITE_TEMP_MESSAGE
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (response) => {
+      setAccessToken(response.data.accessToken);
+      navigate("/rooms", { replace: true });
+    },
+  });
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    loginMutation.mutate(form);
+  };
+
+  const handleTemporaryLogin = () => {
+    setAccessToken("temporary-access-token");
+    navigate("/rooms/create");
+  };
 
   return (
-    <PageContainer className="py-16 sm:py-24">
-      <section className="max-w-3xl">
-        <p className="mb-3 text-sm font-semibold tracking-wider text-brand-600 uppercase">
-          Frontend Starter
-        </p>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          개발을 시작할 준비가 되었습니다.
-        </h1>
-        <p className="mt-6 text-lg leading-8 text-slate-600">
-          라우팅, 서버 상태, 전역 상태, API 요청, 스타일 시스템의 기본 구성을
-          연결했습니다.
-        </p>
-      </section>
+    <main className="flex min-h-screen items-center bg-slate-100 py-12">
+      <PageContainer>
+        <section className="mx-auto max-w-md rounded-3xl border bg-white p-7 shadow-xl shadow-slate-200/70 sm:p-9">
+          <p className="text-sm font-semibold text-brand-600">임시 로그인</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+            다시 만나서 반가워요
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            이메일과 비밀번호를 입력해 로그인해 주세요.
+          </p>
 
-      <section className="mt-10 rounded-2xl border border-brand-500/20 bg-brand-50 p-5">
-        <p className="text-sm font-semibold text-brand-600">
-          임시 환경변수 확인
-        </p>
-        <p className="mt-2 break-words font-mono text-sm text-slate-700">
-          {tempMessage}
-        </p>
-      </section>
-
-      <section
-        aria-label="설정된 기술"
-        className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {STACK_ITEMS.map((item) => (
-          <article
-            key={item.title}
-            className="rounded-2xl border bg-white p-5 shadow-sm"
-          >
-            <h2 className="font-semibold">{item.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {item.description}
+          {location.state?.signupCompleted && (
+            <p className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              회원가입이 완료되었습니다. 로그인해 주세요.
             </p>
-          </article>
-        ))}
-      </section>
-    </PageContainer>
-  )
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <label className="block">
+              <span className="text-sm font-medium">이메일</span>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+                placeholder="user@example.com"
+                className="mt-2 w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium">비밀번호</span>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+                placeholder="비밀번호를 입력해 주세요"
+                className="mt-2 w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10"
+              />
+            </label>
+
+            {loginMutation.isError && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                {getApiErrorMessage(
+                  loginMutation.error,
+                  "로그인에 실패했습니다.",
+                )}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginMutation.isPending}
+              className="w-full rounded-xl bg-brand-600 px-4 py-3 font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loginMutation.isPending ? "로그인 중..." : "로그인"}
+            </button>
+          </form>
+
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              onClick={handleTemporaryLogin}
+              className="mt-3 w-full rounded-xl border border-dashed border-brand-500 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
+            >
+              임시 로그인 후 방 생성 화면 보기
+            </button>
+          )}
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            계정이 없나요?{" "}
+            <Link to="/signup" className="font-semibold text-brand-600 hover:underline">
+              회원가입
+            </Link>
+          </p>
+        </section>
+      </PageContainer>
+    </main>
+  );
 }
 
-export default HomePage
+export default HomePage;

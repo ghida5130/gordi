@@ -61,6 +61,16 @@ public class Product {
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "KRW";
 
+    // 판매 상태 (추천 후보는 AVAILABLE 만 사용)
+    @Builder.Default
+    @Column(
+            name = "availability",
+            nullable = false,
+            length = 50,
+            columnDefinition = "varchar(50) not null default 'AVAILABLE'"
+    )
+    private String availability = ProductAvailability.AVAILABLE.name();
+
     @Column(name = "source_hash", length = 255)
     private String sourceHash;
 

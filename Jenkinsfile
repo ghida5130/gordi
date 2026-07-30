@@ -18,7 +18,8 @@ pipeline {
                     echo '2. Docker 이미지 빌드 및 Docker Compose 배포'
                     
                     withCredentials([
-                        file(credentialsId: 'backend-env-file', variable: 'BACKEND_ENV_FILE')
+                        file(credentialsId: 'backend-env-file', variable: 'BACKEND_ENV_FILE'),
+                        file(credentialsId: 'frontend-env-file', variable: 'FRONTEND_ENV_FILE')
                     ]) {
                         sh '''
                             set -e
@@ -35,8 +36,8 @@ pipeline {
                             rm -f .env
                             cp "$BACKEND_ENV_FILE" .env
 
-                            # rm -f ./frontend/.env
-                            # cp "$FRONTEND_ENV_FILE" ./frontend/.env
+                            rm -f ./frontend/.env
+                            cp "$FRONTEND_ENV_FILE" ./frontend/.env
 
                             echo "2. backend 전용 Docker Compose 실행"
                             docker-compose -f docker-compose.prod.yml up -d --build
