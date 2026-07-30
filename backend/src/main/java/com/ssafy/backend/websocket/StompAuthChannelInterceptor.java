@@ -41,6 +41,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             return message;
         }
 
+        // 토큰 검증 및 예외처리
         String authorization = accessor.getFirstNativeHeader("Authorization");
         if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
             throw new MessageDeliveryException(ErrorCode.UNAUTHORIZED.getCode());
@@ -54,6 +55,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             throw new MessageDeliveryException(e.getErrorCode().getCode());
         }
 
+        // 세션 바인딩 - Room 전용 Principal 인터페이스 구현체
         RoomPrincipal principal = new RoomPrincipal(
                 claims.participantId(),
                 claims.roomId(),
@@ -62,6 +64,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         );
         accessor.setUser(principal);
 
+        // @MessageMapping 컨트롤러나 다른 인터셉터에서 접속자의 방 정보 꺼내쓰기
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes != null) {
             sessionAttributes.put("roomId", claims.roomId());
