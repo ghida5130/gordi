@@ -4,9 +4,11 @@ import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -87,6 +89,26 @@ class RoomEventPublisherTest {
         assertThat(event.version()).isEqualTo(13L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.data()).isEqualTo(new ItemMovedEventDataDTO(domainEvent.placements()));
+    }
+
+    @Test
+    void 방_시작_이벤트를_IN_PROGRESS_상태와_함께_브로드캐스트한다() {
+        RoomStartedEvent domainEvent = new RoomStartedEvent(31L, 13L, 42L, "request-uuid");
+
+        roomEventPublisher.handleRoomStarted(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ROOM_STARTED);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.version()).isEqualTo(13L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new RoomStartedEventDataDTO("IN_PROGRESS"));
     }
 
     @Test

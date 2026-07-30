@@ -35,4 +35,18 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             + "where room.id = :roomId and room.version = :baseVersion")
     int bumpVersionIfMatches(@Param("roomId") Long roomId, @Param("baseVersion") Long baseVersion);
 
+    // - 인자: 방 ID, 클라이언트가 알고 있는 baseVersion, 변경할 상태
+    // - 동작: 버전이 일치할 때만 상태 변경 + 버전 +1을 한 문장으로 원자적으로 수행.
+    //         반환값 0이면 버전 불일치(VERSION_CONFLICT).
+    //         (엔티티 setStatus 대신 bulk UPDATE를 쓰는 이유: @Version 필드가 있는 엔티티를
+    //          bumpVersion 이후 dirty-check로 수정하면 stale version으로 낙관적 락 충돌이 난다)
+    @Modifying
+    @Query("update Room room set room.version = room.version + 1, room.status = :status "
+            + "where room.id = :roomId and room.version = :baseVersion")
+    int updateStatusIfVersionMatches(
+            @Param("roomId") Long roomId,
+            @Param("baseVersion") Long baseVersion,
+            @Param("status") String status
+    );
+
 }
