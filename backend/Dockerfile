@@ -8,14 +8,13 @@ WORKDIR /app
 COPY gradlew ./
 COPY gradle gradle/
 COPY build.gradle settings.gradle ./
-COPY src src
 
 # 실행 권한 부여 및 JAR 파일 빌드 (테스트 제외)
 RUN chmod +x ./gradlew
 RUN ./gradlew dependencies --no-daemon || true
 
 # 소스코드 복사 및 JAR 빌드
-COPY src src/
+COPY src src
 RUN ./gradlew clean bootJar -x test --no-daemon
 
 # 2. Run Stage
