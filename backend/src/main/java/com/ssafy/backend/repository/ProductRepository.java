@@ -1,6 +1,7 @@
 package com.ssafy.backend.repository;
 
 import com.ssafy.backend.domain.Product;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -71,5 +72,23 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Integer findMaxPrice(
             @Param("category") String category,
             @Param("subcategory") String subcategory
+    );
+
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.availability = 'AVAILABLE'
+          AND (:category IS NULL OR p.category = :category)
+          AND (:minPrice IS NULL OR p.price >= :minPrice)
+          AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+          AND (:keyword IS NULL
+               OR p.name LIKE CONCAT('%', :keyword, '%')
+               OR p.brand LIKE CONCAT('%', :keyword, '%'))
+        """)
+    Page<Product> search(
+            @Param("category") String category,
+            @Param("minPrice") Integer minPrice,
+            @Param("maxPrice") Integer maxPrice,
+            @Param("keyword") String keyword,
+            Pageable pageable
     );
 }

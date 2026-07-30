@@ -54,9 +54,6 @@ public class Product {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "color_group", length = 50)
-    private String colorGroup;
-
     @Builder.Default
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "KRW";
@@ -70,9 +67,6 @@ public class Product {
             columnDefinition = "varchar(50) not null default 'AVAILABLE'"
     )
     private String availability = ProductAvailability.AVAILABLE.name();
-
-    @Column(name = "source_hash", length = 255)
-    private String sourceHash;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
