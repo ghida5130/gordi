@@ -52,29 +52,6 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(userService.existUser(dto)));
     }
 
-    // 유저 정보 조회
-    @GetMapping
-    public ApiResponse<UserResponseDTO> userMeApi() {
-        return ApiResponse.success(userService.readUser());
-    }
-
-    // 유저 수정
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Long>> updateUserApi(
-            @Validated(UserRequestDTO.updateGroup.class) @RequestBody UserRequestDTO dto
-    ) throws AccessDeniedException {
-        return ResponseEntity.ok(ApiResponse.success(userService.updateUser(dto))); // userId 반환
-    }
-
-    // 유저 제거
-    @DeleteMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Boolean>> deleteUserApi(
-            @Validated(UserRequestDTO.deleteGroup.class) @RequestBody UserRequestDTO dto
-    ) throws AccessDeniedException {
-        userService.deleteUser(dto);
-        return ResponseEntity.ok(ApiResponse.success(true));
-    }
-
     /** 나의 아바타 조회 */
     @GetMapping("/me/avatar")
     public ApiResponse<AvatarResponseDTO> readMyAvatar(Authentication authentication) {

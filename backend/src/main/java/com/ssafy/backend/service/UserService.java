@@ -88,7 +88,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다: " + email));
 
-        return new UserResponseDTO(email, user.getNickname());
+        return UserResponseDTO.from(user);
     }
 
     // 자체 로그인 회원 탈퇴
