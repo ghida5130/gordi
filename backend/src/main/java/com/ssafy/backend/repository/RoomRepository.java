@@ -22,6 +22,8 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     Optional<Room> findByHostUserIdAndIdempotencyKey(Long hostUserId, String idempotencyKey);
 
+    Optional<Room> findByRoomCode(String roomCode);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select room from Room room where room.roomCode = :roomCode")
     Optional<Room> findByRoomCodeForUpdate(@Param("roomCode") String roomCode);
