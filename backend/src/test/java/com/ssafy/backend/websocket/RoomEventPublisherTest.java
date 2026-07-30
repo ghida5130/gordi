@@ -1,7 +1,9 @@
 package com.ssafy.backend.websocket;
 
-import com.ssafy.backend.dto.room.ParticipantEventDataDTO;
-import com.ssafy.backend.dto.room.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

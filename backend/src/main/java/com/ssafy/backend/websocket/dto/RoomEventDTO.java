@@ -1,6 +1,6 @@
-package com.ssafy.backend.dto.room;
+package com.ssafy.backend.websocket.dto;
 
-import com.ssafy.backend.websocket.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomEventType;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -1,7 +1,9 @@
 package com.ssafy.backend.websocket;
 
-import com.ssafy.backend.dto.room.ParticipantEventDataDTO;
-import com.ssafy.backend.dto.room.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.RoomEventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;

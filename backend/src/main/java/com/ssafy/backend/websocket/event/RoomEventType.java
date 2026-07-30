@@ -1,4 +1,4 @@
-package com.ssafy.backend.websocket;
+package com.ssafy.backend.websocket.event;
 
 /**
  * 방 토픽(/topic/v1/rooms/{roomId}/participants)으로 브로드캐스트되는 이벤트 종류.

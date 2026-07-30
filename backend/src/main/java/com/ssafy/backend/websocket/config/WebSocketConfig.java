@@ -1,6 +1,7 @@
-package com.ssafy.backend.config;
+package com.ssafy.backend.websocket.config;
 
 import com.ssafy.backend.websocket.StompAuthChannelInterceptor;
+import com.ssafy.backend.websocket.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * - 엔드포인트: /ws/v1 (클라이언트는 wss://{host}/ws/v1 로 접속, nginx가 백엔드로 프록시)
  * - 브로커: SimpleBroker(인메모리). 스케일아웃 시 RabbitMQ StompBrokerRelay로 교체 예정.
  * - 인증: CONNECT frame의 Authorization 헤더를 StompAuthChannelInterceptor에서 검증, inbound 채널에 인증 인터셉터 등록
+ * - 에러: StompErrorHandler가 예외를 ErrorCode 기반 ERROR frame으로 정제해 응답
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -24,10 +26,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
+    private final StompErrorHandler stompErrorHandler;
 
-    // 웹소켓 연결(HandShake) 진입점 설정
+    // 웹소켓 연결(HandShake) 진입점 설정 + ERROR frame 핸들러 등록
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.setErrorHandler(stompErrorHandler);
         registry.addEndpoint("/ws/v1")
                 .setAllowedOriginPatterns("*"); // CORS 설정 TODO: 운영 배포 시 실제 도메인으로 제한
     }
