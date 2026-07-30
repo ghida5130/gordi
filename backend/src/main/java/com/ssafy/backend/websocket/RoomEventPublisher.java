@@ -1,7 +1,9 @@
 package com.ssafy.backend.websocket;
 
+import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,20 @@ public class RoomEventPublisher {
                         event.nickname(),
                         event.role()
                 )
+        ));
+    }
+
+    // - 인자: 아이템 이동 도메인 이벤트
+    // - 동작: 커밋 후 전체 placements를 담은 ITEM_MOVED 이벤트를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleItemMoved(ItemMovedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ITEM_MOVED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new ItemMovedEventDataDTO(event.placements())
         ));
     }
 

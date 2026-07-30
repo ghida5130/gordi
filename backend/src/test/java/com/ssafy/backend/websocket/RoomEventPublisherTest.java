@@ -1,9 +1,12 @@
 package com.ssafy.backend.websocket;
 
+import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.PlacementDTO;
+import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
-import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,6 +58,35 @@ class RoomEventPublisherTest {
         assertThat(event.data()).isEqualTo(
                 new ParticipantEventDataDTO(42L, "친구1", "PARTICIPANTS")
         );
+    }
+
+    @Test
+    void 아이템_이동_이벤트를_전체_placements와_함께_브로드캐스트한다() {
+        ItemMovedEvent domainEvent = new ItemMovedEvent(
+                31L,
+                13L,
+                42L,
+                "request-uuid",
+                List.of(
+                        new PlacementDTO(30L, 1L, 10_000),
+                        new PlacementDTO(20L, null, 10_000)
+                )
+        );
+
+        roomEventPublisher.handleItemMoved(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ITEM_MOVED);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.version()).isEqualTo(13L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new ItemMovedEventDataDTO(domainEvent.placements()));
     }
 
     @Test
