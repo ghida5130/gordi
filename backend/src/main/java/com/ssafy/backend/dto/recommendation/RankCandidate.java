@@ -10,7 +10,6 @@ public record RankCandidate(
         Integer price,
         String category,
         String subcategory,
-        String colorGroup,
         String description
 ) {
 
@@ -22,7 +21,6 @@ public record RankCandidate(
                 product.getPrice(),
                 product.getCategory(),
                 product.getSubcategory(),
-                product.getColorGroup(),
                 product.getDescription()
         );
     }
