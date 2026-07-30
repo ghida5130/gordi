@@ -81,7 +81,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
-                        .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
+                        .requestMatchers("/api/v1/oauth2/**", "/api/v1/login/oauth2/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/rooms/*/join").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -138,8 +138,8 @@ public class SecurityConfig {
 
         // OAuth2 로그인 (카카오)
         http.oauth2Login(oauth2 -> oauth2
-                .authorizationEndpoint(a -> a.baseUri("/api/oauth2/authorization"))
-                .redirectionEndpoint(r -> r.baseUri("/api/login/oauth2/code/*"))
+                .authorizationEndpoint(a -> a.baseUri("/api/v1/oauth2/authorization"))
+                .redirectionEndpoint(r -> r.baseUri("/api/v1/login/oauth2/code/*"))
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .successHandler(oAuth2SuccessHandler)
                 .failureHandler((request, response, exception) ->
