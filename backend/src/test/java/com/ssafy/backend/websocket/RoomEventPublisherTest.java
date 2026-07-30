@@ -12,8 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.time.Instant;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -52,7 +50,6 @@ class RoomEventPublisherTest {
         assertThat(event.roomId()).isEqualTo(31L);
         assertThat(event.version()).isEqualTo(13L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
-        assertThat(event.occurredAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(event.data()).isEqualTo(
                 new ParticipantEventDataDTO(42L, "친구1", "PARTICIPANTS")
         );

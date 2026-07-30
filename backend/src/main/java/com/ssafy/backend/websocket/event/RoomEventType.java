@@ -1,9 +1,11 @@
 package com.ssafy.backend.websocket.event;
 
 /**
- * 방 토픽(/topic/v1/rooms/{roomId}/participants)으로 브로드캐스트되는 이벤트 종류.
+ * 방 토픽(/topic/v1/rooms/{roomId}/participants) 브로드캐스트 및
+ * 개인 큐(/user/queue/sync) 응답에 사용되는 이벤트 종류.
  */
 public enum RoomEventType {
+    BOARD_SNAPSHOT,
     PARTICIPANT_JOINED,
     PARTICIPANT_LEFT,
     ROOM_STARTED,

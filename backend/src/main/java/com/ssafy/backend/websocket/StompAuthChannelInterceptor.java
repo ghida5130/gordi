@@ -14,6 +14,8 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * STOMP CONNECT frame의 Authorization 헤더에서 roomToken을 검증한다.
@@ -22,12 +24,20 @@ import java.util.Map;
  *   예외를 던져 연결을 거절한다. 예외 메시지(ErrorCode name)는 STOMP ERROR frame의
  *   message 헤더로 클라이언트에 전달된다.
  * - 검증 성공 시 RoomPrincipal을 세션에 바인딩하고, Spring이 CONNECTED frame을 응답한다.
+ * <p>
+ * SUBSCRIBE frame은 목적지 권한을 검증한다.
+ * - /user/queue/** : Spring이 세션 단위로 라우팅하므로 통과
+ * - /topic/v1/rooms/{roomId}/** : Principal의 roomId와 일치해야 통과, 불일치 시 FORBIDDEN
+ * - 그 외 목적지: FORBIDDEN
  */
 @Component
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String USER_QUEUE_PREFIX = "/user/queue/";
+    private static final Pattern ROOM_TOPIC_PATTERN =
+            Pattern.compile("^/topic/v1/rooms/(\\d+)(/.*)?$");
 
     private final RoomTokenProvider roomTokenProvider;
 
@@ -36,8 +46,18 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // CONNECT 이외의 frame은 CONNECT 시점에 바인딩된 Principal을 그대로 사용
-        if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
+        if (accessor == null) {
+            return message;
+        }
+
+        // SUBSCRIBE는 목적지 권한 검증
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            validateSubscription(accessor);
+            return message;
+        }
+
+        // CONNECT/SUBSCRIBE 이외의 frame은 CONNECT 시점에 바인딩된 Principal을 그대로 사용
+        if (!StompCommand.CONNECT.equals(accessor.getCommand())) {
             return message;
         }
 
@@ -72,5 +92,33 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
 
         return message;
+    }
+
+    // - 인자: SUBSCRIBE frame accessor
+    // - 동작: 개인 큐는 통과, 방 토픽은 Principal roomId 일치 검증, 그 외 목적지는 거절.
+    //         예외는 StompErrorHandler가 ERROR frame으로 변환한다.
+    private void validateSubscription(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null) {
+            throw new MessageDeliveryException(ErrorCode.BAD_REQUEST.getCode());
+        }
+
+        // 개인 큐(/user/queue/**)는 브로커가 세션 단위로 라우팅하므로 추가 검증 불필요
+        if (destination.startsWith(USER_QUEUE_PREFIX)) {
+            return;
+        }
+
+        Matcher matcher = ROOM_TOPIC_PATTERN.matcher(destination);
+        if (!matcher.matches()) {
+            throw new MessageDeliveryException(ErrorCode.FORBIDDEN.getCode());
+        }
+
+        if (!(accessor.getUser() instanceof RoomPrincipal principal)) {
+            throw new MessageDeliveryException(ErrorCode.UNAUTHORIZED.getCode());
+        }
+        long requestedRoomId = Long.parseLong(matcher.group(1));
+        if (!principal.roomId().equals(requestedRoomId)) {
+            throw new MessageDeliveryException(ErrorCode.FORBIDDEN.getCode());
+        }
     }
 }
