@@ -82,20 +82,29 @@ class RoomSyncServiceTest {
 
     @Test
     void 방_전체_스냅샷을_BOARD_SNAPSHOT_envelope로_조립한다() {
+        // 1. Mock 객체를 먼저 생성
         Tier tierS = tier(1L, "S", 0);
         Tier tierA = tier(2L, "A", 1);
 
+        Room mockRoom = room(31L, 14L, "IN_PROGRESS");
+        RoomParticipant host = participant(42L, "홍길동", "HOST");
+
+        RoomItem item1 = item(30L, 100L, tierS, 0);
+        RoomItem item2 = item(40L, 200L, null, 1);
+
+        // 2. 생성된 Mock 객체로 Repository 스터빙
         when(roomRepository.findById(31L))
-                .thenReturn(Optional.of(room(31L, 14L, "IN_PROGRESS")));
-        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
-                .thenReturn(List.of(participant(42L, "홍길동", "HOST")));
+                .thenReturn(Optional.of(mockRoom));
+
+        when(roomParticipantRepository
+                .findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(host));
+
         when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L))
                 .thenReturn(List.of(tierS, tierA));
+
         when(roomItemRepository.findAllByRoomIdWithProduct(31L))
-                .thenReturn(List.of(
-                        item(30L, 100L, tierS, 0),
-                        item(40L, 200L, null, 1)
-                ));
+                .thenReturn(List.of(item1, item2));
 
         RoomEventDTO snapshot = roomSyncService.buildSnapshot(31L, "request-uuid", 42L);
 
