@@ -8,7 +8,9 @@ import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
+import com.ssafy.backend.websocket.event.TierRenamedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -109,6 +111,26 @@ class RoomEventPublisherTest {
         assertThat(event.version()).isEqualTo(13L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.data()).isEqualTo(new RoomStartedEventDataDTO("IN_PROGRESS"));
+    }
+
+    @Test
+    void 티어_이름_변경_이벤트를_브로드캐스트한다() {
+        TierRenamedEvent domainEvent = new TierRenamedEvent(31L, 13L, 42L, "request-uuid", 3L, "S급");
+
+        roomEventPublisher.handleTierRenamed(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.TIER_RENAMED);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.version()).isEqualTo(13L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new TierRenamedEventDataDTO(3L, "S급"));
     }
 
     @Test

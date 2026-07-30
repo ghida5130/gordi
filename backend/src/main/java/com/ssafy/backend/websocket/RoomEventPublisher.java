@@ -7,7 +7,9 @@ import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
+import com.ssafy.backend.websocket.event.TierRenamedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -70,6 +72,20 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.senderParticipantId(),
                 new RoomStartedEventDataDTO("IN_PROGRESS")
+        ));
+    }
+
+    // - 인자: 티어 이름 변경 도메인 이벤트
+    // - 동작: 커밋 후 TIER_RENAMED 이벤트를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTierRenamed(TierRenamedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TIER_RENAMED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TierRenamedEventDataDTO(event.tierId(), event.name())
         ));
     }
 
