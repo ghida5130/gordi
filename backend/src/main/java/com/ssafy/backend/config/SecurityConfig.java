@@ -6,8 +6,11 @@ import com.ssafy.backend.filter.JWTFilter;
 import com.ssafy.backend.filter.LoginFilter;
 import com.ssafy.backend.handler.LoginSuccessHandler;
 import com.ssafy.backend.handler.LogoutSuccessHandler;
+import com.ssafy.backend.handler.OAuth2SuccessHandler;
+import com.ssafy.backend.service.CustomOAuth2UserService;
 import com.ssafy.backend.service.JwtService;
 import com.ssafy.backend.util.JWTUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,12 +20,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
-import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableWebSecurity
@@ -33,25 +33,28 @@ public class SecurityConfig {
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
     private final ApiErrorResponseWriter errorResponseWriter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
+    @Value("${oauth2.failure-redirect-url}")
+    private String oauthFailureRedirectUrl;
 
     public SecurityConfig(
             AuthenticationConfiguration authenticationConfiguration,
             LoginSuccessHandler loginSuccessHandler,
             JwtService jwtService,
             JWTUtil jwtUtil,
-            ApiErrorResponseWriter errorResponseWriter
+            ApiErrorResponseWriter errorResponseWriter,
+            CustomOAuth2UserService customOAuth2UserService,
+            OAuth2SuccessHandler oAuth2SuccessHandler
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
         this.errorResponseWriter = errorResponseWriter;
-    }
-
-    // 비밀번호 단방향 암호화용 빈
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        this.customOAuth2UserService = customOAuth2UserService;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
     // 로그인 필터 AuthenticationManager
@@ -77,7 +80,8 @@ public class SecurityConfig {
         // 인가 설정
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/refresh", "/api/v1/auth/exchange").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/rooms/*/join").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -130,6 +134,16 @@ public class SecurityConfig {
                         response.setStatus(204);
                     }
                 })
+        );
+
+        // OAuth2 로그인 (카카오)
+        http.oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(a -> a.baseUri("/api/oauth2/authorization"))
+                .redirectionEndpoint(r -> r.baseUri("/api/login/oauth2/code/*"))
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2SuccessHandler)
+                .failureHandler((request, response, exception) ->
+                        response.sendRedirect(oauthFailureRedirectUrl))
         );
 
         return http.build();
