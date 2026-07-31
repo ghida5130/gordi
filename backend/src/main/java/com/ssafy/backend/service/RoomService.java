@@ -10,10 +10,7 @@ import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.Tier;
 import com.ssafy.backend.domain.User;
-import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
-import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
-import com.ssafy.backend.dto.room.RoomJoinRequestDTO;
-import com.ssafy.backend.dto.room.RoomJoinResponseDTO;
+import com.ssafy.backend.dto.room.*;
 import com.ssafy.backend.repository.RecommendationItemRepository;
 import com.ssafy.backend.repository.RecommendationRepository;
 import com.ssafy.backend.repository.RoomItemRepository;
@@ -183,6 +180,20 @@ public class RoomService {
 
         publishParticipantJoined(room, participant);
         return joinResponse(room, participant);
+    }
+
+    @Transactional(readOnly = true)
+    public MyActiveRoomResponseDTO readMyActiveRoom(String email) {
+        return roomParticipantRepository
+                .findActiveByUserEmail(email)
+                .stream().findFirst()
+                .map(rp -> new MyActiveRoomResponseDTO(new MyActiveRoomResponseDTO.ActiveRoom(
+                        rp.getRoom().getId(),
+                        rp.getRoom().getRoomCode(),
+                        rp.getRoom().getStatus(),
+                        rp.getRole(),
+                        rp.getRoom().getExpiresAt().atZone(AppZone.KST).toInstant())))
+                .orElseGet(() -> new MyActiveRoomResponseDTO(null));
     }
 
     private RoomJoinResponseDTO rejoin(
