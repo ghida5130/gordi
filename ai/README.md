@@ -116,3 +116,8 @@ python -m app.recommendation.embedding_cli `
 별도 checkpoint에 원자적으로 기록되므로 중단 후 같은 명령을 실행하면 입력
 해시가 동일한 임베딩을 재사용합니다. 전체 성공 시에만 `COMPLETE` snapshot을
 교체하며 `catalog_index/` 산출물은 Git에서 제외합니다.
+
+생성된 snapshot은 애플리케이션에서 `CatalogVectorIndex.load()`로 검증 후
+메모리에 적재합니다. 현재 198건 MVP는 외부 벡터 DB 없이 정확한 cosine
+검색을 사용하며, 성별(동일 성별 또는 `UNISEX`)·카테고리·세부 카테고리·가격
+조건을 점수 계산 전에 적용합니다. 기본 검색 후보는 50건, 최대 200건입니다.

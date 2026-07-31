@@ -118,15 +118,58 @@ class GeminiEmbeddingProvider:
         image: bytes,
         mime_type: str,
     ) -> list[float]:
+        return self._embed_parts(
+            text=document,
+            image=image,
+            mime_type=mime_type,
+        )
+
+    def embed_query(
+        self,
+        *,
+        text: str | None,
+        image: bytes | None,
+        mime_type: str | None,
+    ) -> list[float]:
+        query_text = None
+        if text is not None and text.strip():
+            query_text = (
+                f"task: search result | query: {text.strip()}"
+            )
+        if query_text is None and image is None:
+            raise CatalogEmbeddingError(
+                "embedding query requires text or image"
+            )
+        return self._embed_parts(
+            text=query_text,
+            image=image,
+            mime_type=mime_type,
+        )
+
+    def _embed_parts(
+        self,
+        *,
+        text: str | None,
+        image: bytes | None,
+        mime_type: str | None,
+    ) -> list[float]:
         from google.genai import types
 
+        contents: list[Any] = []
+        if text is not None:
+            contents.append(text)
+        if image is not None:
+            if mime_type not in {"image/jpeg", "image/png"}:
+                raise CatalogEmbeddingError(
+                    "query image must be JPEG or PNG"
+                )
+            contents.append(
+                types.Part.from_bytes(data=image, mime_type=mime_type)
+            )
         try:
             result = self._client.models.embed_content(
                 model=self.model,
-                contents=[
-                    document,
-                    types.Part.from_bytes(data=image, mime_type=mime_type),
-                ],
+                contents=contents,
                 config=types.EmbedContentConfig(
                     output_dimensionality=self.dimensions
                 ),
@@ -135,11 +178,15 @@ class GeminiEmbeddingProvider:
             raise CatalogEmbeddingError(
                 f"Gemini embed_content failed: {exc}"
             ) from exc
-        if len(result.embeddings) != 1:
+        embeddings = result.embeddings
+        if embeddings is None or len(embeddings) != 1:
             raise CatalogEmbeddingError(
                 "Gemini must return exactly one aggregated embedding"
             )
-        return list(result.embeddings[0].values)
+        values = embeddings[0].values
+        if values is None:
+            raise CatalogEmbeddingError("Gemini returned no embedding values")
+        return list(values)
 
 
 class HttpProductImageResolver:
