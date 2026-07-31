@@ -27,27 +27,22 @@ public class Avatar {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "gender_presentation", nullable = false, length = 50)
-    private String genderPresentation;
+    @Column(name = "gender", nullable = false, length = 50)
+    private String gender;
 
-    @Column(name = "body_build", nullable = false, length = 50)
-    private String bodyBuild;
-
-    @Column(name = "body_proportion", nullable = false, length = 50)
-    private String bodyProportion;
+    @Column(name = "body_type", nullable = false, length = 50)
+    private String bodyType;
 
     @Column(name = "image_url", nullable = false, length = 2048)
     private String imageUrl;
 
-    @Builder.Default
-    @Column(name = "version", nullable = false)
-    private Integer version = 1;
+    @Column(name = "height_id", nullable = false)
+    private Long heightId;
+
+    @Column(name = "weight_id", nullable = false)
+    private Long weightId;
 
     @Builder.Default
     @Column(name = "is_default", nullable = false)
     private boolean defaultAvatar = false;
-
-    @Builder.Default
-    @Column(name = "is_active", nullable = false)
-    private boolean active = true;
 }

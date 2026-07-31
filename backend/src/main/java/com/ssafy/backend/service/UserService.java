@@ -1,10 +1,8 @@
 package com.ssafy.backend.service;
 
-import com.ssafy.backend.common.error.ApiException;
-import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.domain.User;
-import com.ssafy.backend.dto.UserRequestDTO;
-import com.ssafy.backend.dto.UserResponseDTO;
+import com.ssafy.backend.dto.users.UserRequestDTO;
+import com.ssafy.backend.dto.users.UserResponseDTO;
 import com.ssafy.backend.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContext;
@@ -15,8 +13,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Map;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -68,6 +64,22 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user).getId();
     }
 
+    @Transactional
+    public void updateNickname(String nickname) {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "사용자를 찾을 수 없습니다: " + email
+                        )
+                );
+
+        user.updateNickname(nickname);
+    }
+
     // 자체 유저 정보 조회
     @Transactional(readOnly = true)
     public UserResponseDTO readUser() {
@@ -76,7 +88,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다: " + email));
 
-        return new UserResponseDTO(email, user.getNickname());
+        return UserResponseDTO.from(user);
     }
 
     // 자체 로그인 회원 탈퇴

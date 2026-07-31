@@ -1,21 +1,52 @@
-import { authApi, publicApi } from '@/api/request'
+import { authApi, publicApi } from "@/api/request";
+
+const apiBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api"
+).replace(/\/+$/, "");
 
 // 인증 전 사용자 정보를 전달하는 로그인 요청
 export function login(credentials) {
+<<<<<<< HEAD
   return publicApi.post('/v1/auth/login', credentials)
 }
 
 // 회원가입 요청 (토큰이 없으므로 publicApi 사용)
 export function signup(userData) {
   return publicApi.post('/v1/auth/signup', userData)
+=======
+  return publicApi.post("v1/auth/login", credentials);
+}
+
+export function startKakaoLogin() {
+  window.location.href = `${apiBaseUrl}/v1/oauth2/authorization/kakao`;
+}
+
+// 회원가입 요청 (토큰이 없으므로 publicApi 사용)
+export function signup(userData) {
+  return publicApi.post("/v1/auth/signup", userData);
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 }
 
 // 토큰 재발급 요청 (방식에 따라 public 또는 auth를 사용합니다)
 export function reissueToken() {
+<<<<<<< HEAD
   return publicApi.post('/v1/auth/refresh')
+=======
+  return publicApi.post(
+    "/v1/auth/refresh",
+    {},
+    {
+      withCredentials: true,
+    },
+  );
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 }
 
 // 저장된 액세스 토큰을 포함하는 로그아웃 요청
 export function logout() {
+<<<<<<< HEAD
   return authApi.post('/v1/auth/logout')
+=======
+  return authApi.post("/v1/auth/logout");
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 }

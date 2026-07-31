@@ -7,9 +7,6 @@ RUN npm ci
 # 파일 복사
 COPY . .
 
-# ARG VITE_API_BASE_URL
-# ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-
 RUN npm run build
 
 # nginx를 통한 정적 파일 실행

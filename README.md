@@ -34,13 +34,21 @@ docker compose up -d
 
 ### 2. 프론트엔드 및 백엔드 실행
 
-기존 컨테이너를 먼저 종료합니다.
+개별 컨테이너 따로 실행하기 
 
 ```bash
-docker compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml up -d --build frontend
+docker compose -f docker-compose.local.yml up -d --build backend
+docker compose -f docker-compose.local.yml up -d --build ai
+docker compose -f docker-compose.local.yml up -d --build nginx
 ```
 
-이미지를 새로 빌드한 후 프론트엔드와 백엔드 컨테이너를 실행합니다.
+여러 개를 한 번에도 가능
+```bash
+docker compose -f docker-compose.local.yml up -d --build backend ai
+```
+
+백엔드, 프론트, ai 한번에 컨테이너 실행 
 
 ```bash
 docker compose -f docker-compose.local.yml up -d --build
@@ -52,6 +60,7 @@ docker compose -f docker-compose.local.yml up -d --build
 | --- | --- |
 | 프론트엔드 | http://localhost/ |
 | 백엔드 API | http://localhost/api/ |
+| AI API | http://localhost/ai/ |
 | Swagger UI | http://localhost/api/swagger-ui/index.html |
 
 ### 주의사항

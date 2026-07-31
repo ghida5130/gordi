@@ -1,58 +1,93 @@
 pipeline {
     agent any
 
+    environment {
+        COMPOSE = 'docker-compose -f docker-compose.prod.yml'
+    }
+
     stages {
-        stage('Backend Build') {
+        stage('변경 감지') {
             steps {
-                dir('backend') {
-                    echo '1. Spring Boot Gradle 빌드 시작 (Java 21)'
-                    sh 'chmod +x ./gradlew'
-                    sh './gradlew clean build -x test'
+                script {
+                    def base = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+                    def valid = sh(script: "git cat-file -e '${base}^{commit}' 2>/dev/null", returnStatus: true) == 0
+
+                    def changed = valid
+                        ? sh(script: "git diff --name-only ${base} HEAD", returnStdout: true).trim().split('\n')
+                        : []
+                    
+                    if (!valid) {
+                        echo "기준 커밋(${base})을 찾을 수 없어 전체 배포합니다."
+                    }
+
+                    echo "변경 파일:\n${changed.join('\n')}"
+
+                    env.BUILD_FRONT = (!valid || changed.any { it.startsWith('frontend/') }) ? 'true' : 'false'
+                    env.BUILD_BACK  = (!valid || changed.any { it.startsWith('backend/') })  ? 'true' : 'false'
+                    env.BUILD_AI    = (!valid || changed.any { it.startsWith('ai/') })       ? 'true' : 'false'
+
+                    // 공통 파일 변경 시 전체 재배포
+                    if (changed.any { it in ['docker-compose.prod.yml', 'Jenkinsfile'] }) {
+                        env.BUILD_FRONT = 'true'
+                        env.BUILD_BACK  = 'true'
+                        env.BUILD_AI    = 'true'
+                    }
                 }
             }
         }
 
-        stage('Backend Docker Deploy') {
+        stage('환경변수 준비') {
             steps {
-                dir('.') {
-                    echo '2. Docker 이미지 빌드 및 Docker Compose 배포'
-                    
-                    withCredentials([
-                        file(credentialsId: 'backend-env-file', variable: 'BACKEND_ENV_FILE')
-                    ]) {
-                        sh '''
-                            set -e
-                            set +x
-
-                            export DOCKER_BUILDKIT=0
-                            export COMPOSE_DOCKER_CLI_BUILD=0
-
-                            echo "2. 기존 backend 서비스 안전하게 중지 및 삭제"
-                            # 기존 컨테이너를 먼저 내립니다. (오류가 나도 계속 진행하도록 || true 추가)
-                            docker-compose -f docker-compose.prod.yml down || true
-
-                            # 💡 $BACKEND_ENV_FILE을 빌드 위치의 .env 파일로 복사
-                            rm -f .env
-                            cp "$BACKEND_ENV_FILE" .env
-
-                            # rm -f ./frontend/.env
-                            # cp "$FRONTEND_ENV_FILE" ./frontend/.env
-
-                            echo "2. backend 전용 Docker Compose 실행"
-                            docker-compose -f docker-compose.prod.yml up -d --build
-                        '''
-                    }
+                withCredentials([
+                    file(credentialsId: 'backend-env-file',  variable: 'BACKEND_ENV_FILE'),
+                    file(credentialsId: 'frontend-env-file', variable: 'FRONTEND_ENV_FILE')
+                ]) {
+                    sh '''
+                        set -e
+                        set +x
+                        rm -f .env && cp "$BACKEND_ENV_FILE" .env
+                        rm -f ./frontend/.env && cp "$FRONTEND_ENV_FILE" ./frontend/.env
+                    '''
                 }
+            }
+        }
+
+        stage('Backend 배포') {
+            when { expression { env.BUILD_BACK == 'true' } }
+            steps {
+                sh '''
+                    export DOCKER_BUILDKIT=0
+                    export COMPOSE_DOCKER_CLI_BUILD=0
+                    $COMPOSE up -d --build backend
+                '''
+            }
+        }
+
+        stage('Frontend 배포') {
+            when { expression { env.BUILD_FRONT == 'true' } }
+            steps {
+                sh '''
+                    export DOCKER_BUILDKIT=0
+                    export COMPOSE_DOCKER_CLI_BUILD=0
+                    $COMPOSE up -d --build frontend
+                '''
+            }
+        }
+
+        stage('AI 배포') {
+            when { expression { env.BUILD_AI == 'true' } }
+            steps {
+                sh '''
+                    export DOCKER_BUILDKIT=0
+                    export COMPOSE_DOCKER_CLI_BUILD=0
+                    $COMPOSE up -d --build ai
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo '🎉 Spring Boot 컨테이너 배포 성공!'
-        }
-        failure {
-            echo '🚨 백엔드 배포 실패! 젠킨스 콘솔 로그를 확인하세요.'
-        }
+        success { echo "배포 완료 (back=${env.BUILD_BACK} front=${env.BUILD_FRONT} ai=${env.BUILD_AI})" }
+        failure { echo '🚨 배포 실패' }
     }
 }

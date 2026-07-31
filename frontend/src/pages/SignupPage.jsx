@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
@@ -9,6 +10,19 @@ import { signup } from '@/api/auth';
 const TERMS_TEXT = `제1조 (목적)
 본 약관은 서비스 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
 
+=======
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate, Link } from "react-router-dom";
+import { signup } from "@/api/auth";
+// 💡 프로젝트에 맞는 토큰 저장 함수 경로로 맞추어 주석을 해제하고 사용하세요.
+// import { setAccessToken } from '@/utils/tokenStorage';
+
+// 약관 및 정책 텍스트 정의
+const TERMS_TEXT = `제1조 (목적)
+본 약관은 서비스 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 제2조 (회원의 의무)
 ① 회원은 가입 시 정확한 정보를 기재해야 합니다.
 ② 회원은 타인의 정보를 도용하여 가입할 수 없습니다.
@@ -36,6 +50,7 @@ const MARKETING_TEXT = `1. 마케팅 및 광고에의 활용
 
 export default function SignupPage() {
   const navigate = useNavigate();
+<<<<<<< HEAD
 
   // 폼 상태 관리
   const [email, setEmail] = useState('');
@@ -50,6 +65,22 @@ export default function SignupPage() {
     marketing: false,
   });
   
+=======
+
+  // 폼 상태 관리
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [nickname, setNickname] = useState("");
+
+  // 약관 동의 상태 관리
+  const [agreements, setAgreements] = useState({
+    terms: false,
+    privacy: false,
+    marketing: false,
+  });
+
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
   // 팝업창(모달) 상태 관리
   const [modalContent, setModalContent] = useState(null);
 
@@ -65,9 +96,17 @@ export default function SignupPage() {
   const { mutate, isPending } = useMutation({
     mutationFn: signup,
     onSuccess: (response) => {
+<<<<<<< HEAD
       const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
       const refreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
       
+=======
+      const accessToken =
+        response.data?.data?.accessToken || response.data?.accessToken;
+      const refreshToken =
+        response.data?.data?.refreshToken || response.data?.refreshToken;
+
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
       if (accessToken) {
         // setAccessToken(accessToken);
       }
@@ -75,9 +114,26 @@ export default function SignupPage() {
         // 리프레시 토큰 저장 함수가 있다면 사용
       }
 
+<<<<<<< HEAD
       alert('회원가입이 완료되었습니다!');
       // 가입 즉시 토큰이 발급되므로 홈 화면으로 이동합니다.
       navigate('/'); 
+=======
+      alert("회원가입이 완료되었습니다!");
+      // 가입 즉시 토큰이 발급되므로 홈 화면으로 이동합니다.
+      navigate("/");
+    },
+    onError: (error) => {
+      const status = error.response?.status;
+      if (status === 409) {
+        alert("이미 가입된 이메일이거나 중복된 닉네임입니다.");
+      } else if (status === 400) {
+        alert("입력하신 정보의 형식이 올바르지 않습니다.");
+      } else {
+        console.error("회원가입 실패:", error);
+        alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
     },
     onError: (error) => {
       const status = error.response?.status;
@@ -113,6 +169,7 @@ export default function SignupPage() {
     e.preventDefault();
 
     if (!passwordRegex.test(password)) {
+<<<<<<< HEAD
       alert('비밀번호는 영문, 숫자, 특수문자 포함 8자리 이상이어야 합니다.');
       return;
     }
@@ -126,6 +183,21 @@ export default function SignupPage() {
     }
     if (!agreements.terms || !agreements.privacy) {
       alert('필수 이용약관에 동의해주세요.');
+=======
+      alert("비밀번호는 영문, 숫자, 특수문자 포함 8자리 이상이어야 합니다.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (!nicknameRegex.test(nickname)) {
+      alert("닉네임은 특수문자를 제외한 2~12글자로 입력해주세요.");
+      return;
+    }
+    if (!agreements.terms || !agreements.privacy) {
+      alert("필수 이용약관에 동의해주세요.");
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
       return;
     }
 
@@ -137,21 +209,41 @@ export default function SignupPage() {
     });
   };
 
+<<<<<<< HEAD
   const isAllChecked = agreements.terms && agreements.privacy && agreements.marketing;
+=======
+  const isAllChecked =
+    agreements.terms && agreements.privacy && agreements.marketing;
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 py-10">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-sm border border-gray-100">
+<<<<<<< HEAD
         
         {/* 상단 탭 */}
         <div className="flex p-1 bg-gray-50 rounded-full border border-gray-200">
           <Link to="/login" className="w-1/2 py-2 text-sm font-medium text-center text-gray-500 rounded-full hover:bg-gray-100 transition">로그인</Link>
           <div className="w-1/2 py-2 text-sm font-bold text-center text-white bg-black rounded-full shadow">회원가입</div>
+=======
+        {/* 상단 탭 */}
+        <div className="flex p-1 bg-gray-50 rounded-full border border-gray-200">
+          <Link
+            to="/login"
+            className="w-1/2 py-2 text-sm font-medium text-center text-gray-500 rounded-full hover:bg-gray-100 transition"
+          >
+            로그인
+          </Link>
+          <div className="w-1/2 py-2 text-sm font-bold text-center text-white bg-black rounded-full shadow">
+            회원가입
+          </div>
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-4 p-4 border border-gray-100 rounded-lg bg-white">
             <h3 className="text-xs font-bold text-gray-400">계정 정보</h3>
+<<<<<<< HEAD
             
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">이메일</label>
@@ -221,6 +313,185 @@ export default function SignupPage() {
           이미 계정이 있으신가요? <Link to="/login" className="text-blue-500 hover:underline ml-1">로그인</Link>
         </div>
       </div>
+=======
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                이메일
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                로그인에 사용됩니다
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                비밀번호
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                영문+숫자+특수문자 8자리 이상
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                비밀번호 확인
+              </label>
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                닉네임
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="앱에서 사용되는 이름"
+                required
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                2~12글자, 특수문자 제외
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 border border-gray-100 rounded-lg bg-white space-y-3">
+            <h3 className="text-xs font-bold text-gray-400 mb-2">약관 동의</h3>
+
+            <label className="flex items-center space-x-2 pb-2 border-b border-gray-100 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAllChecked}
+                onChange={handleAllCheck}
+                className="rounded text-black focus:ring-black"
+              />
+              <span className="text-sm font-medium">전체 동의</span>
+            </label>
+
+            <div className="space-y-2 pt-1">
+              <label className="flex items-center justify-between text-xs cursor-pointer">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="terms"
+                    checked={agreements.terms}
+                    onChange={handleSingleCheck}
+                    className="rounded text-black focus:ring-black"
+                  />
+                  <span className="text-gray-600">[필수] 이용약관</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal("이용약관", TERMS_TEXT)}
+                  className="text-blue-500 hover:underline"
+                >
+                  보기
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between text-xs cursor-pointer">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="privacy"
+                    checked={agreements.privacy}
+                    onChange={handleSingleCheck}
+                    className="rounded text-black focus:ring-black"
+                  />
+                  <span className="text-gray-600">
+                    [필수] 개인정보 처리방침
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal("개인정보 처리방침", PRIVACY_TEXT)}
+                  className="text-blue-500 hover:underline"
+                >
+                  보기
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between text-xs cursor-pointer">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="marketing"
+                    checked={agreements.marketing}
+                    onChange={handleSingleCheck}
+                    className="rounded text-black focus:ring-black"
+                  />
+                  <span className="text-gray-600">
+                    [선택] 마케팅 정보 수신 동의
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openModal("마케팅 정보 수신 동의", MARKETING_TEXT)
+                  }
+                  className="text-blue-500 hover:underline"
+                >
+                  보기
+                </button>
+              </label>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full py-3 mt-4 text-sm font-bold text-white bg-black rounded-lg hover:bg-gray-800 disabled:bg-gray-300 transition"
+          >
+            {isPending ? "처리 중..." : "회원가입 완료"}
+          </button>
+        </form>
+
+        <div className="text-sm text-center text-gray-500 pt-4">
+          이미 계정이 있으신가요?{" "}
+          <Link to="/login" className="text-blue-500 hover:underline ml-1">
+            로그인
+          </Link>
+        </div>
+      </div>
+
+      {/* 팝업창(모달) */}
+      {modalContent && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              {modalContent.title}
+            </h3>
+
+            <div className="h-40 overflow-y-auto text-sm text-gray-600 mb-6 p-3 bg-gray-50 rounded border border-gray-100 whitespace-pre-wrap">
+              {modalContent.content}
+            </div>
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 
       {/* 팝업창(모달) */}
       {modalContent && (
@@ -241,7 +512,13 @@ export default function SignupPage() {
           </div>
         </div>
       )}
+<<<<<<< HEAD
       
     </div>
   );
 }
+=======
+    </div>
+  );
+}
+>>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
