@@ -23,6 +23,7 @@ def rank_payload() -> dict[str, object]:
     return {
         "recommendationId": 77,
         "condition": {
+            "gender": "MALE",
             "category": "TOP",
             "subcategory": "SHORT_SLEEVE",
             "budgetMin": 0,
@@ -36,6 +37,7 @@ def rank_payload() -> dict[str, object]:
                 "name": "Casual T-shirt",
                 "brand": "Alpha",
                 "price": 50_000,
+                "gender": "MALE",
                 "category": "TOP",
                 "subcategory": "SHORT_SLEEVE",
                 "description": "Daily casual garment",
@@ -45,6 +47,7 @@ def rank_payload() -> dict[str, object]:
                 "name": "Basic T-shirt",
                 "brand": "Beta",
                 "price": 50_000,
+                "gender": "UNISEX",
                 "category": "TOP",
                 "subcategory": "SHORT_SLEEVE",
                 "description": None,
@@ -54,6 +57,7 @@ def rank_payload() -> dict[str, object]:
                 "name": "Casual T-shirt",
                 "brand": "Gamma",
                 "price": 0,
+                "gender": "MALE",
                 "category": "TOP",
                 "subcategory": "SHORT_SLEEVE",
                 "description": "Casual",
@@ -90,6 +94,7 @@ def test_rank_filters_candidates_outside_backend_condition() -> None:
                 "name": "Wrong category",
                 "brand": "Delta",
                 "price": 50_000,
+                "gender": "MALE",
                 "category": "BOTTOM",
                 "subcategory": "DENIM_PANTS",
                 "description": "Casual",
@@ -99,6 +104,7 @@ def test_rank_filters_candidates_outside_backend_condition() -> None:
                 "name": "Over budget",
                 "brand": "Epsilon",
                 "price": 100_001,
+                "gender": "MALE",
                 "category": "TOP",
                 "subcategory": "SHORT_SLEEVE",
                 "description": "Casual",
@@ -114,6 +120,35 @@ def test_rank_filters_candidates_outside_backend_condition() -> None:
     assert response.status_code == 200
     returned_ids = {item["productId"] for item in response.json()["ranked"]}
     assert returned_ids == {101, 102, 103}
+
+
+def test_rank_filters_candidates_for_another_gender() -> None:
+    payload = rank_payload()
+    payload["limit"] = 10
+    candidates = payload["candidates"]
+    assert isinstance(candidates, list)
+    candidates.append(
+        {
+            "productId": 106,
+            "name": "Female casual top",
+            "brand": "Zeta",
+            "price": 50_000,
+            "gender": "FEMALE",
+            "category": "TOP",
+            "subcategory": "SHORT_SLEEVE",
+            "description": "Casual",
+        }
+    )
+
+    response = client.post(
+        "/internal/v1/recommendations/rank",
+        json=payload,
+    )
+
+    assert response.status_code == 200
+    returned_ids = {item["productId"] for item in response.json()["ranked"]}
+    assert 106 not in returned_ids
+    assert 102 in returned_ids
 
 
 def test_rank_rejects_invalid_budget_range() -> None:

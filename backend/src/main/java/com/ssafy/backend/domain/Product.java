@@ -45,6 +45,9 @@ public class Product {
     @Column(name = "external_id", nullable = false, length = 255)
     private String externalProductId;
 
+    @Column(name = "gender", nullable = false, length = 16)
+    private String gender;
+
     @Column(name = "price", nullable = false)
     private Integer price;
 

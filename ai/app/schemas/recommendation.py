@@ -15,6 +15,7 @@ class CamelCaseModel(BaseModel):
 
 
 class RankCondition(CamelCaseModel):
+    gender: str = Field(pattern="^(MALE|FEMALE)$")
     category: str = Field(min_length=1)
     subcategory: str | None = None
     budget_min: int = Field(ge=0)
@@ -33,6 +34,7 @@ class RankCandidate(CamelCaseModel):
     name: str = Field(min_length=1)
     brand: str = Field(min_length=1)
     price: int = Field(ge=0)
+    gender: str = Field(pattern="^(MALE|FEMALE|UNISEX)$")
     category: str = Field(min_length=1)
     subcategory: str = Field(min_length=1)
     description: str | None = None

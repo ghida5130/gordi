@@ -11,13 +11,21 @@ public enum CategoryCode {
             SubcategoryCode.LONG_SLEEVE,
             SubcategoryCode.SHIRT,
             SubcategoryCode.KNIT,
-            SubcategoryCode.HOODIE
+            SubcategoryCode.HOODIE,
+            SubcategoryCode.SLEEVELESS,
+            SubcategoryCode.SPORTS_TOP,
+            SubcategoryCode.OTHER_TOP,
+            SubcategoryCode.DRESS
     )),
     BOTTOM("하의", List.of(
             SubcategoryCode.DENIM_PANTS,
             SubcategoryCode.SLACKS,
             SubcategoryCode.SHORTS,
-            SubcategoryCode.SKIRT
+            SubcategoryCode.SKIRT,
+            SubcategoryCode.COTTON_PANTS,
+            SubcategoryCode.JOGGER_PANTS,
+            SubcategoryCode.SPORTS_BOTTOM,
+            SubcategoryCode.OTHER_BOTTOM
     )),
     OUTER("아우터", List.of(
             SubcategoryCode.JACKET,

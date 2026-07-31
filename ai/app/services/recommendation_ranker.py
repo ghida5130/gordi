@@ -62,6 +62,8 @@ class RecommendationRanker:
     ) -> bool:
         if candidate.category != condition.category:
             return False
+        if candidate.gender not in {condition.gender, "UNISEX"}:
+            return False
         if (
             condition.subcategory is not None
             and candidate.subcategory != condition.subcategory
