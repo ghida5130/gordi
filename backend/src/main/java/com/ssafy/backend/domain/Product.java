@@ -1,11 +1,6 @@
 package com.ssafy.backend.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +12,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
+@Table(
+        name = "products",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_products_source_external",
+                columnNames = {"source", "external_id"}
+        )
+)
 @Getter
 @Setter
 @Builder
@@ -35,6 +36,14 @@ public class Product {
 
     @Column(name = "brand", nullable = false, length = 100)
     private String brand;
+
+    // 상품 출처 (예: MUSINSA, COUPANG)
+    @Column(name = "source", nullable = false, length = 50)
+    private String source;
+
+    // 출처 사이트에서의 원본 상품 ID
+    @Column(name = "external_id", nullable = false, length = 255)
+    private String externalProductId;
 
     @Column(name = "price", nullable = false)
     private Integer price;
