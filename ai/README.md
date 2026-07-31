@@ -93,3 +93,26 @@ python -m garment_collector seed-db `
 
 EC2 전체 실행 순서와 재실행·정리 기준은
 `docs/garment-seed-ec2-runbook.md`를 따릅니다.
+
+## Gemini Embedding 2 카탈로그 임베딩
+
+추천 검색용 카탈로그는 MySQL의 `AVAILABLE` 상품 정보와 primary 이미지 한 장을
+`gemini-embedding-2`의 같은 요청에 넣어 768차원 결합 임베딩으로 만듭니다.
+가격과 판매 상태는 검색 필터 메타데이터로 보존하되 임베딩 입력에서는 제외해,
+가격 변경만으로 유료 재임베딩하지 않습니다.
+
+로컬에서 S3 이미지 URL을 아직 제공하지 않을 때는 `--dataset-root`로 검수된
+이미지를 읽을 수 있습니다. DB 상품 정보는 두 실행 모두 동일하게 사용합니다.
+
+```powershell
+python -m app.recommendation.embedding_cli `
+  --dataset-root garment_dataset-v2 `
+  --output catalog_index/catalog-embeddings.json `
+  --limit 1
+```
+
+`GEMINI_API_KEY`, `GEMINI_EMBEDDING_MODEL`,
+`GEMINI_EMBEDDING_DIMENSIONS`와 MySQL 환경변수가 필요합니다. 성공한 상품은
+별도 checkpoint에 원자적으로 기록되므로 중단 후 같은 명령을 실행하면 입력
+해시가 동일한 임베딩을 재사용합니다. 전체 성공 시에만 `COMPLETE` snapshot을
+교체하며 `catalog_index/` 산출물은 Git에서 제외합니다.
