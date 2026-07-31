@@ -12,6 +12,7 @@ public interface RoomItemRepository extends JpaRepository<RoomItem, Long> {
     long countByRoomId(Long roomId);
 
     boolean existsByRoomIdAndProductId(Long roomId, Long productId);
+    boolean existsByIdAndRoomId(Long id, Long roomId);
     Optional<RoomItem> findByRoomIdAndProductId(Long roomId, Long productId);
 
     @Query("select ri from RoomItem ri join fetch ri.product where ri.room.id = :roomId order by ri.position asc")
