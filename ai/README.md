@@ -121,3 +121,10 @@ python -m app.recommendation.embedding_cli `
 메모리에 적재합니다. 현재 198건 MVP는 외부 벡터 DB 없이 정확한 cosine
 검색을 사용하며, 성별(동일 성별 또는 `UNISEX`)·카테고리·세부 카테고리·가격
 조건을 점수 계산 전에 적용합니다. 기본 검색 후보는 50건, 최대 200건입니다.
+
+후보 50건은 `RecommendationPipeline`에서 상품명·설명·세부 카테고리로
+확인되는 색상·계절·스타일 태그와 규칙 기반 궁합 점수를 적용해 상위 10건으로
+재정렬합니다. 전용 DB 컬럼이 없는 세 조건은 누락값 때문에 상품을 제거하지
+않는 soft score이며, 추천 이유에는 실제로 일치한 태그와 예산 조건만
+사용합니다. `CompatibilityModel`과 `RecommendationReasonGenerator`
+인터페이스를 구현하면 이후 학습 모델이나 VLM으로 교체할 수 있습니다.
