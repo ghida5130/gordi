@@ -13,6 +13,10 @@ from garment_collector.config import MAX_ITEMS_PILOT, CollectorSettings
 from garment_collector.models import GarmentRecord
 from garment_collector.pipeline import CollectionPipeline
 from garment_collector.reprocess import ReprocessError, reprocess_dataset
+from garment_collector.seed_manifest import (
+    ManifestError,
+    export_seed_manifest,
+)
 from garment_collector.storage import DatasetStorage
 from garment_collector.validate import validate_record
 
@@ -115,6 +119,29 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Empty output root for garment-dataset-v2",
+    )
+
+    export_seed = sub.add_parser(
+        "export-seed",
+        help="Export the strict 198-product backend seed manifest",
+    )
+    export_seed.add_argument(
+        "--dataset-root",
+        type=Path,
+        required=True,
+        help="Reviewed garment-dataset-v2 root",
+    )
+    export_seed.add_argument(
+        "--selection-file",
+        type=Path,
+        required=True,
+        help="Balanced selection report containing grouped ids",
+    )
+    export_seed.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Output manifest path (kept outside Git)",
     )
 
     return parser
@@ -240,6 +267,33 @@ def cmd_reprocess(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_seed(args: argparse.Namespace) -> int:
+    try:
+        manifest = export_seed_manifest(
+            args.dataset_root,
+            args.selection_file,
+            args.output,
+        )
+    except ManifestError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(
+        json.dumps(
+            {
+                "schema_version": manifest["schema_version"],
+                "product_count": manifest["product_count"],
+                "size_row_count": manifest["size_row_count"],
+                "group_counts": manifest["group_counts"],
+                "manifest_sha256": manifest["manifest_sha256"],
+                "output": str(args.output.resolve()),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -253,6 +307,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_validate(args)
     if args.command == "reprocess":
         return cmd_reprocess(args)
+    if args.command == "export-seed":
+        return cmd_export_seed(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

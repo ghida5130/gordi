@@ -55,3 +55,14 @@ v2는 상품당 `PRIMARY` 한 장만 보존합니다. `view`, 착용 참고 여�
 모델·다른 의류 포함 여부는 수동 검수 전 미확정 상태로 기록됩니다. raw bundle
 해시는 `source.json` 객체를 key 정렬한 compact UTF-8 JSON의 SHA-256입니다.
 `garment_dataset*`의 raw·normalized·images·reports 산출물은 Git에 넣지 않습니다.
+
+수동 검수가 끝나 `READY`가 된 균형 선정 항목만 backend seed manifest로
+내보낼 수 있습니다. 한 항목이라도 상태·필수 치수·enum·이미지 해시가 맞지
+않으면 파일을 생성하지 않습니다.
+
+```powershell
+python -m garment_collector export-seed `
+  --dataset-root garment_dataset-v2 `
+  --selection-file garment_dataset/reports/preload_ready_50each.json `
+  --output garment_dataset-v2/reports/gordi-product-seed-v1.json
+```
