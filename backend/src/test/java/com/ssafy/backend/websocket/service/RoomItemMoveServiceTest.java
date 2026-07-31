@@ -13,6 +13,8 @@ import com.ssafy.backend.websocket.dto.ItemMoveRequestDTO;
 import com.ssafy.backend.websocket.dto.ItemMoveRequestDTO.ItemMoveDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
+import com.ssafy.backend.websocket.event.ItemUnlockReason;
+import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +45,8 @@ class RoomItemMoveServiceTest {
     @Mock
     private TierRepository tierRepository;
     @Mock
+    private RoomItemLockService roomItemLockService;
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
@@ -67,10 +71,14 @@ class RoomItemMoveServiceTest {
     }
 
     private ItemMoveRequestDTO request(long roomItemId, Long targetTierId, int newIndex) {
+        return request(roomItemId, targetTierId, newIndex, null);
+    }
+
+    private ItemMoveRequestDTO request(long roomItemId, Long targetTierId, int newIndex, String lockToken) {
         return new ItemMoveRequestDTO(
                 "request-uuid",
                 12L,
-                new ItemMoveDataDTO(roomItemId, targetTierId, newIndex)
+                new ItemMoveDataDTO(roomItemId, targetTierId, newIndex, lockToken)
         );
     }
 
@@ -200,9 +208,65 @@ class RoomItemMoveServiceTest {
     }
 
     @Test
+    void 이동_성공_시_lockToken이_있으면_잠금_해제_이벤트도_발행한다() {
+        RoomItem item30 = item(30L, tierS, 10_000);
+        RoomItem item20 = item(20L, null, 10_000);
+
+        when(roomRepository.findById(31L)).thenReturn(Optional.of(room));
+        when(roomRepository.bumpVersionIfMatches(31L, 12L)).thenReturn(1);
+        when(roomItemRepository.findAllByRoomIdOrderByPositionAsc(31L))
+                .thenReturn(List.of(item30, item20));
+        when(tierRepository.findById(1L)).thenReturn(Optional.of(tierS));
+
+        roomItemMoveService.moveItem(31L, 42L, request(20L, 1L, 0, "drag-token"));
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+
+        assertThat(captor.getAllValues().get(0)).isInstanceOf(ItemMovedEvent.class);
+        ItemUnlockRequestedEvent unlockEvent =
+                (ItemUnlockRequestedEvent) captor.getAllValues().get(1);
+        assertThat(unlockEvent.roomId()).isEqualTo(31L);
+        assertThat(unlockEvent.roomVersion()).isEqualTo(13L);
+        assertThat(unlockEvent.senderParticipantId()).isEqualTo(42L);
+        assertThat(unlockEvent.clientEventId()).isEqualTo("request-uuid");
+        assertThat(unlockEvent.roomItemId()).isEqualTo(20L);
+        assertThat(unlockEvent.lockToken()).isEqualTo("drag-token");
+        assertThat(unlockEvent.reason()).isEqualTo(ItemUnlockReason.MOVE_COMPLETED);
+    }
+
+    @Test
+    void lockToken이_없으면_잠금_해제_이벤트를_발행하지_않는다() {
+        RoomItem item20 = item(20L, null, 10_000);
+
+        when(roomRepository.findById(31L)).thenReturn(Optional.of(room));
+        when(roomRepository.bumpVersionIfMatches(31L, 12L)).thenReturn(1);
+        when(roomItemRepository.findAllByRoomIdOrderByPositionAsc(31L))
+                .thenReturn(List.of(item20));
+
+        roomItemMoveService.moveItem(31L, 42L, request(20L, null, 0));
+
+        verify(eventPublisher, never()).publishEvent(any(ItemUnlockRequestedEvent.class));
+    }
+
+    @Test
+    void 다른_참여자가_잠근_상품이면_CONFLICT를_던지고_버전을_올리지_않는다() {
+        when(roomRepository.findById(31L)).thenReturn(Optional.of(room));
+        when(roomItemLockService.isLockedByOther(31L, 20L, 42L)).thenReturn(true);
+
+        assertThatThrownBy(() -> roomItemMoveService.moveItem(31L, 42L, request(20L, 1L, 0)))
+                .isInstanceOf(ApiException.class)
+                .extracting(e -> ((ApiException) e).getErrorCode())
+                .isEqualTo(ErrorCode.CONFLICT);
+
+        verify(roomRepository, never()).bumpVersionIfMatches(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(ItemMovedEvent.class));
+    }
+
+    @Test
     void 필수_필드가_없으면_BAD_REQUEST를_던진다() {
         ItemMoveRequestDTO noBaseVersion = new ItemMoveRequestDTO(
-                "request-uuid", null, new ItemMoveDataDTO(20L, 1L, 0)
+                "request-uuid", null, new ItemMoveDataDTO(20L, 1L, 0, null)
         );
 
         assertThatThrownBy(() -> roomItemMoveService.moveItem(31L, 42L, noBaseVersion))

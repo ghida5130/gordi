@@ -12,6 +12,7 @@ public enum RoomEventType {
     ITEM_MOVED,
     ITEM_LOCKED,
     ITEM_LOCK_REJECTED,
+    ITEM_UNLOCKED,
     TIER_RENAMED,
     TRY_ON_PROCESSING,
     TRY_ON_SUCCEEDED,

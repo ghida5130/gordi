@@ -12,6 +12,8 @@ import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.websocket.dto.ItemMoveRequestDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
+import com.ssafy.backend.websocket.event.ItemUnlockReason;
+import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,7 @@ public class RoomItemMoveService {
     private final RoomRepository roomRepository;
     private final RoomItemRepository roomItemRepository;
     private final TierRepository tierRepository;
+    private final RoomItemLockService roomItemLockService;
     private final ApplicationEventPublisher eventPublisher;
 
     // - 인자: 방 ID, 요청자 participantId, 이동 요청(clientEventId/baseVersion/data)
@@ -53,6 +56,15 @@ public class RoomItemMoveService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND));
         validateActive(room);
+
+        // 다른 참여자가 유효한 잠금을 보유 중이면 이동 거부 (드래그 충돌 방지)
+        if (roomItemLockService.isLockedByOther(roomId, request.data().roomItemId(), senderParticipantId)) {
+            throw new ApiException(
+                    ErrorCode.CONFLICT,
+                    "다른 참여자가 잠근 상품입니다.",
+                    Map.of("roomItemId", request.data().roomItemId())
+            );
+        }
 
         if (roomRepository.bumpVersionIfMatches(roomId, request.baseVersion()) == 0) {
             throw new ApiException(ErrorCode.VERSION_CONFLICT);
@@ -87,6 +99,21 @@ public class RoomItemMoveService {
                 request.clientEventId(),
                 toPlacements(items)
         ));
+
+        // 드래그 잠금 자동 해제: 커밋 후 ITEM_MOVED에 이어 ITEM_UNLOCKED(MOVE_COMPLETED) 방송
+        // (같은 트랜잭션에서 발행 순서가 보장되므로 항상 ITEM_MOVED 다음에 도착한다)
+        String lockToken = request.data().lockToken();
+        if (lockToken != null && !lockToken.isBlank()) {
+            eventPublisher.publishEvent(new ItemUnlockRequestedEvent(
+                    roomId,
+                    newVersion,
+                    senderParticipantId,
+                    request.clientEventId(),
+                    request.data().roomItemId(),
+                    lockToken,
+                    ItemUnlockReason.MOVE_COMPLETED
+            ));
+        }
     }
 
     // - 인자: 이동 아이템, 대상 티어(null=미분류), 대상 영역 아이템 목록, 목표 인덱스

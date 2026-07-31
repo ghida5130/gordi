@@ -6,13 +6,21 @@ import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
+import com.ssafy.backend.websocket.RoomEventPublisher;
 import com.ssafy.backend.websocket.dto.ItemLockRequestDTO;
+import com.ssafy.backend.websocket.dto.ItemUnlockedEventDataDTO;
+import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
+import com.ssafy.backend.websocket.event.RoomEventType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 아이템 드래그 잠금(ITEM_LOCKED) 처리.
@@ -51,15 +59,18 @@ public class RoomItemLockService {
 
     private final RoomRepository roomRepository;
     private final RoomItemRepository roomItemRepository;
+    private final RoomEventPublisher roomEventPublisher;
     private final long lockTtlMillis;
 
     public RoomItemLockService(
             RoomRepository roomRepository,
             RoomItemRepository roomItemRepository,
+            RoomEventPublisher roomEventPublisher,
             @Value("${room.item-lock-ttl:30000}") long lockTtlMillis
     ) {
         this.roomRepository = roomRepository;
         this.roomItemRepository = roomItemRepository;
+        this.roomEventPublisher = roomEventPublisher;
         this.lockTtlMillis = lockTtlMillis;
     }
 
@@ -97,6 +108,54 @@ public class RoomItemLockService {
         });
 
         return new ItemLockResult(current == candidate, room.getVersion(), current);
+    }
+
+    // - 인자: 이동 커밋 후 발행되는 잠금 해제 요청 이벤트
+    // - 동작: 소유자·토큰이 일치하면 잠금을 제거하고 ITEM_UNLOCKED를 방 토픽으로 브로드캐스트.
+    //         (TTL 만료로 이미 다른 참여자가 잠금을 가져간 경우엔 해제·방송하지 않는다)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleUnlockRequested(ItemUnlockRequestedEvent event) {
+        boolean released = releaseIfOwnedBy(
+                event.roomId(),
+                event.roomItemId(),
+                event.senderParticipantId(),
+                event.lockToken()
+        );
+        if (!released) {
+            return;
+        }
+        roomEventPublisher.publish(RoomEventDTO.of(
+                RoomEventType.ITEM_UNLOCKED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new ItemUnlockedEventDataDTO(event.roomItemId(), event.reason())
+        ));
+    }
+
+    // - 인자: 방/아이템 ID, 해제 요청자 participantId, 잠금 토큰
+    // - 동작: 현재 잠금의 소유자와 토큰이 모두 일치할 때만 원자적으로 제거. 제거 여부 반환
+    public boolean releaseIfOwnedBy(Long roomId, Long roomItemId, Long participantId, String lockToken) {
+        AtomicBoolean released = new AtomicBoolean(false);
+        locks.computeIfPresent(new LockKey(roomId, roomItemId), (key, existing) -> {
+            if (existing.participantId().equals(participantId)
+                    && existing.lockToken().equals(lockToken)) {
+                released.set(true);
+                return null; // 엔트리 제거
+            }
+            return existing;
+        });
+        return released.get();
+    }
+
+    // - 인자: 방/아이템 ID, 확인 주체 participantId
+    // - 동작: 다른 참여자가 만료되지 않은 잠금을 보유 중인지 여부 반환
+    public boolean isLockedByOther(Long roomId, Long roomItemId, Long participantId) {
+        ItemLock lock = locks.get(new LockKey(roomId, roomItemId));
+        return lock != null
+                && !isExpired(lock)
+                && !lock.participantId().equals(participantId);
     }
 
     private boolean isExpired(ItemLock lock) {
