@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     )
     openrouter_http_referer: str = ""
     openrouter_app_title: str = "Gordi AI"
+    openrouter_provider_order: str = "google-vertex"
+    openrouter_allow_fallbacks: bool = False
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )

@@ -319,8 +319,8 @@ def test_openrouter_provider_sends_joint_text_and_image_input() -> None:
         "dimensions": 128,
         "encoding_format": "float",
         "provider": {
-            "order": ["google-vertex", "google-ai-studio"],
-            "allow_fallbacks": True,
+            "order": ["google-vertex"],
+            "allow_fallbacks": False,
         },
     }
     client.close()
@@ -402,6 +402,13 @@ def test_openrouter_provider_maps_http_error_without_secret() -> None:
 def test_openrouter_provider_rejects_empty_api_key() -> None:
     with pytest.raises(CatalogEmbeddingError, match="must not be empty"):
         OpenRouterEmbeddingProvider(EmbeddingSettings(api_key="  "))
+
+
+def test_openrouter_provider_defaults_to_vertex_without_fallback() -> None:
+    settings = EmbeddingSettings(api_key="openrouter-key")
+
+    assert settings.provider_order == ("google-vertex",)
+    assert settings.allow_fallbacks is False
 
 
 def test_embedding_settings_read_openrouter_environment(

@@ -43,6 +43,14 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
                     settings.openrouter_http_referer.strip() or None
                 ),
                 app_title=settings.openrouter_app_title.strip() or None,
+                provider_order=tuple(
+                    provider.strip()
+                    for provider in (
+                        settings.openrouter_provider_order.split(",")
+                    )
+                    if provider.strip()
+                ),
+                allow_fallbacks=settings.openrouter_allow_fallbacks,
             )
         )
         retriever = CandidateRetriever(index, provider)

@@ -23,10 +23,7 @@ DEFAULT_MODEL = "google/gemini-embedding-2"
 DEFAULT_DIMENSIONS = 768
 DEFAULT_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/embeddings"
 DEFAULT_OPENROUTER_APP_TITLE = "Gordi AI"
-DEFAULT_OPENROUTER_PROVIDER_ORDER = (
-    "google-vertex",
-    "google-ai-studio",
-)
+DEFAULT_OPENROUTER_PROVIDER_ORDER = ("google-vertex",)
 MIN_DIMENSIONS = 128
 MAX_DIMENSIONS = 3072
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -45,7 +42,7 @@ class EmbeddingSettings:
     http_referer: str | None = None
     app_title: str | None = DEFAULT_OPENROUTER_APP_TITLE
     provider_order: tuple[str, ...] = DEFAULT_OPENROUTER_PROVIDER_ORDER
-    allow_fallbacks: bool = True
+    allow_fallbacks: bool = False
 
     @classmethod
     def from_env(cls) -> "EmbeddingSettings":
@@ -99,7 +96,7 @@ class EmbeddingSettings:
             )
         allow_fallbacks = _parse_boolean_environment(
             "OPENROUTER_ALLOW_FALLBACKS",
-            default=True,
+            default=False,
         )
         return cls(
             api_key=api_key,
