@@ -131,6 +131,17 @@ public class TryOnJob {
     @JoinColumn(name = "retry_of_job_id")
     private TryOnJob retryOfJob;
 
+    /**
+     * 마지막으로 반영한 콜백 이벤트 순번.
+     * 이 값보다 낮거나 같은 순번의 이벤트는 늦게 도착한 것으로 보고 상태를 바꾸지 않는다.
+     */
+    @Column(name = "last_event_sequence")
+    private Long lastEventSequence;
+
+    // 외부 생성 서비스가 알려준 시도 횟수 (콜백 값을 그대로 보관)
+    @Column(name = "attempt")
+    private Integer attempt;
+
     /* ---------- 결과 (SUCCEEDED) ---------- */
 
     @Column(name = "result_image_url", length = 2048)
@@ -200,6 +211,11 @@ public class TryOnJob {
     }
 
     /* ---------- 상태 전이 ---------- */
+
+    // 생성 시작 반영 (PROCESSING 콜백)
+    public void markRunning() {
+        this.status = TryOnJobStatus.RUNNING.name();
+    }
 
     // 생성 성공 결과 반영
     public void markSucceeded(
