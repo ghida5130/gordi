@@ -4,15 +4,16 @@ import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
 import com.ssafy.backend.dto.avatar.AvatarSelectRequestDTO;
 import com.ssafy.backend.dto.avatar.UserAvatarResponseDTO;
+import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.users.NicknameRequestDTO;
 import com.ssafy.backend.dto.users.UserRequestDTO;
 import com.ssafy.backend.dto.users.UserResponseDTO;
 import com.ssafy.backend.service.AvatarService;
+import com.ssafy.backend.service.ResultService;
 import com.ssafy.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException; // 파일 시스템 예외가 아닌 Spring Security 예외로 변경
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,12 @@ public class UserController {
 
     private final UserService userService;
     private final AvatarService avatarService;
+    private final ResultService resultService;
 
-    public UserController(UserService userService, AvatarService avatarService) {
+    public UserController(UserService userService, AvatarService avatarService, ResultService resultService) {
         this.userService = userService;
         this.avatarService = avatarService;
+        this.resultService = resultService;
     }
 
     // 내 정보 조회
@@ -66,5 +69,10 @@ public class UserController {
     ) {
         return ApiResponse.success(
                 avatarService.selectAvatar(authentication.getName(), request.avatarId()));
+    }
+
+    @GetMapping("/me/results")
+    public ApiResponse<MyResultListResponseDTO> readMyResults(Authentication authentication) {
+        return ApiResponse.success(resultService.readMyResults(authentication.getName()));
     }
 }

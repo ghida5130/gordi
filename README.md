@@ -40,6 +40,7 @@ docker compose up -d
 docker compose -f docker-compose.local.yml up -d --build frontend
 docker compose -f docker-compose.local.yml up -d --build backend
 docker compose -f docker-compose.local.yml up -d --build ai
+docker compose -f docker-compose.local.yml up -d --build nginx
 ```
 
 여러 개를 한 번에도 가능
