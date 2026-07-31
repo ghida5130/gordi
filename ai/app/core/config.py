@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     ai_port: int = 8000
     ai_reload: bool = True
 
+    internal_api_key: str = ""
+
     cors_allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )
