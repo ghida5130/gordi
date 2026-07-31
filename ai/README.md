@@ -39,3 +39,19 @@ X-Internal-Api-Key: ${INTERNAL_API_KEY}
 ```powershell
 pytest
 ```
+
+## 의류 데이터셋 v2 오프라인 재처리
+
+기존 raw bundle과 primary 파일만 사용하며 네트워크 요청을 만들지 않습니다.
+원본과 출력 경로는 반드시 분리하고, 출력 경로는 비어 있어야 합니다.
+
+```powershell
+python -m garment_collector reprocess `
+  --source-root garment_dataset `
+  --output-root garment_dataset-v2
+```
+
+v2는 상품당 `PRIMARY` 한 장만 보존합니다. `view`, 착용 참고 여부,
+모델·다른 의류 포함 여부는 수동 검수 전 미확정 상태로 기록됩니다. raw bundle
+해시는 `source.json` 객체를 key 정렬한 compact UTF-8 JSON의 SHA-256입니다.
+`garment_dataset*`의 raw·normalized·images·reports 산출물은 Git에 넣지 않습니다.
