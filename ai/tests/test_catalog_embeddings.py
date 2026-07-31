@@ -4,13 +4,16 @@ import json
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 from PIL import Image
 
 from app.recommendation.catalog import CatalogProduct
 from app.recommendation.catalog_embeddings import (
     CatalogEmbeddingError,
+    EmbeddingSettings,
     HttpProductImageResolver,
+    OpenRouterEmbeddingProvider,
     ResolvedImage,
     build_catalog_embeddings,
     format_catalog_document,
@@ -64,7 +67,7 @@ class FakeImageResolver:
 
 
 class FakeProvider:
-    model = "gemini-embedding-2"
+    model = "google/gemini-embedding-2"
     dimensions = 128
 
     def __init__(self) -> None:
@@ -118,7 +121,7 @@ def test_builds_normalized_aggregated_embedding_snapshot(
     assert report.embedded_count == 1
     assert report.reused_count == 0
     assert payload["status"] == "COMPLETE"
-    assert payload["model"] == "gemini-embedding-2"
+    assert payload["model"] == "google/gemini-embedding-2"
     assert payload["dimensions"] == 128
     assert payload["product_count"] == 1
     assert payload["items"][0]["product"]["price"] == 50_000
@@ -254,3 +257,169 @@ def test_local_image_resolver_rejects_multiple_primary_files(
             match="exactly one local primary",
         ):
             resolver.resolve(item)
+
+
+def test_openrouter_provider_sends_joint_text_and_image_input() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["headers"] = dict(request.headers)
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"data": [{"embedding": [1.0] * 128}]},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = OpenRouterEmbeddingProvider(
+        EmbeddingSettings(
+            api_key="test-secret",
+            dimensions=128,
+            http_referer="https://gordi.example",
+            app_title="Gordi Test",
+        ),
+        client=client,
+    )
+
+    values = provider.embed(
+        document="title: 셔츠 | text: 여름",
+        image=b"\xff\xd8image",
+        mime_type="image/jpeg",
+    )
+
+    assert values == [1.0] * 128
+    assert captured["url"] == (
+        "https://openrouter.ai/api/v1/embeddings"
+    )
+    headers = captured["headers"]
+    assert headers["authorization"] == "Bearer test-secret"
+    assert headers["http-referer"] == "https://gordi.example"
+    assert headers["x-title"] == "Gordi Test"
+    assert captured["body"] == {
+        "model": "google/gemini-embedding-2",
+        "input": [
+            {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "title: 셔츠 | text: 여름",
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": (
+                                "data:image/jpeg;base64,/9hpbWFnZQ=="
+                            )
+                        },
+                    },
+                ]
+            }
+        ],
+        "dimensions": 128,
+        "encoding_format": "float",
+    }
+    client.close()
+
+
+def test_openrouter_provider_sends_prefixed_text_query() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={"data": [{"embedding": [1.0] * 128}]},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = OpenRouterEmbeddingProvider(
+        EmbeddingSettings(api_key="test-secret", dimensions=128),
+        client=client,
+    )
+
+    provider.embed_query(text="여름 반팔", image=None, mime_type=None)
+
+    assert bodies[0]["input"] == [
+        {
+            "content": [
+                {
+                    "type": "text",
+                    "text": "task: search result | query: 여름 반팔",
+                }
+            ]
+        }
+    ]
+    client.close()
+
+
+def test_openrouter_provider_rejects_ambiguous_response() -> None:
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(200, json={"data": []})
+        )
+    )
+    provider = OpenRouterEmbeddingProvider(
+        EmbeddingSettings(api_key="test-secret", dimensions=128),
+        client=client,
+    )
+
+    with pytest.raises(
+        CatalogEmbeddingError,
+        match="exactly one aggregated embedding",
+    ):
+        provider.embed_query(text="셔츠", image=None, mime_type=None)
+    client.close()
+
+
+def test_openrouter_provider_maps_http_error_without_secret() -> None:
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                401,
+                json={"error": {"message": "invalid credentials"}},
+            )
+        )
+    )
+    provider = OpenRouterEmbeddingProvider(
+        EmbeddingSettings(api_key="never-log-this", dimensions=128),
+        client=client,
+    )
+
+    with pytest.raises(CatalogEmbeddingError) as error:
+        provider.embed_query(text="셔츠", image=None, mime_type=None)
+
+    assert "status 401" in str(error.value)
+    assert "invalid credentials" in str(error.value)
+    assert "never-log-this" not in str(error.value)
+    client.close()
+
+
+def test_openrouter_provider_rejects_empty_api_key() -> None:
+    with pytest.raises(CatalogEmbeddingError, match="must not be empty"):
+        OpenRouterEmbeddingProvider(EmbeddingSettings(api_key="  "))
+
+
+def test_embedding_settings_read_openrouter_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-key")
+    monkeypatch.setenv(
+        "OPENROUTER_EMBEDDING_MODEL",
+        "google/gemini-embedding-2",
+    )
+    monkeypatch.setenv("OPENROUTER_EMBEDDING_DIMENSIONS", "1536")
+    monkeypatch.setenv(
+        "OPENROUTER_HTTP_REFERER",
+        "https://gordi.example",
+    )
+    monkeypatch.setenv("OPENROUTER_APP_TITLE", "Gordi Test")
+    monkeypatch.setenv("GEMINI_API_KEY", "legacy-key")
+
+    settings = EmbeddingSettings.from_env()
+
+    assert settings.api_key == "openrouter-key"
+    assert settings.model == "google/gemini-embedding-2"
+    assert settings.dimensions == 1536
+    assert settings.http_referer == "https://gordi.example"
+    assert settings.app_title == "Gordi Test"

@@ -16,8 +16,8 @@ from app.recommendation.catalog import (
 from app.recommendation.catalog_embeddings import (
     CatalogEmbeddingError,
     EmbeddingSettings,
-    GeminiEmbeddingProvider,
     HttpProductImageResolver,
+    OpenRouterEmbeddingProvider,
     build_catalog_embeddings,
 )
 
@@ -26,7 +26,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Embed AVAILABLE MySQL garments with their primary image using "
-            "Gemini Embedding 2"
+            "Gemini Embedding 2 through OpenRouter"
         )
     )
     parser.add_argument(
@@ -59,10 +59,12 @@ def main(argv: list[str] | None = None) -> int:
         embedding_settings = EmbeddingSettings.from_env()
         connection = connect_catalog_database(database_settings)
         repository = MySQLCatalogRepository(connection)
-        provider = GeminiEmbeddingProvider(embedding_settings)
-        with HttpProductImageResolver(
-            dataset_root=args.dataset_root
-        ) as image_resolver:
+        with (
+            OpenRouterEmbeddingProvider(embedding_settings) as provider,
+            HttpProductImageResolver(
+                dataset_root=args.dataset_root
+            ) as image_resolver,
+        ):
             report = build_catalog_embeddings(
                 repository,
                 image_resolver,

@@ -94,10 +94,12 @@ python -m garment_collector seed-db `
 EC2 전체 실행 순서와 재실행·정리 기준은
 `docs/garment-seed-ec2-runbook.md`를 따릅니다.
 
-## Gemini Embedding 2 카탈로그 임베딩
+## OpenRouter 기반 Gemini Embedding 2 카탈로그 임베딩
 
 추천 검색용 카탈로그는 MySQL의 `AVAILABLE` 상품 정보와 primary 이미지 한 장을
-`gemini-embedding-2`의 같은 요청에 넣어 768차원 결합 임베딩으로 만듭니다.
+OpenRouter의 `google/gemini-embedding-2` 같은 요청에 넣어 768차원 결합
+임베딩으로 만듭니다. 호출 엔드포인트는 기본적으로
+`https://openrouter.ai/api/v1/embeddings`입니다.
 가격과 판매 상태는 검색 필터 메타데이터로 보존하되 임베딩 입력에서는 제외해,
 가격 변경만으로 유료 재임베딩하지 않습니다.
 
@@ -111,11 +113,17 @@ python -m app.recommendation.embedding_cli `
   --limit 1
 ```
 
-`GEMINI_API_KEY`, `GEMINI_EMBEDDING_MODEL`,
-`GEMINI_EMBEDDING_DIMENSIONS`와 MySQL 환경변수가 필요합니다. 성공한 상품은
+`OPENROUTER_API_KEY`, `OPENROUTER_EMBEDDING_MODEL`,
+`OPENROUTER_EMBEDDING_DIMENSIONS`와 MySQL 환경변수가 필요합니다. 선택적으로
+`OPENROUTER_HTTP_REFERER`, `OPENROUTER_APP_TITLE`을 설정할 수 있습니다.
+성공한 상품은
 별도 checkpoint에 원자적으로 기록되므로 중단 후 같은 명령을 실행하면 입력
 해시가 동일한 임베딩을 재사용합니다. 전체 성공 시에만 `COMPLETE` snapshot을
 교체하며 `catalog_index/` 산출물은 Git에서 제외합니다.
+
+직접 Gemini API로 만든 기존 snapshot은 OpenRouter 모델 식별자와 일치하지
+않으므로 위 명령으로 다시 생성해야 합니다. 애플리케이션은 모델이 다른
+snapshot을 검색에 사용하지 않습니다.
 
 생성된 snapshot은 애플리케이션에서 `CatalogVectorIndex.load()`로 검증 후
 메모리에 적재합니다. 현재 198건 MVP는 외부 벡터 DB 없이 정확한 cosine
@@ -160,5 +168,5 @@ RECOMMENDATION_DEMO_DATASET_ROOT=garment_dataset-v2
 
 데모 API는 `POST /api/v1/demo/recommendations` multipart 요청이며 JPEG/PNG
 최대 10MB, 텍스트 2,000자를 허용합니다. 실제 실행 전
-`catalog_index/catalog-embeddings.json` 생성과 `GEMINI_API_KEY` 설정이
+`catalog_index/catalog-embeddings.json` 생성과 `OPENROUTER_API_KEY` 설정이
 필요합니다.

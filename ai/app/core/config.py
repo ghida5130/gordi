@@ -27,9 +27,18 @@ class Settings(BaseSettings):
 
     internal_api_key: str = ""
 
-    gemini_api_key: str = ""
-    gemini_embedding_model: str = "gemini-embedding-2"
-    gemini_embedding_dimensions: int = Field(default=768, ge=128, le=3072)
+    openrouter_api_key: str = ""
+    openrouter_embedding_model: str = "google/gemini-embedding-2"
+    openrouter_embedding_dimensions: int = Field(
+        default=768,
+        ge=128,
+        le=3072,
+    )
+    openrouter_embedding_endpoint: str = (
+        "https://openrouter.ai/api/v1/embeddings"
+    )
+    openrouter_http_referer: str = ""
+    openrouter_app_title: str = "Gordi AI"
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )

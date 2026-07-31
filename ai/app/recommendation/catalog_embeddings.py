@@ -1,7 +1,8 @@
-"""Build a resumable Gemini multimodal embedding snapshot of the catalog."""
+"""Build a resumable multimodal embedding snapshot of the catalog."""
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import io
 import json
@@ -18,8 +19,10 @@ from PIL import Image, UnidentifiedImageError
 from app.recommendation.catalog import CatalogProduct, CatalogRepository
 
 CATALOG_EMBEDDING_SCHEMA_VERSION = "gordi-catalog-embedding-v1"
-DEFAULT_MODEL = "gemini-embedding-2"
+DEFAULT_MODEL = "google/gemini-embedding-2"
 DEFAULT_DIMENSIONS = 768
+DEFAULT_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/embeddings"
+DEFAULT_OPENROUTER_APP_TITLE = "Gordi AI"
 MIN_DIMENSIONS = 128
 MAX_DIMENSIONS = 3072
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -34,31 +37,56 @@ class EmbeddingSettings:
     api_key: str
     model: str = DEFAULT_MODEL
     dimensions: int = DEFAULT_DIMENSIONS
+    endpoint: str = DEFAULT_OPENROUTER_ENDPOINT
+    http_referer: str | None = None
+    app_title: str | None = DEFAULT_OPENROUTER_APP_TITLE
 
     @classmethod
     def from_env(cls) -> "EmbeddingSettings":
-        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+        api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
         if not api_key:
             raise CatalogEmbeddingError(
-                "missing required environment variable: GEMINI_API_KEY"
+                "missing required environment variable: OPENROUTER_API_KEY"
             )
         model = os.environ.get(
-            "GEMINI_EMBEDDING_MODEL",
+            "OPENROUTER_EMBEDDING_MODEL",
             DEFAULT_MODEL,
         ).strip()
         try:
             dimensions = int(
                 os.environ.get(
-                    "GEMINI_EMBEDDING_DIMENSIONS",
+                    "OPENROUTER_EMBEDDING_DIMENSIONS",
                     str(DEFAULT_DIMENSIONS),
                 )
             )
         except ValueError as exc:
             raise CatalogEmbeddingError(
-                "GEMINI_EMBEDDING_DIMENSIONS must be an integer"
+                "OPENROUTER_EMBEDDING_DIMENSIONS must be an integer"
             ) from exc
         _validate_embedding_contract(model, dimensions)
-        return cls(api_key=api_key, model=model, dimensions=dimensions)
+        endpoint = os.environ.get(
+            "OPENROUTER_EMBEDDING_ENDPOINT",
+            DEFAULT_OPENROUTER_ENDPOINT,
+        ).strip()
+        _validate_openrouter_endpoint(endpoint)
+        http_referer = (
+            os.environ.get("OPENROUTER_HTTP_REFERER", "").strip() or None
+        )
+        app_title = (
+            os.environ.get(
+                "OPENROUTER_APP_TITLE",
+                DEFAULT_OPENROUTER_APP_TITLE,
+            ).strip()
+            or None
+        )
+        return cls(
+            api_key=api_key,
+            model=model,
+            dimensions=dimensions,
+            endpoint=endpoint,
+            http_referer=http_referer,
+            app_title=app_title,
+        )
 
 
 @dataclass(frozen=True)
@@ -96,20 +124,45 @@ class ProductImageResolver(Protocol):
         """Resolve and validate one primary JPEG or PNG."""
 
 
-class GeminiEmbeddingProvider:
-    """Thin adapter around the official Google Gen AI Python SDK."""
+class OpenRouterEmbeddingProvider:
+    """OpenRouter adapter for a joint text-and-image embedding."""
 
-    def __init__(self, settings: EmbeddingSettings) -> None:
+    def __init__(
+        self,
+        settings: EmbeddingSettings,
+        *,
+        client: httpx.Client | None = None,
+        timeout_seconds: float = 60.0,
+    ) -> None:
         _validate_embedding_contract(settings.model, settings.dimensions)
-        try:
-            from google import genai
-        except ImportError as exc:
+        _validate_openrouter_endpoint(settings.endpoint)
+        if not settings.api_key.strip():
             raise CatalogEmbeddingError(
-                "google-genai is required for Gemini embeddings"
-            ) from exc
+                "OpenRouter API key must not be empty"
+            )
         self.model = settings.model
         self.dimensions = settings.dimensions
-        self._client = genai.Client(api_key=settings.api_key)
+        self._endpoint = settings.endpoint
+        self._headers = {
+            "Authorization": f"Bearer {settings.api_key}",
+            "Content-Type": "application/json",
+        }
+        if settings.http_referer:
+            self._headers["HTTP-Referer"] = settings.http_referer
+        if settings.app_title:
+            self._headers["X-Title"] = settings.app_title
+        self._client = client or httpx.Client(timeout=timeout_seconds)
+        self._owns_client = client is None
+
+    def close(self) -> None:
+        if self._owns_client:
+            self._client.close()
+
+    def __enter__(self) -> "OpenRouterEmbeddingProvider":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
 
     def embed(
         self,
@@ -153,40 +206,68 @@ class GeminiEmbeddingProvider:
         image: bytes | None,
         mime_type: str | None,
     ) -> list[float]:
-        from google.genai import types
-
-        contents: list[Any] = []
+        content: list[dict[str, Any]] = []
         if text is not None:
-            contents.append(text)
+            content.append({"type": "text", "text": text})
         if image is not None:
             if mime_type not in {"image/jpeg", "image/png"}:
                 raise CatalogEmbeddingError(
                     "query image must be JPEG or PNG"
                 )
-            contents.append(
-                types.Part.from_bytes(data=image, mime_type=mime_type)
+            encoded = base64.b64encode(image).decode("ascii")
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mime_type};base64,{encoded}"
+                    },
+                }
+            )
+        payload = {
+            "model": self.model,
+            "input": [{"content": content}],
+            "dimensions": self.dimensions,
+            "encoding_format": "float",
+        }
+        try:
+            response = self._client.post(
+                self._endpoint,
+                headers=self._headers,
+                json=payload,
+            )
+        except httpx.HTTPError as exc:
+            raise CatalogEmbeddingError(
+                "OpenRouter embedding request failed: "
+                f"{type(exc).__name__}"
+            ) from exc
+        if not response.is_success:
+            raise CatalogEmbeddingError(
+                _openrouter_http_error(response)
             )
         try:
-            result = self._client.models.embed_content(
-                model=self.model,
-                contents=contents,
-                config=types.EmbedContentConfig(
-                    output_dimensionality=self.dimensions
-                ),
-            )
-        except Exception as exc:
+            result = response.json()
+        except ValueError as exc:
             raise CatalogEmbeddingError(
-                f"Gemini embed_content failed: {exc}"
+                "OpenRouter returned a non-JSON embedding response"
             ) from exc
-        embeddings = result.embeddings
-        if embeddings is None or len(embeddings) != 1:
+        if not isinstance(result, dict):
             raise CatalogEmbeddingError(
-                "Gemini must return exactly one aggregated embedding"
+                "OpenRouter embedding response must be an object"
             )
-        values = embeddings[0].values
-        if values is None:
-            raise CatalogEmbeddingError("Gemini returned no embedding values")
-        return list(values)
+        embeddings = result.get("data")
+        if not isinstance(embeddings, list) or len(embeddings) != 1:
+            raise CatalogEmbeddingError(
+                "OpenRouter must return exactly one aggregated embedding"
+            )
+        item = embeddings[0]
+        if not isinstance(item, dict) or not isinstance(
+            item.get("embedding"),
+            list,
+        ):
+            raise CatalogEmbeddingError(
+                "OpenRouter returned no embedding values"
+            )
+        return list(item["embedding"])
 
 
 class HttpProductImageResolver:
@@ -526,6 +607,43 @@ def _validate_embedding_contract(model: str, dimensions: int) -> None:
             f"embedding dimensions must be between "
             f"{MIN_DIMENSIONS} and {MAX_DIMENSIONS}"
         )
+
+
+def _validate_openrouter_endpoint(endpoint: str) -> None:
+    try:
+        url = httpx.URL(endpoint)
+    except (TypeError, ValueError) as exc:
+        raise CatalogEmbeddingError(
+            "OpenRouter embedding endpoint is invalid"
+        ) from exc
+    if url.scheme != "https" or not url.host:
+        raise CatalogEmbeddingError(
+            "OpenRouter embedding endpoint must be an HTTPS URL"
+        )
+
+
+def _openrouter_http_error(response: httpx.Response) -> str:
+    detail = ""
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = None
+    if isinstance(payload, dict):
+        error = payload.get("error")
+        if isinstance(error, dict) and isinstance(error.get("message"), str):
+            detail = error["message"].strip()
+        elif isinstance(error, str):
+            detail = error.strip()
+    if detail:
+        detail = detail[:300]
+        return (
+            f"OpenRouter embedding request failed with status "
+            f"{response.status_code}: {detail}"
+        )
+    return (
+        f"OpenRouter embedding request failed with status "
+        f"{response.status_code}"
+    )
 
 
 def _sha256_bytes(value: bytes) -> str:

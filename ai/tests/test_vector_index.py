@@ -74,7 +74,7 @@ class Images:
 
 
 class CatalogProvider:
-    model = "gemini-embedding-2"
+    model = "google/gemini-embedding-2"
     dimensions = DIMENSIONS
 
     def __init__(self, vectors: dict[int, list[float]]) -> None:
@@ -91,7 +91,7 @@ class CatalogProvider:
 
 
 class QueryProvider:
-    model = "gemini-embedding-2"
+    model = "google/gemini-embedding-2"
     dimensions = DIMENSIONS
 
     def __init__(self, result: list[float]) -> None:

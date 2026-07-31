@@ -8,7 +8,7 @@ from app.core.config import get_settings
 from app.recommendation.catalog_embeddings import (
     CatalogEmbeddingError,
     EmbeddingSettings,
-    GeminiEmbeddingProvider,
+    OpenRouterEmbeddingProvider,
 )
 from app.recommendation.pipeline import RecommendationPipeline
 from app.recommendation.vector_index import (
@@ -25,17 +25,24 @@ class RecommendationRuntimeError(RuntimeError):
 @lru_cache
 def get_recommendation_pipeline() -> RecommendationPipeline:
     settings = get_settings()
-    if not settings.gemini_api_key.strip():
-        raise RecommendationRuntimeError("GEMINI_API_KEY is not configured")
+    if not settings.openrouter_api_key.strip():
+        raise RecommendationRuntimeError(
+            "OPENROUTER_API_KEY is not configured"
+        )
     try:
         index = CatalogVectorIndex.load(
             settings.catalog_embedding_index_path
         )
-        provider = GeminiEmbeddingProvider(
+        provider = OpenRouterEmbeddingProvider(
             EmbeddingSettings(
-                api_key=settings.gemini_api_key,
-                model=settings.gemini_embedding_model,
-                dimensions=settings.gemini_embedding_dimensions,
+                api_key=settings.openrouter_api_key,
+                model=settings.openrouter_embedding_model,
+                dimensions=settings.openrouter_embedding_dimensions,
+                endpoint=settings.openrouter_embedding_endpoint,
+                http_referer=(
+                    settings.openrouter_http_referer.strip() or None
+                ),
+                app_title=settings.openrouter_app_title.strip() or None,
             )
         )
         retriever = CandidateRetriever(index, provider)
