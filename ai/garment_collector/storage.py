@@ -138,7 +138,13 @@ class DatasetStorage:
                 suffix=".tmp",
                 delete=False,
             ) as handle:
-                json.dump(payload, handle, ensure_ascii=False, indent=2)
+                json.dump(
+                    payload,
+                    handle,
+                    ensure_ascii=False,
+                    indent=2,
+                    default=str,
+                )
                 handle.flush()
                 os.fsync(handle.fileno())
                 temporary_path = Path(handle.name)

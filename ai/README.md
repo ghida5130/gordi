@@ -79,3 +79,17 @@ python -m garment_collector upload-s3 `
   --output garment_dataset-v2/reports/gordi-product-seed-v1-uploaded.json `
   --dry-run
 ```
+
+S3 URL이 추가된 manifest는 `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`,
+`MYSQL_USER`, `MYSQL_PASSWORD` 환경변수로 접속한 MySQL에 적재합니다.
+`--dry-run`은 schema와 대상 건수만 읽으며, `--apply`는 대상 기존 행을 먼저
+백업한 뒤 전체 상품을 한 트랜잭션으로 반영합니다.
+
+```powershell
+python -m garment_collector seed-db `
+  --manifest garment_dataset-v2/reports/gordi-product-seed-v1-uploaded.json `
+  --dry-run
+```
+
+EC2 전체 실행 순서와 재실행·정리 기준은
+`docs/garment-seed-ec2-runbook.md`를 따릅니다.

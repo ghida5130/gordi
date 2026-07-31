@@ -5,12 +5,20 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
 from garment_collector.adapters.musinsa import MusinsaAdapter
 from garment_collector.config import MAX_ITEMS_PILOT, CollectorSettings
 from garment_collector.models import GarmentRecord
+from garment_collector.mysql_seeder import (
+    MySQLSettings,
+    SeedError,
+    connect_database,
+    load_uploaded_manifest,
+    seed_database,
+)
 from garment_collector.pipeline import CollectionPipeline
 from garment_collector.reprocess import ReprocessError, reprocess_dataset
 from garment_collector.seed_manifest import (
@@ -176,6 +184,33 @@ def _build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Run HeadObject preflight only; do not upload or write output",
+    )
+
+    seed_db = sub.add_parser(
+        "seed-db",
+        help="Validate and transactionally seed the backend MySQL catalog",
+    )
+    seed_db.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="S3-enriched gordi-product-seed-v1 manifest",
+    )
+    mode = seed_db.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate schema/manifest and inspect targets without DML",
+    )
+    mode.add_argument(
+        "--apply",
+        action="store_true",
+        help="Back up targets and apply one transaction",
+    )
+    seed_db.add_argument(
+        "--backup-output",
+        type=Path,
+        help="Required with --apply; JSON backup of targeted existing rows",
     )
 
     return parser
@@ -361,6 +396,52 @@ def cmd_upload_s3(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_seed_db(args: argparse.Namespace) -> int:
+    connection = None
+    try:
+        settings = MySQLSettings.from_env()
+        image_base_url = os.environ.get("GARMENT_IMAGE_BASE_URL")
+        if not image_base_url:
+            raise SeedError(
+                "missing required environment variable: "
+                "GARMENT_IMAGE_BASE_URL"
+            )
+        if args.apply and args.backup_output is None:
+            raise SeedError("--backup-output is required with --apply")
+        manifest = load_uploaded_manifest(
+            args.manifest,
+            image_base_url=image_base_url,
+        )
+        connection = connect_database(settings)
+        report = seed_database(
+            connection,
+            manifest,
+            database=settings.database,
+            apply=args.apply,
+            backup_output=args.backup_output,
+        )
+    except SeedError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        if connection is not None:
+            connection.close()
+    print(
+        json.dumps(
+            {
+                "product_count": report.product_count,
+                "size_row_count": report.size_row_count,
+                "existing_product_count": report.existing_product_count,
+                "applied": report.applied,
+                "backup_output": report.backup_output,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -378,6 +459,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_export_seed(args)
     if args.command == "upload-s3":
         return cmd_upload_s3(args)
+    if args.command == "seed-db":
+        return cmd_seed_db(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
