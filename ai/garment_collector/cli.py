@@ -17,6 +17,12 @@ from garment_collector.seed_manifest import (
     ManifestError,
     export_seed_manifest,
 )
+from garment_collector.s3_uploader import (
+    S3Settings,
+    S3UploadError,
+    create_s3_client,
+    upload_manifest,
+)
 from garment_collector.storage import DatasetStorage
 from garment_collector.validate import validate_record
 
@@ -142,6 +148,34 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Output manifest path (kept outside Git)",
+    )
+
+    upload_s3 = sub.add_parser(
+        "upload-s3",
+        help="Idempotently upload manifest primary images to private S3",
+    )
+    upload_s3.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="gordi-product-seed-v1 manifest",
+    )
+    upload_s3.add_argument(
+        "--dataset-root",
+        type=Path,
+        required=True,
+        help="Dataset root containing manifest primary.local_path files",
+    )
+    upload_s3.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Manifest path to write with image_url/object key",
+    )
+    upload_s3.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run HeadObject preflight only; do not upload or write output",
     )
 
     return parser
@@ -294,6 +328,39 @@ def cmd_export_seed(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_upload_s3(args: argparse.Namespace) -> int:
+    try:
+        settings = S3Settings.from_env()
+        report = upload_manifest(
+            args.manifest,
+            args.dataset_root,
+            args.output,
+            client=create_s3_client(settings),
+            bucket=settings.bucket,
+            image_base_url=settings.image_base_url,
+            dry_run=args.dry_run,
+        )
+    except S3UploadError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(
+        json.dumps(
+            {
+                "checked": report.checked,
+                "uploaded": report.uploaded,
+                "skipped": report.skipped,
+                "dry_run": report.dry_run,
+                "output": (
+                    None if report.dry_run else str(args.output.resolve())
+                ),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -309,6 +376,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_reprocess(args)
     if args.command == "export-seed":
         return cmd_export_seed(args)
+    if args.command == "upload-s3":
+        return cmd_upload_s3(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

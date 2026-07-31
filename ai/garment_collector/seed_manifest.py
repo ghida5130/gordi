@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from collections import Counter
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -207,7 +205,7 @@ def export_seed_manifest(
     }
     payload["manifest_sha256"] = DatasetStorage.sha256_json(payload)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    _atomic_write_json(output_path, payload)
+    DatasetStorage.atomic_write_json(output_path, payload)
     return payload
 
 
@@ -337,24 +335,3 @@ def _decimal_string(value: Any) -> str | None:
         decimal_value.quantize(_TWO_PLACES, rounding=ROUND_HALF_UP),
         ".2f",
     )
-
-
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    temporary_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            json.dump(payload, handle, ensure_ascii=False, indent=2)
-            handle.flush()
-            os.fsync(handle.fileno())
-            temporary_path = Path(handle.name)
-        temporary_path.replace(path)
-    finally:
-        if temporary_path is not None and temporary_path.exists():
-            temporary_path.unlink()

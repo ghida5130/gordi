@@ -66,3 +66,16 @@ python -m garment_collector export-seed `
   --selection-file garment_dataset/reports/preload_ready_50each.json `
   --output garment_dataset-v2/reports/gordi-product-seed-v1.json
 ```
+
+S3 설정과 자격 증명은 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_REGION`, `GARMENT_S3_BUCKET`, `GARMENT_IMAGE_BASE_URL` 환경변수로만
+받습니다. 먼저 `--dry-run`으로 모든 객체를 검사한 뒤 실행하며, 같은 key의
+크기나 SHA-256 metadata가 다르면 덮어쓰지 않고 전체 preflight를 실패시킵니다.
+
+```powershell
+python -m garment_collector upload-s3 `
+  --manifest garment_dataset-v2/reports/gordi-product-seed-v1.json `
+  --dataset-root garment_dataset-v2 `
+  --output garment_dataset-v2/reports/gordi-product-seed-v1-uploaded.json `
+  --dry-run
+```
