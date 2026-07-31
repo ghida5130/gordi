@@ -23,6 +23,10 @@ DEFAULT_MODEL = "google/gemini-embedding-2"
 DEFAULT_DIMENSIONS = 768
 DEFAULT_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/embeddings"
 DEFAULT_OPENROUTER_APP_TITLE = "Gordi AI"
+DEFAULT_OPENROUTER_PROVIDER_ORDER = (
+    "google-vertex",
+    "google-ai-studio",
+)
 MIN_DIMENSIONS = 128
 MAX_DIMENSIONS = 3072
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -40,6 +44,8 @@ class EmbeddingSettings:
     endpoint: str = DEFAULT_OPENROUTER_ENDPOINT
     http_referer: str | None = None
     app_title: str | None = DEFAULT_OPENROUTER_APP_TITLE
+    provider_order: tuple[str, ...] = DEFAULT_OPENROUTER_PROVIDER_ORDER
+    allow_fallbacks: bool = True
 
     @classmethod
     def from_env(cls) -> "EmbeddingSettings":
@@ -79,6 +85,22 @@ class EmbeddingSettings:
             ).strip()
             or None
         )
+        provider_order = tuple(
+            provider.strip()
+            for provider in os.environ.get(
+                "OPENROUTER_PROVIDER_ORDER",
+                ",".join(DEFAULT_OPENROUTER_PROVIDER_ORDER),
+            ).split(",")
+            if provider.strip()
+        )
+        if not provider_order:
+            raise CatalogEmbeddingError(
+                "OPENROUTER_PROVIDER_ORDER must contain a provider"
+            )
+        allow_fallbacks = _parse_boolean_environment(
+            "OPENROUTER_ALLOW_FALLBACKS",
+            default=True,
+        )
         return cls(
             api_key=api_key,
             model=model,
@@ -86,6 +108,8 @@ class EmbeddingSettings:
             endpoint=endpoint,
             http_referer=http_referer,
             app_title=app_title,
+            provider_order=provider_order,
+            allow_fallbacks=allow_fallbacks,
         )
 
 
@@ -143,6 +167,14 @@ class OpenRouterEmbeddingProvider:
         self.model = settings.model
         self.dimensions = settings.dimensions
         self._endpoint = settings.endpoint
+        if not settings.provider_order:
+            raise CatalogEmbeddingError(
+                "OpenRouter provider order must not be empty"
+            )
+        self._provider_routing = {
+            "order": list(settings.provider_order),
+            "allow_fallbacks": settings.allow_fallbacks,
+        }
         self._headers = {
             "Authorization": f"Bearer {settings.api_key}",
             "Content-Type": "application/json",
@@ -228,6 +260,7 @@ class OpenRouterEmbeddingProvider:
             "input": [{"content": content}],
             "dimensions": self.dimensions,
             "encoding_format": "float",
+            "provider": self._provider_routing,
         }
         try:
             response = self._client.post(
@@ -643,6 +676,20 @@ def _openrouter_http_error(response: httpx.Response) -> str:
     return (
         f"OpenRouter embedding request failed with status "
         f"{response.status_code}"
+    )
+
+
+def _parse_boolean_environment(name: str, *, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    normalized = raw.strip().casefold()
+    if normalized in {"true", "1", "yes"}:
+        return True
+    if normalized in {"false", "0", "no"}:
+        return False
+    raise CatalogEmbeddingError(
+        f"{name} must be true or false"
     )
 
 

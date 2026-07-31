@@ -318,6 +318,10 @@ def test_openrouter_provider_sends_joint_text_and_image_input() -> None:
         ],
         "dimensions": 128,
         "encoding_format": "float",
+        "provider": {
+            "order": ["google-vertex", "google-ai-studio"],
+            "allow_fallbacks": True,
+        },
     }
     client.close()
 
@@ -414,6 +418,11 @@ def test_embedding_settings_read_openrouter_environment(
         "https://gordi.example",
     )
     monkeypatch.setenv("OPENROUTER_APP_TITLE", "Gordi Test")
+    monkeypatch.setenv(
+        "OPENROUTER_PROVIDER_ORDER",
+        "google-vertex, google-ai-studio",
+    )
+    monkeypatch.setenv("OPENROUTER_ALLOW_FALLBACKS", "false")
     monkeypatch.setenv("GEMINI_API_KEY", "legacy-key")
 
     settings = EmbeddingSettings.from_env()
@@ -423,3 +432,21 @@ def test_embedding_settings_read_openrouter_environment(
     assert settings.dimensions == 1536
     assert settings.http_referer == "https://gordi.example"
     assert settings.app_title == "Gordi Test"
+    assert settings.provider_order == (
+        "google-vertex",
+        "google-ai-studio",
+    )
+    assert settings.allow_fallbacks is False
+
+
+def test_embedding_settings_reject_invalid_fallback_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-key")
+    monkeypatch.setenv("OPENROUTER_ALLOW_FALLBACKS", "sometimes")
+
+    with pytest.raises(
+        CatalogEmbeddingError,
+        match="OPENROUTER_ALLOW_FALLBACKS must be true or false",
+    ):
+        EmbeddingSettings.from_env()
