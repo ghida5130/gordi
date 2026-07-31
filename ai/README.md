@@ -142,3 +142,23 @@ X-Internal-Api-Key: ${INTERNAL_API_KEY}
 `budgetMin`/`budgetMax`, `candidateLimit`(기본 50), `resultLimit`(기본 10)을
 보냅니다. 응답은 `productId`, 최종·검색·궁합 점수, 추천 이유와 사용한
 embedding snapshot SHA-256을 반환합니다.
+
+## FastAPI 단독 추천 데모
+
+로컬에서만 `ENABLE_RECOMMENDATION_DEMO=true`로 설정한 뒤 AI 서버를 실행하면
+`http://localhost:8000/demo/recommendations`에서 이미지 업로드부터 후보 검색,
+조건·궁합 재정렬, 추천 이유까지 한 화면에서 확인할 수 있습니다. 운영 기본값은
+`false`이며 비활성 상태에서는 페이지와 업로드 API 모두 404를 반환합니다.
+
+DB의 이미지 URL이 브라우저에서 접근할 수 없는 Docker 내부 주소라면, 검수
+데이터셋 경로를 아래처럼 지정해 FastAPI가 primary 이미지만 로컬 데모에
+제공하도록 할 수 있습니다. 이 경로는 Git에 포함하지 않습니다.
+
+```text
+RECOMMENDATION_DEMO_DATASET_ROOT=garment_dataset-v2
+```
+
+데모 API는 `POST /api/v1/demo/recommendations` multipart 요청이며 JPEG/PNG
+최대 10MB, 텍스트 2,000자를 허용합니다. 실제 실행 전
+`catalog_index/catalog-embeddings.json` 생성과 `GEMINI_API_KEY` 설정이
+필요합니다.

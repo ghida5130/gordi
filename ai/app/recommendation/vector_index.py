@@ -8,6 +8,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from app.recommendation.catalog_embeddings import (
     CATALOG_EMBEDDING_SCHEMA_VERSION,
@@ -315,6 +316,12 @@ def _validate_product_metadata(
         raise VectorIndexError(
             f"product {product_id} is not AVAILABLE"
         )
+    for field in ("image_url", "purchase_url"):
+        parsed = urlsplit(product[field])
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise VectorIndexError(
+                f"product {product_id} {field} is invalid"
+            )
     price = product.get("price")
     if (
         not isinstance(price, int)

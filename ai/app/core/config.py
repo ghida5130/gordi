@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     recommendation_image_allowed_hosts: list[str] = Field(
         default_factory=list
     )
+    enable_recommendation_demo: bool = False
+    recommendation_demo_dataset_root: Path | None = None
 
     cors_allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173"]

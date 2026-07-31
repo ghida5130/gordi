@@ -269,6 +269,24 @@ def test_load_rejects_non_object_item_with_domain_error(
         CatalogVectorIndex.load(path)
 
 
+def test_load_rejects_unsafe_product_url(tmp_path: Path) -> None:
+    path, _ = build_index(
+        tmp_path,
+        [product(1)],
+        {1: vector(1.0, 0.0)},
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["items"][0]["product"]["purchase_url"] = "javascript:alert(1)"
+    payload.pop("snapshot_sha256")
+    from app.recommendation.vector_index import _snapshot_sha256
+
+    payload["snapshot_sha256"] = _snapshot_sha256(payload)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(VectorIndexError, match="purchase_url is invalid"):
+        CatalogVectorIndex.load(path)
+
+
 @pytest.mark.parametrize(
     ("filters", "message"),
     [

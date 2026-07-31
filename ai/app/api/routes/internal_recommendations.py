@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.dependencies import require_recommendation_pipeline
 from app.core.config import Settings, get_settings
 from app.core.security import verify_internal_api_key
 from app.recommendation.image_fetcher import (
@@ -20,10 +21,6 @@ from app.schemas.recommendation import (
     RecommendedProduct,
     SearchRecommendationRequest,
     SearchRecommendationResponse,
-)
-from app.services.recommendation_pipeline import (
-    RecommendationRuntimeError,
-    get_recommendation_pipeline,
 )
 from app.services.recommendation_ranker import (
     SCHEMA_VERSION,
@@ -56,16 +53,6 @@ def get_query_image_fetcher(
     return QueryImageFetcher.create(
         settings.recommendation_image_allowed_hosts
     )
-
-
-def require_recommendation_pipeline() -> RecommendationPipeline:
-    try:
-        return get_recommendation_pipeline()
-    except RecommendationRuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        ) from exc
 
 
 @router.post(

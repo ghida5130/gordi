@@ -115,3 +115,21 @@ class SearchRecommendationResponse(CamelCaseModel):
     recommendation_id: int = Field(gt=0)
     index_version: str = Field(min_length=64, max_length=64)
     results: list[RecommendedProduct]
+
+
+class DemoRecommendedProduct(RecommendedProduct):
+    name: str = Field(min_length=1)
+    brand: str = Field(min_length=1)
+    price: int = Field(ge=0)
+    currency: str = Field(min_length=3, max_length=3)
+    category: str = Field(min_length=1)
+    subcategory: str = Field(min_length=1)
+    image_url: str = Field(min_length=1)
+    purchase_url: str = Field(min_length=1)
+
+
+class DemoRecommendationResponse(CamelCaseModel):
+    schema_version: str
+    index_version: str = Field(min_length=64, max_length=64)
+    candidate_limit: int = Field(ge=1, le=200)
+    results: list[DemoRecommendedProduct]

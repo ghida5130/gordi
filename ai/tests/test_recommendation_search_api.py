@@ -10,10 +10,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from app.api.routes.internal_recommendations import (
-    get_query_image_fetcher,
-    require_recommendation_pipeline,
-)
+from app.api.dependencies import require_recommendation_pipeline
+from app.api.routes.internal_recommendations import get_query_image_fetcher
 from app.main import app
 from app.recommendation.catalog_embeddings import ResolvedImage
 from app.recommendation.image_fetcher import (
@@ -228,8 +226,7 @@ def test_runtime_dependency_maps_unavailable_pipeline_to_503(
         raise RecommendationRuntimeError("index unavailable")
 
     monkeypatch.setattr(
-        "app.api.routes.internal_recommendations."
-        "get_recommendation_pipeline",
+        "app.api.dependencies.get_recommendation_pipeline",
         unavailable,
     )
 
