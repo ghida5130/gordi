@@ -36,6 +36,7 @@ _PRODUCT_COLUMNS = {
     "description",
     "currency",
     "availability",
+    "created_at",
 }
 _TOP_SIZE_COLUMNS = {
     "id",
@@ -83,9 +84,10 @@ _CATEGORY_SUBCATEGORIES = {
 _PRODUCT_UPSERT = """
 INSERT INTO products (
     name, brand, source, external_id, gender, price, category, subcategory,
-    image_url, purchase_url, description, currency, availability
+    image_url, purchase_url, description, currency, availability, created_at
 ) VALUES (
-    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+    CURRENT_TIMESTAMP
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),

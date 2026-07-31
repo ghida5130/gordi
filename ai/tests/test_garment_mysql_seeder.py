@@ -163,6 +163,7 @@ def test_uploaded_manifest_and_product_upsert_sql(tmp_path: Path) -> None:
 
     assert "ON DUPLICATE KEY UPDATE" in sql
     assert "source, external_id" in sql
+    assert "CURRENT_TIMESTAMP" in sql
     assert params[2:5] == ("MUSINSA", "123", "MALE")
     assert params[8].startswith(f"{BASE_URL}/")
 
