@@ -9,6 +9,8 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.websocket.RoomEventPublisher;
 import com.ssafy.backend.websocket.dto.ItemLockRequestDTO;
 import com.ssafy.backend.websocket.dto.ItemLockRequestDTO.ItemLockDataDTO;
+import com.ssafy.backend.websocket.dto.ItemUnlockRequestDTO;
+import com.ssafy.backend.websocket.dto.ItemUnlockRequestDTO.ItemUnlockDataDTO;
 import com.ssafy.backend.websocket.dto.ItemUnlockedEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.event.ItemUnlockReason;
@@ -200,6 +202,61 @@ class RoomItemLockServiceTest {
         assertThat(roomItemLockService.isLockedByOther(31L, 91L, 50L)).isTrue();  // 타인
         assertThat(roomItemLockService.isLockedByOther(31L, 91L, 42L)).isFalse(); // 본인
         assertThat(roomItemLockService.isLockedByOther(31L, 92L, 50L)).isFalse(); // 잠금 없음
+    }
+
+    private ItemUnlockRequestDTO manualUnlockRequest(String lockToken) {
+        return new ItemUnlockRequestDTO(
+                "unlock-request-uuid",
+                new ItemUnlockDataDTO(91L, lockToken, ItemUnlockReason.CANCELLED)
+        );
+    }
+
+    @Test
+    void 수동_해제_성공_시_요청_reason으로_ITEM_UNLOCKED를_방송한다() {
+        stubValidRoomAndItem();
+        roomItemLockService.tryLock(31L, 42L, "철수", request(91L, "token-1"));
+
+        boolean released = roomItemLockService.unlock(31L, 42L, manualUnlockRequest("token-1"));
+
+        assertThat(released).isTrue();
+        org.mockito.ArgumentCaptor<RoomEventDTO> captor =
+                org.mockito.ArgumentCaptor.forClass(RoomEventDTO.class);
+        org.mockito.Mockito.verify(roomEventPublisher).publish(captor.capture());
+
+        RoomEventDTO event = captor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ITEM_UNLOCKED);
+        assertThat(event.clientEventId()).isEqualTo("unlock-request-uuid");
+        assertThat(event.version()).isEqualTo(12L); // 버전 증가 없음
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(
+                new ItemUnlockedEventDataDTO(91L, ItemUnlockReason.CANCELLED)
+        );
+    }
+
+    @Test
+    void 늦게_도착한_이전_드래그의_unlock은_새_잠금을_해제하지_못한다() {
+        stubValidRoomAndItem();
+        // 철수의 이전 드래그(token-old) → 이동 완료로 해제 → 영희가 새로 잠금(token-new)
+        roomItemLockService.tryLock(31L, 42L, "철수", request(91L, "token-old"));
+        roomItemLockService.releaseIfOwnedBy(31L, 91L, 42L, "token-old");
+        roomItemLockService.tryLock(31L, 50L, "영희", request(91L, "token-new"));
+
+        // 철수의 늦은 unlock(token-old) 도착
+        boolean released = roomItemLockService.unlock(31L, 42L, manualUnlockRequest("token-old"));
+
+        assertThat(released).isFalse();
+        org.mockito.Mockito.verify(roomEventPublisher, org.mockito.Mockito.never())
+                .publish(org.mockito.ArgumentMatchers.any());
+        // 영희의 잠금은 그대로 유지
+        assertThat(roomItemLockService.isLockedByOther(31L, 91L, 42L)).isTrue();
+    }
+
+    @Test
+    void unlock_요청에_lockToken이_없으면_BAD_REQUEST를_던진다() {
+        assertThatThrownBy(() -> roomItemLockService.unlock(31L, 42L, manualUnlockRequest("  ")))
+                .isInstanceOf(ApiException.class)
+                .extracting(e -> ((ApiException) e).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
     }
 
     @Test

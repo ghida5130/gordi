@@ -8,8 +8,10 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.websocket.RoomEventPublisher;
 import com.ssafy.backend.websocket.dto.ItemLockRequestDTO;
+import com.ssafy.backend.websocket.dto.ItemUnlockRequestDTO;
 import com.ssafy.backend.websocket.dto.ItemUnlockedEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.event.ItemUnlockReason;
 import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,6 +110,50 @@ public class RoomItemLockService {
         });
 
         return new ItemLockResult(current == candidate, room.getVersion(), current);
+    }
+
+    // - 인자: 방 ID, 요청자 participantId, 해제 요청(roomItemId/lockToken/reason)
+    // - 동작: 소유자·토큰이 일치할 때만 잠금을 해제하고 ITEM_UNLOCKED를 방 토픽으로 방송.
+    //         (버전 증가 없음, 방송 reason은 요청의 reason 그대로. 기본값 RELEASED)
+    //         불일치(늦게 도착한 이전 드래그의 unlock 등)는 해제·방송 없이 false 반환
+    public boolean unlock(Long roomId, Long participantId, ItemUnlockRequestDTO request) {
+        validateUnlockRequest(request);
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND));
+
+        boolean released = releaseIfOwnedBy(
+                roomId,
+                request.data().roomItemId(),
+                participantId,
+                request.data().lockToken()
+        );
+        if (!released) {
+            return false;
+        }
+
+        ItemUnlockReason reason = request.data().reason() == null
+                ? ItemUnlockReason.RELEASED
+                : request.data().reason();
+        roomEventPublisher.publish(RoomEventDTO.of(
+                RoomEventType.ITEM_UNLOCKED,
+                request.clientEventId(),
+                roomId,
+                room.getVersion(),
+                participantId,
+                new ItemUnlockedEventDataDTO(request.data().roomItemId(), reason)
+        ));
+        return true;
+    }
+
+    private void validateUnlockRequest(ItemUnlockRequestDTO request) {
+        if (request == null
+                || request.data() == null
+                || request.data().roomItemId() == null
+                || request.data().lockToken() == null
+                || request.data().lockToken().isBlank()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST);
+        }
     }
 
     // - 인자: 이동 커밋 후 발행되는 잠금 해제 요청 이벤트

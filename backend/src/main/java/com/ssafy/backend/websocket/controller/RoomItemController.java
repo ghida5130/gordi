@@ -8,6 +8,7 @@ import com.ssafy.backend.websocket.dto.ItemLockRejectedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemLockRequestDTO;
 import com.ssafy.backend.websocket.dto.ItemLockedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMoveRequestDTO;
+import com.ssafy.backend.websocket.dto.ItemUnlockRequestDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import com.ssafy.backend.websocket.service.RoomItemLockService;
@@ -140,6 +141,41 @@ public class RoomItemController {
                         )
                 )
         );
+    }
+
+    // - 인자: 경로의 roomId, 해제 요청 body(roomItemId/lockToken/reason), 세션 Principal
+    // - 동작: 소유자·토큰이 일치하면 잠금 해제 후 ITEM_UNLOCKED가 방 토픽으로 방송된다.
+    //         불일치(늦은 unlock 등)나 검증 실패는 로그만 남기고 무시한다(연결 유지).
+    @MessageMapping("/rooms/{roomId}/items/unlock")
+    public void unlockItem(
+            @DestinationVariable Long roomId,
+            @Payload ItemUnlockRequestDTO request,
+            Principal principal
+    ) {
+        if (!(principal instanceof RoomPrincipal roomPrincipal)) {
+            log.warn("items/unlock 요청에 RoomPrincipal이 없어 무시: roomId={}", roomId);
+            return;
+        }
+        if (!roomPrincipal.roomId().equals(roomId)) {
+            log.warn("다른 방 items/unlock 요청 무시: requestedRoomId={}, principalRoomId={}, participantId={}",
+                    roomId, roomPrincipal.roomId(), roomPrincipal.participantId());
+            return;
+        }
+
+        try {
+            boolean released = roomItemLockService.unlock(
+                    roomId,
+                    roomPrincipal.participantId(),
+                    request
+            );
+            if (!released) {
+                log.debug("items/unlock 불일치로 무시: roomId={}, participantId={}, roomItemId={}",
+                        roomId, roomPrincipal.participantId(), request.data().roomItemId());
+            }
+        } catch (ApiException exception) {
+            log.warn("items/unlock 처리 실패: roomId={}, participantId={}, errorCode={}",
+                    roomId, roomPrincipal.participantId(), exception.getErrorCode().getCode());
+        }
     }
 
     // - 인자: 방 ID, 요청자 Principal, 원본 요청, 발생 예외
