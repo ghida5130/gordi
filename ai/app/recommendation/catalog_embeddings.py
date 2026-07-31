@@ -237,7 +237,10 @@ class HttpProductImageResolver:
                 f"product {product.product_id} image exceeds "
                 f"{MAX_IMAGE_BYTES} bytes"
             )
-        mime_type = _detect_image_mime(content, product.product_id)
+        mime_type = detect_image_mime(
+            content,
+            context=f"product {product.product_id}",
+        )
         return ResolvedImage(
             content=content,
             mime_type=mime_type,
@@ -494,19 +497,23 @@ def _validated_normalized_embedding(
     return [value / norm for value in converted]
 
 
-def _detect_image_mime(content: bytes, product_id: int) -> str:
+def detect_image_mime(
+    content: bytes,
+    *,
+    context: str = "image",
+) -> str:
     try:
         with Image.open(io.BytesIO(content)) as image:
             image.verify()
             image_format = image.format
     except (OSError, UnidentifiedImageError) as exc:
         raise CatalogEmbeddingError(
-            f"product {product_id} image is not decodable"
+            f"{context} is not decodable"
         ) from exc
     mime_types = {"JPEG": "image/jpeg", "PNG": "image/png"}
     if image_format not in mime_types:
         raise CatalogEmbeddingError(
-            f"product {product_id} image format {image_format} is unsupported"
+            f"{context} format {image_format} is unsupported"
         )
     return mime_types[image_format]
 

@@ -128,3 +128,17 @@ python -m app.recommendation.embedding_cli `
 않는 soft score이며, 추천 이유에는 실제로 일치한 태그와 예산 조건만
 사용합니다. `CompatibilityModel`과 `RecommendationReasonGenerator`
 인터페이스를 구현하면 이후 학습 모델이나 VLM으로 교체할 수 있습니다.
+
+백엔드가 AI 검색까지 위임할 때는 기존 후보 기반 `/rank` 대신 아래 내부 API를
+호출합니다. `text`와 `imageUrl` 중 하나 이상이 필요하며 이미지 URL은
+`RECOMMENDATION_IMAGE_ALLOWED_HOSTS`에 등록된 호스트만 허용됩니다.
+
+```text
+POST /internal/v1/recommendations/search
+X-Internal-Api-Key: ${INTERNAL_API_KEY}
+```
+
+요청에는 `recommendationId`, `gender`, 선택 `category`/`subcategory`,
+`budgetMin`/`budgetMax`, `candidateLimit`(기본 50), `resultLimit`(기본 10)을
+보냅니다. 응답은 `productId`, 최종·검색·궁합 점수, 추천 이유와 사용한
+embedding snapshot SHA-256을 반환합니다.

@@ -275,8 +275,17 @@ class RecommendationPipeline:
         *,
         compatibility_model: CompatibilityModel | None = None,
         reason_generator: RecommendationReasonGenerator | None = None,
+        index_version: str = "0" * 64,
     ) -> None:
+        if len(index_version) != 64 or any(
+            character not in "0123456789abcdef"
+            for character in index_version.casefold()
+        ):
+            raise RecommendationPipelineError(
+                "index_version must be a SHA-256 hex digest"
+            )
         self._retriever = retriever
+        self.index_version = index_version
         self._compatibility_model = (
             compatibility_model or RuleBasedCompatibilityModel()
         )
