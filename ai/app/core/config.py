@@ -59,6 +59,11 @@ class Settings(BaseSettings):
         ge=1,
         le=50,
     )
+    recommendation_vlm_rerank_concurrency: int = Field(
+        default=8,
+        ge=1,
+        le=32,
+    )
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )

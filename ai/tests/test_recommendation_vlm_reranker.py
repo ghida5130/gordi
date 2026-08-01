@@ -30,9 +30,14 @@ class RecordingVLMClient:
         *,
         system: str,
         user_parts: list[dict[str, Any]],
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         self.requests.append(
-            {"system": system, "user_parts": user_parts}
+            {
+                "system": system,
+                "user_parts": user_parts,
+                "max_tokens": max_tokens,
+            }
         )
         return self.payload
 
@@ -56,9 +61,7 @@ class StaticFetcher:
 
 
 def test_score_pair_sends_query_and_candidate_evidence() -> None:
-    client = RecordingVLMClient(
-        {"compatibility": 0.9, "rationale": "색이 잘 어울립니다"}
-    )
+    client = RecordingVLMClient({"compatibility": 0.9})
     fetcher = StaticFetcher()
     model = VLMPairwiseCompatibilityModel(
         client,
@@ -73,7 +76,8 @@ def test_score_pair_sends_query_and_candidate_evidence() -> None:
         product=product(1, name="블랙 슬랙스", description="포멀"),
     )
 
-    assert judgment == PairwiseJudgment(0.9, "색이 잘 어울립니다")
+    assert judgment == PairwiseJudgment(0.9)
+    assert client.requests[0]["max_tokens"] == 64
     assert fetcher.urls == ["https://images.internal/1.jpg"]
     parts = client.requests[0]["user_parts"]
     kinds = [part["type"] for part in parts]
@@ -184,7 +188,7 @@ def test_pipeline_reranks_only_top_k_and_reorders() -> None:
         result_limit=5,
     )
 
-    assert reranker.judged == [1, 2, 3]
+    assert sorted(reranker.judged) == [1, 2, 3]
     assert results[0].product_id == 2
     assert results[0].compatibility_score == pytest.approx(1.0)
     ranked_ids = [result.product_id for result in results]
@@ -207,7 +211,7 @@ def test_pipeline_keeps_rule_score_when_judgment_fails() -> None:
         result_limit=3,
     )
 
-    assert reranker.judged == [1, 2]
+    assert sorted(reranker.judged) == [1, 2]
     assert [result.product_id for result in results] == [1, 2, 3]
 
 
@@ -281,3 +285,59 @@ def test_pipeline_rejects_invalid_rerank_top_k() -> None:
             pairwise_reranker=StaticReranker({}),
             rerank_top_k=MAX_RERANK_TOP_K + 1,
         )
+
+
+def test_pipeline_rejects_invalid_rerank_concurrency() -> None:
+    with pytest.raises(
+        RecommendationPipelineError,
+        match="rerank_concurrency",
+    ):
+        RecommendationPipeline(
+            Retriever([]),
+            pairwise_reranker=StaticReranker({}),
+            rerank_concurrency=0,
+        )
+
+
+class BarrierReranker:
+    """Succeeds only when two judgments overlap in time."""
+
+    def __init__(self) -> None:
+        import threading
+
+        self.barrier = threading.Barrier(2, timeout=5)
+
+    def score_pair(
+        self,
+        *,
+        intent: Any,
+        query_image: bytes | None,
+        query_mime_type: str | None,
+        product: dict[str, Any],
+    ) -> PairwiseJudgment:
+        self.barrier.wait()
+        return PairwiseJudgment(0.9)
+
+
+def test_pipeline_judges_candidates_concurrently() -> None:
+    pipeline = RecommendationPipeline(
+        Retriever(hits(2)),
+        pairwise_reranker=BarrierReranker(),
+        rerank_top_k=2,
+        rerank_concurrency=2,
+    )
+
+    results = pipeline.recommend(
+        text="기본 상의",
+        image=None,
+        mime_type=None,
+        filters=SearchFilters(gender="MALE"),
+        result_limit=2,
+    )
+
+    # A sequential run would trip the barrier timeout and fall back to
+    # rule-based scores; concurrent execution yields the VLM score.
+    assert all(
+        result.compatibility_score == pytest.approx(0.9)
+        for result in results
+    )

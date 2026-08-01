@@ -32,11 +32,14 @@ _SYSTEM_PROMPT = (
     "how well the candidate garment would pair with the user's query "
     "outfit (photo and/or text) as one coordinated look. Judge color "
     "harmony, season consistency, style/mood, and pattern mixing. "
-    "Respond with one JSON object only: {\"compatibility\": <number "
-    "0.0-1.0>, \"rationale\": \"<one short Korean sentence citing "
-    "only what you actually observed>\"}. 0.0 = clashes badly, "
+    "Respond with one JSON object only, no explanation: "
+    "{\"compatibility\": <number 0.0-1.0>}. 0.0 = clashes badly, "
     "0.5 = neutral, 1.0 = excellent match."
 )
+
+# Score-only answers are ~10 tokens; a tight output cap keeps decode
+# time negligible even on low-throughput providers.
+_JUDGMENT_MAX_TOKENS = 64
 
 
 class VLMClient(Protocol):
@@ -45,6 +48,7 @@ class VLMClient(Protocol):
         *,
         system: str,
         user_parts: list[dict[str, Any]],
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         """Return one parsed JSON object from the model."""
 
@@ -57,7 +61,7 @@ class ProductImageFetcher(Protocol):
 @dataclass(frozen=True)
 class PairwiseJudgment:
     compatibility: float
-    rationale: str | None
+    rationale: str | None = None
 
 
 class PairwiseCompatibilityModel(Protocol):
@@ -113,6 +117,7 @@ class VLMPairwiseCompatibilityModel:
         payload = self._client.complete_json(
             system=_SYSTEM_PROMPT,
             user_parts=user_parts,
+            max_tokens=_JUDGMENT_MAX_TOKENS,
         )
         return _judgment_from_payload(payload)
 
@@ -161,12 +166,8 @@ def _judgment_from_payload(payload: dict[str, Any]) -> PairwiseJudgment:
         raise VLMError(
             "pairwise compatibility must be between 0.0 and 1.0"
         )
-    rationale = payload.get("rationale")
-    if not isinstance(rationale, str) or not rationale.strip():
-        rationale = None
     return PairwiseJudgment(
         compatibility=max(0.0, min(1.0, value)),
-        rationale=rationale,
     )
 
 

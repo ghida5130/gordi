@@ -466,7 +466,7 @@
           </li>
           <li data-step="rerank">
             <span class="dot"></span>
-            <span class="label">VLM 코디 궁합 판정 <small>pairwise</small></span>
+            <span class="label">VLM 코디 궁합 판정 <small>pairwise · 병렬</small></span>
             <span class="detail"></span>
           </li>
           <li data-step="reasons">
@@ -591,7 +591,7 @@
       if (stage === "rerank") {
         detailBox.textContent = `${detail.current}/${detail.total}`;
         $("pipe-now").textContent =
-          `판정 중: ${detail.product_name ?? ""}`;
+          `판정 완료: ${detail.product_name ?? ""}`;
       }
     } else if (status === "done") {
       li.className = "done";

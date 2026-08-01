@@ -105,14 +105,21 @@ class OpenAICompatibleVLMClient:
         *,
         system: str,
         user_parts: list[dict[str, Any]],
+        max_tokens: int | None = None,
     ) -> str:
+        if max_tokens is not None and max_tokens <= 0:
+            raise VLMError("max_tokens override must be positive")
         payload = {
             "model": self._settings.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_parts},
             ],
-            "max_tokens": self._settings.max_output_tokens,
+            "max_tokens": (
+                max_tokens
+                if max_tokens is not None
+                else self._settings.max_output_tokens
+            ),
             "temperature": self._settings.temperature,
         }
         try:
@@ -148,10 +155,12 @@ class OpenAICompatibleVLMClient:
         *,
         system: str,
         user_parts: list[dict[str, Any]],
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         content = self.complete_text(
             system=system,
             user_parts=user_parts,
+            max_tokens=max_tokens,
         )
         parsed = _parse_json_object(content)
         if parsed is None:

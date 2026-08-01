@@ -128,6 +128,9 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
         image_intent_extractor=image_intent_extractor,
         pairwise_reranker=pairwise_reranker,
         rerank_top_k=settings.recommendation_vlm_rerank_top_k,
+        rerank_concurrency=(
+            settings.recommendation_vlm_rerank_concurrency
+        ),
         reason_generator=reason_generator,
         index_version=index.snapshot_sha256,
     )

@@ -113,6 +113,24 @@ def test_client_rejects_http_error_and_bad_content() -> None:
         )
 
 
+def test_client_max_tokens_override_reaches_payload() -> None:
+    seen: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["payload"] = json.loads(request.content)
+        return chat_response("{}")
+
+    client = make_client(handler)
+    client.complete_json(system="s", user_parts=[], max_tokens=64)
+    assert seen["payload"]["max_tokens"] == 64
+
+    client.complete_json(system="s", user_parts=[])
+    assert seen["payload"]["max_tokens"] == VLMSettings().max_output_tokens
+
+    with pytest.raises(VLMError, match="max_tokens"):
+        client.complete_text(system="s", user_parts=[], max_tokens=0)
+
+
 def test_client_parses_fenced_json() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return chat_response(

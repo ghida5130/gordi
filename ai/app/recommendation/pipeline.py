@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Protocol
 
@@ -20,6 +22,8 @@ RETRIEVAL_WEIGHT = 0.65
 COMPATIBILITY_WEIGHT = 0.35
 DEFAULT_RERANK_TOP_K = 20
 MAX_RERANK_TOP_K = 50
+DEFAULT_RERANK_CONCURRENCY = 8
+MAX_RERANK_CONCURRENCY = 32
 
 _COLOR_KEYWORDS = {
     "BLACK": ("블랙", "검정", "검은", "black"),
@@ -368,11 +372,20 @@ class RecommendationPipeline:
         image_intent_extractor: ImageIntentExtractor | None = None,
         pairwise_reranker: PairwiseReranker | None = None,
         rerank_top_k: int = DEFAULT_RERANK_TOP_K,
+        rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
         index_version: str = "0" * 64,
     ) -> None:
         if rerank_top_k < 1 or rerank_top_k > MAX_RERANK_TOP_K:
             raise RecommendationPipelineError(
                 f"rerank_top_k must be between 1 and {MAX_RERANK_TOP_K}"
+            )
+        if (
+            rerank_concurrency < 1
+            or rerank_concurrency > MAX_RERANK_CONCURRENCY
+        ):
+            raise RecommendationPipelineError(
+                "rerank_concurrency must be between 1 and "
+                f"{MAX_RERANK_CONCURRENCY}"
             )
         if len(index_version) != 64 or any(
             character not in "0123456789abcdef"
@@ -392,6 +405,7 @@ class RecommendationPipeline:
         self._image_intent_extractor = image_intent_extractor
         self._pairwise_reranker = pairwise_reranker
         self._rerank_top_k = rerank_top_k
+        self._rerank_concurrency = rerank_concurrency
 
     def recommend(
         self,
@@ -548,24 +562,14 @@ class RecommendationPipeline:
         assert self._pairwise_reranker is not None
         top_k = min(self._rerank_top_k, len(scored))
         _notify(progress, "rerank", status="start", total=top_k)
-        reranked: list[
-            tuple[float, float, SearchHit, CompatibilityScore]
-        ] = []
-        failed = 0
-        for position, (
-            final_score,
-            retrieval,
-            candidate,
-            compatibility,
-        ) in enumerate(scored[:top_k], start=1):
-            _notify(
-                progress,
-                "rerank",
-                status="progress",
-                current=position,
-                total=top_k,
-                product_name=str(candidate.product.get("name", "")),
-            )
+        completed = 0
+        progress_lock = threading.Lock()
+
+        def judge(
+            entry: tuple[float, float, SearchHit, CompatibilityScore],
+        ) -> tuple[float, float, SearchHit, CompatibilityScore, bool]:
+            nonlocal completed
+            final_score, retrieval, candidate, compatibility = entry
             try:
                 judgment = self._pairwise_reranker.score_pair(
                     intent=intent,
@@ -582,24 +586,45 @@ class RecommendationPipeline:
                     candidate.product_id,
                     exc_info=True,
                 )
-                failed += 1
-                reranked.append(
-                    (final_score, retrieval, candidate, compatibility)
+                outcome = (
+                    final_score,
+                    retrieval,
+                    candidate,
+                    compatibility,
+                    True,
                 )
-                continue
-            updated = replace(
-                compatibility,
-                total=_clamp(float(judgment.compatibility)),
-            )
-            reranked.append(
-                (
+            else:
+                updated = replace(
+                    compatibility,
+                    total=_clamp(float(judgment.compatibility)),
+                )
+                outcome = (
                     RETRIEVAL_WEIGHT * retrieval
                     + COMPATIBILITY_WEIGHT * updated.total,
                     retrieval,
                     candidate,
                     updated,
+                    False,
                 )
-            )
+            with progress_lock:
+                completed += 1
+                _notify(
+                    progress,
+                    "rerank",
+                    status="progress",
+                    current=completed,
+                    total=top_k,
+                    product_name=str(
+                        candidate.product.get("name", "")
+                    ),
+                )
+            return outcome
+
+        workers = max(1, min(self._rerank_concurrency, top_k))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            judged = list(executor.map(judge, scored[:top_k]))
+        failed = sum(1 for item in judged if item[4])
+        reranked = [item[:4] for item in judged]
         reranked.extend(scored[top_k:])
         reranked.sort(key=lambda item: (-item[0], item[2].product_id))
         _notify(
