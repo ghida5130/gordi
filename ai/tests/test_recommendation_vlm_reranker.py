@@ -211,6 +211,66 @@ def test_pipeline_keeps_rule_score_when_judgment_fails() -> None:
     assert [result.product_id for result in results] == [1, 2, 3]
 
 
+def test_pipeline_reports_progress_stages_in_order() -> None:
+    reranker = StaticReranker({1: 0.9, 2: 0.8})
+    pipeline = RecommendationPipeline(
+        Retriever(hits(3)),
+        pairwise_reranker=reranker,
+        rerank_top_k=2,
+    )
+    events: list[tuple[str, dict]] = []
+
+    pipeline.recommend(
+        text="기본 상의",
+        image=None,
+        mime_type=None,
+        filters=SearchFilters(gender="MALE"),
+        result_limit=3,
+        progress=lambda stage, detail: events.append((stage, detail)),
+    )
+
+    stages = [
+        (stage, detail.get("status")) for stage, detail in events
+    ]
+    assert stages == [
+        ("image_attributes", "skipped"),
+        ("retrieval", "start"),
+        ("retrieval", "done"),
+        ("scoring", "done"),
+        ("rerank", "start"),
+        ("rerank", "progress"),
+        ("rerank", "progress"),
+        ("rerank", "done"),
+        ("reasons", "start"),
+        ("reasons", "done"),
+    ]
+    rerank_progress = [
+        detail
+        for stage, detail in events
+        if stage == "rerank" and detail.get("status") == "progress"
+    ]
+    assert [item["current"] for item in rerank_progress] == [1, 2]
+    assert all(item["total"] == 2 for item in rerank_progress)
+
+
+def test_pipeline_progress_callback_errors_do_not_break_results() -> None:
+    pipeline = RecommendationPipeline(Retriever(hits(2)))
+
+    def broken(stage: str, detail: dict) -> None:
+        raise RuntimeError("observer down")
+
+    results = pipeline.recommend(
+        text="기본 상의",
+        image=None,
+        mime_type=None,
+        filters=SearchFilters(gender="MALE"),
+        result_limit=2,
+        progress=broken,
+    )
+
+    assert len(results) == 2
+
+
 def test_pipeline_rejects_invalid_rerank_top_k() -> None:
     with pytest.raises(
         RecommendationPipelineError,

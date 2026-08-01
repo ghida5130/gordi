@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,13 @@ class FakePipeline:
 
     def recommend(self, **kwargs: Any) -> list[RecommendationResult]:
         self.calls.append(kwargs)
+        progress = kwargs.get("progress")
+        if progress is not None:
+            progress("retrieval", {"status": "start"})
+            progress(
+                "rerank",
+                {"status": "progress", "current": 1, "total": 5},
+            )
         return [
             RecommendationResult(
                 product_id=12,
@@ -130,6 +138,65 @@ def test_demo_upload_runs_same_recommendation_pipeline(
     assert demo_pipeline.calls[0]["text"] == "여름 캐주얼 반팔"
     assert demo_pipeline.calls[0]["mime_type"] == "image/jpeg"
     assert demo_pipeline.calls[0]["candidate_limit"] == 50
+
+
+def test_demo_stream_emits_progress_then_result(
+    demo_pipeline: FakePipeline,
+) -> None:
+    with client.stream(
+        "POST",
+        "/api/v1/demo/recommendations/stream",
+        data={"text": "여름 캐주얼 반팔", "gender": "MALE"},
+    ) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith(
+            "application/x-ndjson"
+        )
+        events = [
+            json.loads(line)
+            for line in response.iter_lines()
+            if line.strip()
+        ]
+
+    assert [event["event"] for event in events] == [
+        "progress",
+        "progress",
+        "result",
+    ]
+    assert events[0]["stage"] == "retrieval"
+    assert events[1]["detail"]["current"] == 1
+    result = events[-1]["data"]
+    assert result["indexVersion"] == "c" * 64
+    assert result["results"][0]["productId"] == 12
+    assert demo_pipeline.calls[0]["text"] == "여름 캐주얼 반팔"
+
+
+def test_demo_stream_reports_pipeline_error_as_event(
+    demo_pipeline: FakePipeline,
+) -> None:
+    from app.recommendation.pipeline import (
+        RecommendationPipelineError,
+    )
+
+    def broken(**kwargs: Any) -> list[RecommendationResult]:
+        raise RecommendationPipelineError("index unavailable")
+
+    demo_pipeline.recommend = broken  # type: ignore[method-assign]
+
+    with client.stream(
+        "POST",
+        "/api/v1/demo/recommendations/stream",
+        data={"text": "여름 캐주얼 반팔", "gender": "MALE"},
+    ) as response:
+        events = [
+            json.loads(line)
+            for line in response.iter_lines()
+            if line.strip()
+        ]
+
+    assert events == [
+        {"event": "error", "detail": "index unavailable"}
+    ]
 
 
 def test_demo_rejects_non_image_upload(

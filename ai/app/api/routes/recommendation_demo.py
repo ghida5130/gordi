@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import (
     APIRouter,
@@ -15,7 +18,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import HTMLResponse
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import (
@@ -117,26 +120,18 @@ def recommendation_demo_catalog_image(
     return FileResponse(matches[0])
 
 
-@api_router.post(
-    "",
-    response_model=DemoRecommendationResponse,
-    summary="로컬 추천 파이프라인 데모",
-)
-async def run_recommendation_demo(
-    text: Annotated[str | None, Form(max_length=2_000)] = None,
-    image: Annotated[UploadFile | None, File()] = None,
-    gender: Annotated[str, Form(pattern="^(MALE|FEMALE)$")] = "MALE",
-    category: Annotated[str | None, Form(max_length=100)] = None,
-    subcategory: Annotated[str | None, Form(max_length=100)] = None,
-    budget_min: Annotated[int, Form(ge=0)] = 0,
-    budget_max: Annotated[int | None, Form(ge=0)] = None,
-    candidate_limit: Annotated[int, Form(ge=1, le=200)] = 50,
-    result_limit: Annotated[int, Form(ge=1, le=50)] = 10,
-    pipeline: RecommendationPipeline = Depends(
-        require_recommendation_pipeline
-    ),
-    settings: Settings = Depends(get_settings),
-) -> DemoRecommendationResponse:
+async def _parse_demo_request(
+    *,
+    text: str | None,
+    image: UploadFile | None,
+    gender: str,
+    category: str | None,
+    subcategory: str | None,
+    budget_min: int,
+    budget_max: int | None,
+    candidate_limit: int,
+    result_limit: int,
+) -> dict[str, Any]:
     normalized_text = (text or "").strip() or None
     normalized_category = (category or "").strip() or None
     normalized_subcategory = (subcategory or "").strip() or None
@@ -182,29 +177,29 @@ async def run_recommendation_demo(
             detail="text or image is required",
         )
 
-    filters = SearchFilters(
-        gender=gender,
-        category=normalized_category,
-        subcategory=normalized_subcategory,
-        budget_min=budget_min,
-        budget_max=budget_max,
-    )
-    try:
-        results = await run_in_threadpool(
-            pipeline.recommend,
-            text=normalized_text,
-            image=image_bytes,
-            mime_type=image_mime_type,
-            filters=filters,
-            candidate_limit=candidate_limit,
-            result_limit=result_limit,
-        )
-    except (RecommendationPipelineError, VectorIndexError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
+    return {
+        "text": normalized_text,
+        "image": image_bytes,
+        "mime_type": image_mime_type,
+        "filters": SearchFilters(
+            gender=gender,
+            category=normalized_category,
+            subcategory=normalized_subcategory,
+            budget_min=budget_min,
+            budget_max=budget_max,
+        ),
+        "candidate_limit": candidate_limit,
+        "result_limit": result_limit,
+    }
 
+
+def _build_demo_response(
+    results: list[Any],
+    *,
+    pipeline: RecommendationPipeline,
+    settings: Settings,
+    candidate_limit: int,
+) -> DemoRecommendationResponse:
     return DemoRecommendationResponse(
         schema_version="1.0",
         index_version=pipeline.index_version,
@@ -231,6 +226,142 @@ async def run_recommendation_demo(
             )
             for result in results
         ],
+    )
+
+
+@api_router.post(
+    "",
+    response_model=DemoRecommendationResponse,
+    summary="로컬 추천 파이프라인 데모",
+)
+async def run_recommendation_demo(
+    text: Annotated[str | None, Form(max_length=2_000)] = None,
+    image: Annotated[UploadFile | None, File()] = None,
+    gender: Annotated[str, Form(pattern="^(MALE|FEMALE)$")] = "MALE",
+    category: Annotated[str | None, Form(max_length=100)] = None,
+    subcategory: Annotated[str | None, Form(max_length=100)] = None,
+    budget_min: Annotated[int, Form(ge=0)] = 0,
+    budget_max: Annotated[int | None, Form(ge=0)] = None,
+    candidate_limit: Annotated[int, Form(ge=1, le=200)] = 50,
+    result_limit: Annotated[int, Form(ge=1, le=50)] = 10,
+    pipeline: RecommendationPipeline = Depends(
+        require_recommendation_pipeline
+    ),
+    settings: Settings = Depends(get_settings),
+) -> DemoRecommendationResponse:
+    request = await _parse_demo_request(
+        text=text,
+        image=image,
+        gender=gender,
+        category=category,
+        subcategory=subcategory,
+        budget_min=budget_min,
+        budget_max=budget_max,
+        candidate_limit=candidate_limit,
+        result_limit=result_limit,
+    )
+    try:
+        results = await run_in_threadpool(
+            pipeline.recommend,
+            **request,
+        )
+    except (RecommendationPipelineError, VectorIndexError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    return _build_demo_response(
+        results,
+        pipeline=pipeline,
+        settings=settings,
+        candidate_limit=candidate_limit,
+    )
+
+
+@api_router.post(
+    "/stream",
+    summary="로컬 추천 파이프라인 데모 (NDJSON 진행 이벤트 스트림)",
+)
+async def run_recommendation_demo_stream(
+    text: Annotated[str | None, Form(max_length=2_000)] = None,
+    image: Annotated[UploadFile | None, File()] = None,
+    gender: Annotated[str, Form(pattern="^(MALE|FEMALE)$")] = "MALE",
+    category: Annotated[str | None, Form(max_length=100)] = None,
+    subcategory: Annotated[str | None, Form(max_length=100)] = None,
+    budget_min: Annotated[int, Form(ge=0)] = 0,
+    budget_max: Annotated[int | None, Form(ge=0)] = None,
+    candidate_limit: Annotated[int, Form(ge=1, le=200)] = 50,
+    result_limit: Annotated[int, Form(ge=1, le=50)] = 10,
+    pipeline: RecommendationPipeline = Depends(
+        require_recommendation_pipeline
+    ),
+    settings: Settings = Depends(get_settings),
+) -> StreamingResponse:
+    request = await _parse_demo_request(
+        text=text,
+        image=image,
+        gender=gender,
+        category=category,
+        subcategory=subcategory,
+        budget_min=budget_min,
+        budget_max=budget_max,
+        candidate_limit=candidate_limit,
+        result_limit=result_limit,
+    )
+    queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+    loop = asyncio.get_running_loop()
+
+    def report_progress(stage: str, detail: dict[str, Any]) -> None:
+        loop.call_soon_threadsafe(
+            queue.put_nowait,
+            {"event": "progress", "stage": stage, "detail": detail},
+        )
+
+    async def _run_pipeline() -> None:
+        try:
+            results = await run_in_threadpool(
+                pipeline.recommend,
+                progress=report_progress,
+                **request,
+            )
+        except (RecommendationPipelineError, VectorIndexError) as exc:
+            await queue.put({"event": "error", "detail": str(exc)})
+        except Exception:
+            await queue.put(
+                {"event": "error", "detail": "internal error"}
+            )
+        else:
+            response = _build_demo_response(
+                results,
+                pipeline=pipeline,
+                settings=settings,
+                candidate_limit=candidate_limit,
+            )
+            await queue.put(
+                {
+                    "event": "result",
+                    "data": response.model_dump(by_alias=True),
+                }
+            )
+        finally:
+            await queue.put(None)
+
+    async def _events() -> AsyncIterator[str]:
+        task = asyncio.create_task(_run_pipeline())
+        try:
+            while True:
+                item = await queue.get()
+                if item is None:
+                    break
+                yield json.dumps(item, ensure_ascii=False) + "\n"
+        finally:
+            task.cancel()
+
+    return StreamingResponse(
+        _events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache"},
     )
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, replace
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from app.recommendation.vector_index import (
     DEFAULT_RETRIEVAL_LIMIT,
@@ -136,6 +136,23 @@ _SUBCATEGORY_STYLES = {
 
 
 _logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[str, dict[str, Any]], None]
+
+
+def _notify(
+    progress: ProgressCallback | None,
+    stage: str,
+    **detail: Any,
+) -> None:
+    if progress is None:
+        return
+    try:
+        progress(stage, detail)
+    except Exception:
+        # Progress reporting is observability only; it must never
+        # break the recommendation itself.
+        _logger.warning("progress callback failed", exc_info=True)
 
 
 class RecommendationPipelineError(RuntimeError):
@@ -385,6 +402,7 @@ class RecommendationPipeline:
         filters: SearchFilters,
         candidate_limit: int = DEFAULT_RETRIEVAL_LIMIT,
         result_limit: int = DEFAULT_RESULT_LIMIT,
+        progress: ProgressCallback | None = None,
     ) -> list[RecommendationResult]:
         if result_limit <= 0 or result_limit > MAX_RESULT_LIMIT:
             raise RecommendationPipelineError(
@@ -400,6 +418,7 @@ class RecommendationPipeline:
             and mime_type is not None
             and self._image_intent_extractor is not None
         ):
+            _notify(progress, "image_attributes", status="start")
             try:
                 image_tags = self._image_intent_extractor.extract(
                     image=image,
@@ -413,17 +432,36 @@ class RecommendationPipeline:
                     "continuing with text-only intent",
                     exc_info=True,
                 )
+                _notify(progress, "image_attributes", status="failed")
             else:
                 intent = replace(
                     intent,
                     tags=intent.tags.merge(image_tags),
                 )
+                _notify(
+                    progress,
+                    "image_attributes",
+                    status="done",
+                    colors=len(image_tags.colors),
+                    seasons=len(image_tags.seasons),
+                    styles=len(image_tags.styles),
+                    patterns=len(image_tags.patterns),
+                )
+        else:
+            _notify(progress, "image_attributes", status="skipped")
+        _notify(progress, "retrieval", status="start")
         candidates = self._retriever.retrieve(
             text=text,
             image=image,
             mime_type=mime_type,
             filters=filters,
             limit=candidate_limit,
+        )
+        _notify(
+            progress,
+            "retrieval",
+            status="done",
+            candidates=len(candidates),
         )
         scored: list[
             tuple[float, float, SearchHit, CompatibilityScore]
@@ -447,14 +485,29 @@ class RecommendationPipeline:
                 )
             )
         scored.sort(key=lambda item: (-item[0], item[2].product_id))
+        _notify(
+            progress,
+            "scoring",
+            status="done",
+            candidates=len(scored),
+        )
         if self._pairwise_reranker is not None:
             scored = self._rerank_pairwise(
                 scored,
                 intent=intent,
                 image=image,
                 mime_type=mime_type,
+                progress=progress,
             )
+        else:
+            _notify(progress, "rerank", status="skipped")
 
+        _notify(
+            progress,
+            "reasons",
+            status="start",
+            total=min(result_limit, len(scored)),
+        )
         results: list[RecommendationResult] = []
         for rank, (
             final_score,
@@ -480,6 +533,7 @@ class RecommendationPipeline:
                     product=candidate.product,
                 )
             )
+        _notify(progress, "reasons", status="done", total=len(results))
         return results
 
     def _rerank_pairwise(
@@ -489,15 +543,29 @@ class RecommendationPipeline:
         intent: RecommendationIntent,
         image: bytes | None,
         mime_type: str | None,
+        progress: ProgressCallback | None = None,
     ) -> list[tuple[float, float, SearchHit, CompatibilityScore]]:
         assert self._pairwise_reranker is not None
         top_k = min(self._rerank_top_k, len(scored))
+        _notify(progress, "rerank", status="start", total=top_k)
         reranked: list[
             tuple[float, float, SearchHit, CompatibilityScore]
         ] = []
-        for final_score, retrieval, candidate, compatibility in scored[
-            :top_k
-        ]:
+        failed = 0
+        for position, (
+            final_score,
+            retrieval,
+            candidate,
+            compatibility,
+        ) in enumerate(scored[:top_k], start=1):
+            _notify(
+                progress,
+                "rerank",
+                status="progress",
+                current=position,
+                total=top_k,
+                product_name=str(candidate.product.get("name", "")),
+            )
             try:
                 judgment = self._pairwise_reranker.score_pair(
                     intent=intent,
@@ -514,6 +582,7 @@ class RecommendationPipeline:
                     candidate.product_id,
                     exc_info=True,
                 )
+                failed += 1
                 reranked.append(
                     (final_score, retrieval, candidate, compatibility)
                 )
@@ -533,6 +602,13 @@ class RecommendationPipeline:
             )
         reranked.extend(scored[top_k:])
         reranked.sort(key=lambda item: (-item[0], item[2].product_id))
+        _notify(
+            progress,
+            "rerank",
+            status="done",
+            total=top_k,
+            failed=failed,
+        )
         return reranked
 
 

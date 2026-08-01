@@ -208,6 +208,66 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ---------- live pipeline timeline ---------- */
+  .pipeline-live {
+    align-items: stretch; justify-content: flex-start;
+    max-width: 460px; margin: 0 auto; width: 100%;
+    text-align: left; padding: 32px 16px;
+  }
+  .pipe-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px; color: var(--text);
+  }
+  .pipe-head .elapsed {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px; color: var(--accent);
+  }
+  .pipe-steps { list-style: none; margin: 0; padding: 0; }
+  .pipe-steps li {
+    position: relative; display: flex; align-items: center; gap: 10px;
+    padding: 9px 0 9px 4px; font-size: 13.5px; color: var(--text-faint);
+  }
+  .pipe-steps li + li::before {
+    content: ""; position: absolute; left: 11px; top: -8px;
+    width: 2px; height: 16px; background: var(--line);
+  }
+  .pipe-steps .dot {
+    flex: 0 0 16px; height: 16px; border-radius: 999px;
+    border: 2px solid var(--line); background: var(--panel);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; transition: all .2s;
+  }
+  .pipe-steps .label { flex: 1; }
+  .pipe-steps .label small { color: var(--text-faint); font-size: 11px; }
+  .pipe-steps .detail {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11.5px; color: var(--text-faint);
+  }
+  .pipe-steps li.active { color: var(--text); }
+  .pipe-steps li.active .dot {
+    border-color: var(--accent);
+    border-top-color: transparent;
+    animation: spin .8s linear infinite;
+  }
+  .pipe-steps li.done { color: var(--text-dim); }
+  .pipe-steps li.done .dot {
+    border-color: var(--good); background: var(--good);
+  }
+  .pipe-steps li.done .dot::after { content: "✓"; }
+  .pipe-steps li.skipped { opacity: .45; }
+  .pipe-steps li.skipped .dot::after {
+    content: "–"; color: var(--text-faint);
+  }
+  .pipe-steps li.failed .dot {
+    border-color: var(--warn); background: var(--warn);
+  }
+  .pipe-steps li.failed .dot::after { content: "!"; }
+  .pipe-now {
+    margin: 12px 0 0; min-height: 18px; font-size: 12px;
+    color: var(--text-dim); overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .grid {
     display: grid; gap: 14px;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -383,10 +443,39 @@
         <div><strong>아직 실행 전입니다</strong><br>
           왼쪽에서 이미지나 설명을 입력하고 추천을 실행해 보세요.</div>
       </div>
-      <div id="state-loading" class="state" hidden>
-        <div class="spinner" aria-hidden="true"></div>
-        <div><strong>파이프라인 실행 중…</strong><br>
-          임베딩 → 필터 → 유사도 검색 → 궁합 재정렬 → 이유 생성</div>
+      <div id="state-loading" class="state pipeline-live" hidden>
+        <div class="pipe-head">
+          <strong>파이프라인 실행 중</strong>
+          <span id="elapsed" class="elapsed">0.0s</span>
+        </div>
+        <ol id="pipe-steps" class="pipe-steps">
+          <li data-step="image_attributes">
+            <span class="dot"></span>
+            <span class="label">이미지 속성 추출 <small>VLM</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="retrieval">
+            <span class="dot"></span>
+            <span class="label">쿼리 임베딩 · 후보 검색 <small>Gemini + cosine</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="scoring">
+            <span class="dot"></span>
+            <span class="label">규칙 기반 궁합 점수 <small>color/season/style/pattern</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="rerank">
+            <span class="dot"></span>
+            <span class="label">VLM 코디 궁합 판정 <small>pairwise</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="reasons">
+            <span class="dot"></span>
+            <span class="label">추천 이유 생성</span>
+            <span class="detail"></span>
+          </li>
+        </ol>
+        <p id="pipe-now" class="pipe-now"></p>
       </div>
       <div id="state-empty" class="state" hidden>
         <div class="glyph">🫥</div>
@@ -408,6 +497,7 @@
   "use strict";
 
   const API_URL = "/api/v1/demo/recommendations";
+  const STREAM_URL = `${API_URL}/stream`;
   const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
   const SUBCATEGORIES = {
@@ -456,6 +546,80 @@
 
   let imageFile = null;
   let controller = null;
+  let elapsedTimer = null;
+
+  /* ---------- live pipeline timeline ---------- */
+
+  const stepNode = (step) =>
+    document.querySelector(`#pipe-steps li[data-step="${step}"]`);
+
+  function resetSteps() {
+    for (const li of document.querySelectorAll("#pipe-steps li")) {
+      li.className = "";
+      li.querySelector(".detail").textContent = "";
+    }
+    $("pipe-now").textContent = "";
+  }
+
+  function startElapsed() {
+    const started = performance.now();
+    $("elapsed").textContent = "0.0s";
+    elapsedTimer = setInterval(() => {
+      $("elapsed").textContent =
+        `${((performance.now() - started) / 1000).toFixed(1)}s`;
+    }, 100);
+    return started;
+  }
+
+  function stopElapsed() {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
+
+  function applyProgress(stage, detail) {
+    const li = stepNode(stage);
+    if (!li) return;
+    const status = detail.status;
+    const detailBox = li.querySelector(".detail");
+    if (status === "start") {
+      li.className = "active";
+      if (stage === "rerank" && detail.total) {
+        detailBox.textContent = `0/${detail.total}`;
+      }
+    } else if (status === "progress") {
+      li.className = "active";
+      if (stage === "rerank") {
+        detailBox.textContent = `${detail.current}/${detail.total}`;
+        $("pipe-now").textContent =
+          `판정 중: ${detail.product_name ?? ""}`;
+      }
+    } else if (status === "done") {
+      li.className = "done";
+      if (stage === "retrieval" && detail.candidates != null) {
+        detailBox.textContent = `${detail.candidates}개`;
+      } else if (stage === "rerank") {
+        detailBox.textContent = detail.failed
+          ? `${detail.total}개 · 실패 ${detail.failed}`
+          : `${detail.total}개`;
+        $("pipe-now").textContent = "";
+      } else if (stage === "scoring" && detail.candidates != null) {
+        detailBox.textContent = `${detail.candidates}개`;
+      } else if (stage === "reasons" && detail.total != null) {
+        detailBox.textContent = `${detail.total}개`;
+      } else if (stage === "image_attributes") {
+        const tags =
+          (detail.colors ?? 0) + (detail.seasons ?? 0) +
+          (detail.styles ?? 0) + (detail.patterns ?? 0);
+        detailBox.textContent = `태그 ${tags}개`;
+      }
+    } else if (status === "skipped") {
+      li.className = "skipped";
+      detailBox.textContent = "생략";
+    } else if (status === "failed") {
+      li.className = "failed";
+      detailBox.textContent = "실패 · 계속 진행";
+    }
+  }
 
   /* ---------- state helpers ---------- */
 
@@ -675,16 +839,32 @@
     controller = new AbortController();
     runBtn.disabled = true;
     resultCount.textContent = "";
+    resetSteps();
     showState("loading");
-    const started = performance.now();
+    const started = startElapsed();
+
+    const finishWith = (payload) => {
+      const elapsed = ((performance.now() - started) / 1000).toFixed(1);
+      const results = payload.results ?? [];
+      runMeta.innerHTML =
+        `index <code>${(payload.indexVersion ?? "").slice(0, 12)}…</code>` +
+        ` · ${elapsed}s`;
+      if (!results.length) {
+        showState("empty");
+        return;
+      }
+      grid.replaceChildren(...results.map(renderCard));
+      resultCount.textContent =
+        `${results.length}개 · 후보 ${payload.candidateLimit}개 중`;
+      showGrid();
+    };
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(STREAM_URL, {
         method: "POST",
         body,
         signal: controller.signal,
       });
-      const elapsed = ((performance.now() - started) / 1000).toFixed(1);
 
       if (!response.ok) {
         let detail = `요청이 실패했습니다 (HTTP ${response.status})`;
@@ -701,25 +881,45 @@
         return;
       }
 
-      const payload = await response.json();
-      const results = payload.results ?? [];
-      runMeta.innerHTML =
-        `index <code>${(payload.indexVersion ?? "").slice(0, 12)}…</code>` +
-        ` · ${elapsed}s`;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
 
-      if (!results.length) {
-        showState("empty");
-        return;
+      const handleEvent = (message) => {
+        if (message.event === "progress") {
+          applyProgress(message.stage, message.detail ?? {});
+        } else if (message.event === "result") {
+          finished = true;
+          finishWith(message.data ?? {});
+        } else if (message.event === "error") {
+          finished = true;
+          showError(message.detail ?? "파이프라인 실행에 실패했습니다.");
+          showState("idle");
+        }
+      };
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newline;
+        while ((newline = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, newline).trim();
+          buffer = buffer.slice(newline + 1);
+          if (line) handleEvent(JSON.parse(line));
+        }
       }
-      grid.replaceChildren(...results.map(renderCard));
-      resultCount.textContent =
-        `${results.length}개 · 후보 ${payload.candidateLimit}개 중`;
-      showGrid();
+      if (!finished) {
+        showError("응답이 도중에 끊겼습니다. 컨테이너 로그를 확인해 주세요.");
+        showState("idle");
+      }
     } catch (error) {
       if (error.name === "AbortError") return;
       showError("서버에 연결하지 못했습니다. 컨테이너 로그를 확인해 주세요.");
       showState("idle");
     } finally {
+      stopElapsed();
       runBtn.disabled = false;
     }
   }
