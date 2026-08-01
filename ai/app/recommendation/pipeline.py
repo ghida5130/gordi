@@ -18,6 +18,8 @@ DEFAULT_RESULT_LIMIT = 10
 MAX_RESULT_LIMIT = 50
 RETRIEVAL_WEIGHT = 0.65
 COMPATIBILITY_WEIGHT = 0.35
+DEFAULT_RERANK_TOP_K = 20
+MAX_RERANK_TOP_K = 50
 
 _COLOR_KEYWORDS = {
     "BLACK": ("블랙", "검정", "검은", "black"),
@@ -218,6 +220,18 @@ class ImageIntentExtractor(Protocol):
         """Extract closed-vocabulary garment tags from a query image."""
 
 
+class PairwiseReranker(Protocol):
+    def score_pair(
+        self,
+        *,
+        intent: "RecommendationIntent",
+        query_image: bytes | None,
+        query_mime_type: str | None,
+        product: dict[str, Any],
+    ) -> Any:
+        """Return a judgment with a ``compatibility`` float in [0, 1]."""
+
+
 class RecommendationReasonGenerator(Protocol):
     def generate(
         self,
@@ -335,8 +349,14 @@ class RecommendationPipeline:
         compatibility_model: CompatibilityModel | None = None,
         reason_generator: RecommendationReasonGenerator | None = None,
         image_intent_extractor: ImageIntentExtractor | None = None,
+        pairwise_reranker: PairwiseReranker | None = None,
+        rerank_top_k: int = DEFAULT_RERANK_TOP_K,
         index_version: str = "0" * 64,
     ) -> None:
+        if rerank_top_k < 1 or rerank_top_k > MAX_RERANK_TOP_K:
+            raise RecommendationPipelineError(
+                f"rerank_top_k must be between 1 and {MAX_RERANK_TOP_K}"
+            )
         if len(index_version) != 64 or any(
             character not in "0123456789abcdef"
             for character in index_version.casefold()
@@ -353,6 +373,8 @@ class RecommendationPipeline:
             reason_generator or GroundedReasonGenerator()
         )
         self._image_intent_extractor = image_intent_extractor
+        self._pairwise_reranker = pairwise_reranker
+        self._rerank_top_k = rerank_top_k
 
     def recommend(
         self,
@@ -425,6 +447,13 @@ class RecommendationPipeline:
                 )
             )
         scored.sort(key=lambda item: (-item[0], item[2].product_id))
+        if self._pairwise_reranker is not None:
+            scored = self._rerank_pairwise(
+                scored,
+                intent=intent,
+                image=image,
+                mime_type=mime_type,
+            )
 
         results: list[RecommendationResult] = []
         for rank, (
@@ -452,6 +481,59 @@ class RecommendationPipeline:
                 )
             )
         return results
+
+    def _rerank_pairwise(
+        self,
+        scored: list[tuple[float, float, SearchHit, CompatibilityScore]],
+        *,
+        intent: RecommendationIntent,
+        image: bytes | None,
+        mime_type: str | None,
+    ) -> list[tuple[float, float, SearchHit, CompatibilityScore]]:
+        assert self._pairwise_reranker is not None
+        top_k = min(self._rerank_top_k, len(scored))
+        reranked: list[
+            tuple[float, float, SearchHit, CompatibilityScore]
+        ] = []
+        for final_score, retrieval, candidate, compatibility in scored[
+            :top_k
+        ]:
+            try:
+                judgment = self._pairwise_reranker.score_pair(
+                    intent=intent,
+                    query_image=image,
+                    query_mime_type=mime_type,
+                    product=candidate.product,
+                )
+            except Exception:
+                # A failed judgment keeps the rule-based score so the
+                # reranker only ever refines, never blocks, results.
+                _logger.warning(
+                    "pairwise rerank failed for product %s; "
+                    "keeping rule-based score",
+                    candidate.product_id,
+                    exc_info=True,
+                )
+                reranked.append(
+                    (final_score, retrieval, candidate, compatibility)
+                )
+                continue
+            updated = replace(
+                compatibility,
+                total=_clamp(float(judgment.compatibility)),
+            )
+            reranked.append(
+                (
+                    RETRIEVAL_WEIGHT * retrieval
+                    + COMPATIBILITY_WEIGHT * updated.total,
+                    retrieval,
+                    candidate,
+                    updated,
+                )
+            )
+        reranked.extend(scored[top_k:])
+        reranked.sort(key=lambda item: (-item[0], item[2].product_id))
+        return reranked
 
 
 def parse_recommendation_intent(

@@ -19,10 +19,14 @@ from app.recommendation.vector_index import (
     CatalogVectorIndex,
     VectorIndexError,
 )
+from app.recommendation.image_fetcher import QueryImageFetcher
 from app.recommendation.vlm import (
     OpenAICompatibleVLMClient,
     VLMError,
     VLMSettings,
+)
+from app.recommendation.vlm_reranker import (
+    VLMPairwiseCompatibilityModel,
 )
 
 
@@ -105,8 +109,18 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
         image_intent_extractor = VLMImageAttributeExtractor(
             get_vlm_client()
         )
+    pairwise_reranker = None
+    if settings.recommendation_vlm_rerank_enabled:
+        pairwise_reranker = VLMPairwiseCompatibilityModel(
+            get_vlm_client(),
+            product_image_fetcher=QueryImageFetcher.create(
+                settings.recommendation_image_allowed_hosts
+            ),
+        )
     return RecommendationPipeline(
         retriever,
         image_intent_extractor=image_intent_extractor,
+        pairwise_reranker=pairwise_reranker,
+        rerank_top_k=settings.recommendation_vlm_rerank_top_k,
         index_version=index.snapshot_sha256,
     )

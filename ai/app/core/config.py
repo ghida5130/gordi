@@ -52,6 +52,12 @@ class Settings(BaseSettings):
         le=120.0,
     )
     recommendation_image_attributes_enabled: bool = False
+    recommendation_vlm_rerank_enabled: bool = False
+    recommendation_vlm_rerank_top_k: int = Field(
+        default=20,
+        ge=1,
+        le=50,
+    )
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )
