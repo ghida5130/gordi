@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/useUserStore';
+import bgImage from '@/assets/background-placeholder.jpg';
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const MainPage = () => {
       
       {/* 1. Hero Section */}
       <section className="relative w-full h-screen flex flex-col justify-center items-center text-center bg-gray-200 bg-cover bg-center"
-        style={{ backgroundImage: "url('/background-placeholder.jpg')" }} // 실제 배경 이미지 경로로 수정 필요
+        style={{ backgroundImage: `url(${bgImage})` }} // 실제 배경 이미지 경로로 수정 필요
       >
         <div className="absolute inset-0 bg-black/20"></div>
 
@@ -47,22 +48,22 @@ const MainPage = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gray-50 p-8 rounded-2xl">
-              <div className="mb-4 text-2xl">👤</div>
+              <div className="mb-4 text-2xl"></div>
               <h3 className="font-bold text-lg mb-3">내 체형 맞춤 아바타</h3>
               <p className="text-sm text-gray-600">키, 체중, 어깨 너비 등 간단한 체형 정보를 입력하면 나를 꼭 닮은 아바타가 만들어져요.</p>
             </div>
             <div className="bg-gray-50 p-8 rounded-2xl">
-              <div className="mb-4 text-2xl">✨</div>
+              <div className="mb-4 text-2xl"></div>
               <h3 className="font-bold text-lg mb-3">AI가 골라주는 옷</h3>
               <p className="text-sm text-gray-600">내 체형과 스타일 취향을 AI가 분석해 딱 맞는 옷 리스트를 큐레이션해줘요.</p>
             </div>
             <div className="bg-gray-50 p-8 rounded-2xl">
-              <div className="mb-4 text-2xl">👥</div>
+              <div className="mb-4 text-2xl"></div>
               <h3 className="font-bold text-lg mb-3">친구들과 티어 매기기</h3>
               <p className="text-sm text-gray-600">친구를 초대해 AI 추천 옷들을 함께 S/A/B/C 티어로 평가해보세요.</p>
             </div>
             <div className="bg-gray-50 p-8 rounded-2xl">
-              <div className="mb-4 text-2xl">👕</div>
+              <div className="mb-4 text-2xl"></div>
               <h3 className="font-bold text-lg mb-3">아바타에 직접 입혀보기</h3>
               <p className="text-sm text-gray-600">티어를 정한 옷을 내 아바타에 실제로 입혀보며 전체 코디를 완성해보세요.</p>
             </div>
