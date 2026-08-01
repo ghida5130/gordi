@@ -95,8 +95,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers("/api/v1/recommendation-options").hasRole("USER")
                         .requestMatchers("/api/v1/recommendations/**").hasRole("USER")
-                        .requestMatchers("/api/v1/products/**").hasRole("USER")
-                        .requestMatchers("/api/v1/candidates/**").hasRole("USER")
+                        .requestMatchers("/api/v1/products/**").authenticated()
+                        .requestMatchers("/api/v1/candidates/**").authenticated()
                         .requestMatchers("/api/v1/avatars/**").hasRole("USER")
                         .requestMatchers(
                                 "/api/swagger-ui.html",
