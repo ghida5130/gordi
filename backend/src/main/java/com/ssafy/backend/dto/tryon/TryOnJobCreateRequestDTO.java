@@ -40,11 +40,13 @@ public record TryOnJobCreateRequestDTO(
     /**
      * 착장 구성 항목.
      * ROOM 컨텍스트는 roomItemId 로, SOLO 컨텍스트는 productId 로 지정한다.
+     * sizeName 은 사용자가 고른 사이즈이며, 서버가 상품 실측 표에서 해당 행을 찾아 검증한다.
      */
     public record Item(
             Long roomItemId,
             Long productId,
-            @NotBlank String slot
+            @NotBlank String slot,
+            @NotBlank @Size(max = 50) String sizeName
     ) {
     }
 

@@ -8,6 +8,8 @@ import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
 import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Product;
+import com.ssafy.backend.domain.ProductBottomSize;
+import com.ssafy.backend.domain.ProductTopSize;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
@@ -24,7 +26,9 @@ import com.ssafy.backend.dto.tryon.TryOnJobRetryResponseDTO;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.AvatarRepository;
 import com.ssafy.backend.repository.IdempotencyRecordRepository;
+import com.ssafy.backend.repository.ProductBottomSizeRepository;
 import com.ssafy.backend.repository.ProductRepository;
+import com.ssafy.backend.repository.ProductTopSizeRepository;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
@@ -39,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import tools.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +67,7 @@ class TryOnServiceTest {
     private static final String ROOM_CODE = "A7K9Q2";
     private static final long ROOM_VERSION = 17L;
     private static final Long GENERATED_JOB_ID = 71L;
+    private static final String SIZE_NAME = "M";
     private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 7, 23, 10, 20);
 
     @Mock
@@ -74,6 +80,10 @@ class TryOnServiceTest {
     private RoomItemRepository roomItemRepository;
     @Mock
     private ProductRepository productRepository;
+    @Mock
+    private ProductTopSizeRepository productTopSizeRepository;
+    @Mock
+    private ProductBottomSizeRepository productBottomSizeRepository;
     @Mock
     private AvatarRepository avatarRepository;
     @Mock
@@ -95,6 +105,8 @@ class TryOnServiceTest {
                 roomRepository,
                 roomItemRepository,
                 productRepository,
+                productTopSizeRepository,
+                productBottomSizeRepository,
                 avatarRepository,
                 roomAuthResolver,
                 // 해시 계산은 실제 구현을 사용하고 저장소만 대체한다.
@@ -233,6 +245,7 @@ class TryOnServiceTest {
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
             when(tryOnJobRepository.findLatestSucceededByRequestHash(anyString())).thenReturn(Optional.empty());
             when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
                     .thenReturn(0L);
@@ -255,6 +268,117 @@ class TryOnServiceTest {
         }
 
         @Test
+        void 상의는_선택한_사이즈의_실측을_보낸다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
+            when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
+                    .thenReturn(0L);
+            stubJobSave();
+
+            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+
+            TryOnGenerationRequest.SizeProfile sent = capturedItem().sizeProfile();
+            assertThat(sent.sizeName()).isEqualTo(SIZE_NAME);
+            assertThat(sent.totalLength()).isEqualByComparingTo("72.00");
+            assertThat(sent.shoulderWidth()).isEqualByComparingTo("52.00");
+            assertThat(sent.chestWidth()).isEqualByComparingTo("60.00");
+            assertThat(sent.sleeveLength()).isEqualByComparingTo("61.00");
+            // 상의에는 하의 항목이 실리지 않는다.
+            assertThat(sent.waistWidth()).isNull();
+            assertThat(sent.rise()).isNull();
+        }
+
+        @Test
+        void 하의는_하의_실측_항목을_보낸다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(productRepository.findById(600L)).thenReturn(Optional.of(product(600L)));
+            when(productBottomSizeRepository.findByProductIdAndSizeName(600L, SIZE_NAME))
+                    .thenReturn(Optional.of(bottomSize(600L)));
+            when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
+                    .thenReturn(0L);
+            stubJobSave();
+
+            tryOnService.create(soloRequest(600L, "BOTTOM"), null, authentication);
+
+            TryOnGenerationRequest.SizeProfile sent = capturedItem().sizeProfile();
+            assertThat(sent.sizeName()).isEqualTo(SIZE_NAME);
+            assertThat(sent.totalLength()).isEqualByComparingTo("102.00");
+            assertThat(sent.waistWidth()).isEqualByComparingTo("30.25");
+            assertThat(sent.hipWidth()).isEqualByComparingTo("41.75");
+            assertThat(sent.thighWidth()).isEqualByComparingTo("26.63");
+            assertThat(sent.rise()).isEqualByComparingTo("27.50");
+            // 하의에는 상의 항목이 실리지 않는다.
+            assertThat(sent.shoulderWidth()).isNull();
+            assertThat(sent.sleeveLength()).isNull();
+        }
+
+        @Test
+        void 없는_사이즈는_선택_가능한_사이즈를_알려주며_BAD_REQUEST() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            when(productTopSizeRepository.findByProductIdAndSizeName(500L, SIZE_NAME))
+                    .thenReturn(Optional.empty());
+            when(productTopSizeRepository.findAllByProductId(500L))
+                    .thenReturn(List.of(topSize(500L)));
+
+            TryOnJobCreateRequestDTO request = soloRequest(500L, "TOP");
+
+            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+                    .isInstanceOf(ApiException.class)
+                    .satisfies(thrown -> {
+                        ApiException exception = (ApiException) thrown;
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+                        assertThat(exception.getDetails()).containsEntry("availableSizes", List.of(SIZE_NAME));
+                    });
+
+            verify(tryOnGenerationClient, never()).submit(any());
+        }
+
+        @Test
+        void 아바타_구간이_실제_cm_kg_범위로_전달된다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
+            when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
+                    .thenReturn(0L);
+            stubJobSave();
+
+            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+
+            TryOnGenerationRequest.Avatar sent = capturedRequest().avatar();
+            assertThat(sent.gender()).isEqualTo("FEMALE");
+            assertThat(sent.bodyType()).isEqualTo("STANDARD");
+            // heightId=3 -> 160~170, weightId=2 -> 50~60
+            assertThat(sent.minHeight()).isEqualTo(160);
+            assertThat(sent.maxHeight()).isEqualTo(170);
+            assertThat(sent.minWeight()).isEqualTo(50);
+            assertThat(sent.maxWeight()).isEqualTo(60);
+        }
+
+        @Test
+        void SOLO_컨텍스트는_roomId와_boardVersion이_비어_전달된다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
+            when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
+                    .thenReturn(0L);
+            stubJobSave();
+
+            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+
+            TryOnGenerationRequest.Context sent = capturedRequest().context();
+            assertThat(sent.type()).isEqualTo(TryOnContextType.SOLO.name());
+            assertThat(sent.roomId()).isNull();
+            assertThat(sent.boardVersion()).isNull();
+        }
+
+        @Test
         void 동일_구성_성공_Job이_있으면_재생성하지_않고_결과를_재사용한다() {
             TryOnJob cached = soloJob(OTHER_MEMBER_ID);
             cached.markSucceeded("https://cdn/cached.webp", 1024, 1536, List.of("핏"),
@@ -263,6 +387,7 @@ class TryOnServiceTest {
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
             when(tryOnJobRepository.findLatestSucceededByRequestHash(anyString()))
                     .thenReturn(Optional.of(cached));
             when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
@@ -321,6 +446,7 @@ class TryOnServiceTest {
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
+            stubTopSize(500L);
             when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
                     .thenReturn(20L);
 
@@ -357,8 +483,8 @@ class TryOnServiceTest {
                     new TryOnJobCreateRequestDTO.Context(TryOnContextType.SOLO.name(), null, null),
                     AVATAR_ID,
                     List.of(
-                            new TryOnJobCreateRequestDTO.Item(null, 500L, "TOP"),
-                            new TryOnJobCreateRequestDTO.Item(null, 501L, "TOP")
+                            new TryOnJobCreateRequestDTO.Item(null, 500L, "TOP", "M"),
+                            new TryOnJobCreateRequestDTO.Item(null, 501L, "TOP", "M")
                     ),
                     null,
                     null
@@ -375,7 +501,7 @@ class TryOnServiceTest {
             TryOnJobCreateRequestDTO request = new TryOnJobCreateRequestDTO(
                     new TryOnJobCreateRequestDTO.Context("PARTY", null, null),
                     AVATAR_ID,
-                    List.of(new TryOnJobCreateRequestDTO.Item(null, 500L, "TOP")),
+                    List.of(new TryOnJobCreateRequestDTO.Item(null, 500L, "TOP", "M")),
                     null,
                     null
             );
@@ -418,6 +544,7 @@ class TryOnServiceTest {
                     .thenReturn(0L);
             when(tryOnJobItemRepository.findAllByTryOnJobIdWithProduct(GENERATED_JOB_ID))
                     .thenReturn(List.of(jobItem(source, 500L, "TOP")));
+            stubTopSize(500L);
             stubJobSave(GENERATED_JOB_ID + 1);
 
             TryOnJobRetryResponseDTO response = tryOnService.retry(GENERATED_JOB_ID, null, authentication);
@@ -692,6 +819,7 @@ class TryOnServiceTest {
                 .tryOnJob(job)
                 .product(product(productId))
                 .slot(slot)
+                .sizeName(SIZE_NAME)
                 .position(0)
                 .build();
     }
@@ -700,7 +828,7 @@ class TryOnServiceTest {
         return new TryOnJobCreateRequestDTO(
                 new TryOnJobCreateRequestDTO.Context(TryOnContextType.SOLO.name(), null, null),
                 AVATAR_ID,
-                List.of(new TryOnJobCreateRequestDTO.Item(null, productId, slot)),
+                List.of(new TryOnJobCreateRequestDTO.Item(null, productId, slot, SIZE_NAME)),
                 new TryOnJobCreateRequestDTO.WearOptions("UNTUCKED", "OPEN", "NORMAL"),
                 null
         );
@@ -711,9 +839,51 @@ class TryOnServiceTest {
                 new TryOnJobCreateRequestDTO.Context(
                         TryOnContextType.ROOM.name(), ROOM_CODE, boardVersion),
                 AVATAR_ID,
-                List.of(new TryOnJobCreateRequestDTO.Item(roomItemId, null, slot)),
+                List.of(new TryOnJobCreateRequestDTO.Item(roomItemId, null, slot, SIZE_NAME)),
                 null,
                 null
         );
+    }
+
+    private ProductTopSize topSize(Long productId) {
+        return ProductTopSize.builder()
+                .id(1L)
+                .product(product(productId))
+                .sizeName(SIZE_NAME)
+                .totalLength(new BigDecimal("72.00"))
+                .shoulderWidth(new BigDecimal("52.00"))
+                .chestWidth(new BigDecimal("60.00"))
+                .sleeveLength(new BigDecimal("61.00"))
+                .build();
+    }
+
+    private ProductBottomSize bottomSize(Long productId) {
+        return ProductBottomSize.builder()
+                .id(2L)
+                .product(product(productId))
+                .sizeName(SIZE_NAME)
+                .totalLength(new BigDecimal("102.00"))
+                .waistWidth(new BigDecimal("30.25"))
+                .hipWidth(new BigDecimal("41.75"))
+                .thighWidth(new BigDecimal("26.63"))
+                .rise(new BigDecimal("27.50"))
+                .build();
+    }
+
+    // 상의 사이즈 조회를 통과시킨다. slot=TOP 인 요청은 모두 이 스텁이 필요하다.
+    private void stubTopSize(Long productId) {
+        when(productTopSizeRepository.findByProductIdAndSizeName(productId, SIZE_NAME))
+                .thenReturn(Optional.of(topSize(productId)));
+    }
+
+    private TryOnGenerationRequest capturedRequest() {
+        ArgumentCaptor<TryOnGenerationRequest> submitted =
+                ArgumentCaptor.forClass(TryOnGenerationRequest.class);
+        verify(tryOnGenerationClient).submit(submitted.capture());
+        return submitted.getValue();
+    }
+
+    private TryOnGenerationRequest.Item capturedItem() {
+        return capturedRequest().items().getFirst();
     }
 }

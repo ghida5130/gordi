@@ -5,13 +5,17 @@ import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.config.TryOnPolicy;
 import com.ssafy.backend.config.enums.CategoryCode;
+import com.ssafy.backend.config.enums.HeightRange;
 import com.ssafy.backend.config.enums.OuterClosure;
 import com.ssafy.backend.config.enums.Sleeves;
 import com.ssafy.backend.config.enums.TopTuck;
 import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
+import com.ssafy.backend.config.enums.WeightRange;
 import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Product;
+import com.ssafy.backend.domain.ProductBottomSize;
+import com.ssafy.backend.domain.ProductTopSize;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
@@ -27,7 +31,9 @@ import com.ssafy.backend.dto.tryon.TryOnJobDetailResponseDTO;
 import com.ssafy.backend.dto.tryon.TryOnJobRetryResponseDTO;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.AvatarRepository;
+import com.ssafy.backend.repository.ProductBottomSizeRepository;
 import com.ssafy.backend.repository.ProductRepository;
+import com.ssafy.backend.repository.ProductTopSizeRepository;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
@@ -80,6 +86,8 @@ public class TryOnService {
     private final RoomRepository roomRepository;
     private final RoomItemRepository roomItemRepository;
     private final ProductRepository productRepository;
+    private final ProductTopSizeRepository productTopSizeRepository;
+    private final ProductBottomSizeRepository productBottomSizeRepository;
     private final AvatarRepository avatarRepository;
     private final RoomAuthResolver roomAuthResolver;
     private final IdempotencyService idempotencyService;
@@ -408,29 +416,25 @@ public class TryOnService {
                 throw new ApiException(ErrorCode.BAD_REQUEST, Map.of("duplicatedSlot", slot.name()));
             }
 
-            if (contextType.isRoom()) {
-                resolved.add(resolveRoomItem(room, item, slot, position++));
-            } else {
-                resolved.add(resolveSoloItem(item, slot, position++));
-            }
+            Product product = contextType.isRoom()
+                    ? requireRoomItemProduct(room, item)
+                    : requireProduct(item);
+            RoomItem roomItem = contextType.isRoom() ? findRoomItem(item.roomItemId()) : null;
+
+            resolved.add(new ResolvedItem(
+                    product,
+                    roomItem,
+                    slot,
+                    position++,
+                    item.sizeName(),
+                    resolveSizeProfile(product, slot, item.sizeName())
+            ));
         }
         return resolved;
     }
 
-    private ResolvedItem resolveRoomItem(
-            Room room,
-            TryOnJobCreateRequestDTO.Item item,
-            CategoryCode slot,
-            int position
-    ) {
-        if (item.roomItemId() == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, "ROOM 컨텍스트의 항목에는 roomItemId 가 필요합니다.");
-        }
-        RoomItem roomItem = roomItemRepository.findById(item.roomItemId())
-                .orElseThrow(() -> new ApiException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        Map.of("roomItemId", item.roomItemId())
-                ));
+    private Product requireRoomItemProduct(Room room, TryOnJobCreateRequestDTO.Item item) {
+        RoomItem roomItem = findRoomItem(item.roomItemId());
         if (!roomItem.getRoom().getId().equals(room.getId())) {
             throw new ApiException(
                     ErrorCode.FORBIDDEN,
@@ -438,23 +442,99 @@ public class TryOnService {
                     Map.of("roomItemId", item.roomItemId())
             );
         }
-        return new ResolvedItem(roomItem.getProduct(), roomItem, slot, position);
+        return roomItem.getProduct();
     }
 
-    private ResolvedItem resolveSoloItem(
-            TryOnJobCreateRequestDTO.Item item,
-            CategoryCode slot,
-            int position
-    ) {
+    private RoomItem findRoomItem(Long roomItemId) {
+        if (roomItemId == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "ROOM 컨텍스트의 항목에는 roomItemId 가 필요합니다.");
+        }
+        return roomItemRepository.findById(roomItemId)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        Map.of("roomItemId", roomItemId)
+                ));
+    }
+
+    private Product requireProduct(TryOnJobCreateRequestDTO.Item item) {
         if (item.productId() == null) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "SOLO 컨텍스트의 항목에는 productId 가 필요합니다.");
         }
-        Product product = productRepository.findById(item.productId())
+        return productRepository.findById(item.productId())
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND,
                         Map.of("productId", item.productId())
                 ));
-        return new ResolvedItem(product, null, slot, position);
+    }
+
+    /**
+     * 사용자가 고른 사이즈의 실측 행을 찾아 생성 요청용 치수로 펼친다.
+     * 상의와 하의는 실측 항목이 서로 다르므로 slot 으로 조회 대상을 가른다.
+     * 치수 표가 없는 slot(아우터·신발)은 치수 없이 사이즈명만 전달한다.
+     */
+    private TryOnGenerationRequest.SizeProfile resolveSizeProfile(
+            Product product,
+            CategoryCode slot,
+            String sizeName
+    ) {
+        if (slot == CategoryCode.TOP) {
+            ProductTopSize size = productTopSizeRepository
+                    .findByProductIdAndSizeName(product.getId(), sizeName)
+                    .orElseThrow(() -> unknownSize(product, sizeName, availableTopSizes(product)));
+
+            return new TryOnGenerationRequest.SizeProfile(
+                    size.getSizeName(),
+                    size.getTotalLength(),
+                    size.getShoulderWidth(),
+                    size.getChestWidth(),
+                    size.getSleeveLength(),
+                    null, null, null, null
+            );
+        }
+
+        if (slot == CategoryCode.BOTTOM) {
+            ProductBottomSize size = productBottomSizeRepository
+                    .findByProductIdAndSizeName(product.getId(), sizeName)
+                    .orElseThrow(() -> unknownSize(product, sizeName, availableBottomSizes(product)));
+
+            return new TryOnGenerationRequest.SizeProfile(
+                    size.getSizeName(),
+                    size.getTotalLength(),
+                    null, null, null,
+                    size.getWaistWidth(),
+                    size.getHipWidth(),
+                    size.getThighWidth(),
+                    size.getRise()
+            );
+        }
+
+        return new TryOnGenerationRequest.SizeProfile(
+                sizeName, null, null, null, null, null, null, null, null);
+    }
+
+    // 어떤 사이즈를 고를 수 있는지 알려 주어야 클라이언트가 요청을 고칠 수 있다.
+    private ApiException unknownSize(Product product, String sizeName, List<String> available) {
+        return new ApiException(
+                ErrorCode.BAD_REQUEST,
+                "선택한 사이즈의 실측 정보를 찾을 수 없습니다.",
+                Map.of(
+                        "productId", product.getId(),
+                        "sizeName", sizeName,
+                        "availableSizes", available
+                )
+        );
+    }
+
+    private List<String> availableTopSizes(Product product) {
+        return productTopSizeRepository.findAllByProductId(product.getId()).stream()
+                .map(ProductTopSize::getSizeName)
+                .toList();
+    }
+
+    private List<String> availableBottomSizes(Product product) {
+        return productBottomSizeRepository.findAllByProductId(product.getId()).stream()
+                .map(ProductBottomSize::getSizeName)
+                .toList();
     }
 
     private WearOptionValues parseWearOptions(TryOnJobCreateRequestDTO.WearOptions options) {
@@ -493,24 +573,31 @@ public class TryOnService {
                         .product(item.product())
                         .roomItem(item.roomItem())
                         .slot(item.slot().name())
+                        .sizeName(item.sizeName())
                         .position(item.position())
                         .build())
                 .toList());
     }
 
-    // 원본 Job 의 구성을 재시도 Job 으로 복제
+    // 원본 Job 의 구성을 재시도 Job 으로 복제. 사이즈도 원본과 동일하게 유지한다.
     private List<ResolvedItem> copyItems(TryOnJob retryJob, Long sourceJobId) {
         List<ResolvedItem> items = tryOnJobItemRepository.findAllByTryOnJobIdWithProduct(sourceJobId).stream()
-                .map(item -> new ResolvedItem(
-                        item.getProduct(),
-                        item.getRoomItem(),
-                        // 저장 시 CategoryCode 이름으로만 기록하므로 해석 실패는 데이터 손상이다.
-                        CategoryCode.find(item.getSlot()).orElseThrow(() -> new ApiException(
-                                ErrorCode.INTERNAL_SERVER_ERROR,
-                                Map.of("tryOnJobItemId", item.getId(), "slot", item.getSlot())
-                        )),
-                        item.getPosition()
-                ))
+                .map(item -> {
+                    // 저장 시 CategoryCode 이름으로만 기록하므로 해석 실패는 데이터 손상이다.
+                    CategoryCode slot = CategoryCode.find(item.getSlot())
+                            .orElseThrow(() -> new ApiException(
+                                    ErrorCode.INTERNAL_SERVER_ERROR,
+                                    Map.of("tryOnJobItemId", item.getId(), "slot", item.getSlot())
+                            ));
+                    return new ResolvedItem(
+                            item.getProduct(),
+                            item.getRoomItem(),
+                            slot,
+                            item.getPosition(),
+                            item.getSizeName(),
+                            resolveSizeProfile(item.getProduct(), slot, item.getSizeName())
+                    );
+                })
                 .toList();
         saveItems(retryJob, items);
         return items;
@@ -563,9 +650,10 @@ public class TryOnService {
             String prompt
     ) {
         // 순서가 달라도 같은 구성이면 같은 해시가 되도록 slot 기준으로 정렬한다.
+        // 같은 상품이라도 사이즈가 다르면 다른 이미지이므로 sizeName 도 키에 넣는다.
         String itemsKey = items.stream()
                 .sorted(Comparator.comparing(item -> item.slot().name()))
-                .map(item -> item.slot().name() + ':' + item.product().getId())
+                .map(item -> item.slot().name() + ':' + item.product().getId() + ':' + item.sizeName())
                 .reduce("", (left, right) -> left + right + ',');
 
         return idempotencyService.hashRequest(
@@ -588,14 +676,16 @@ public class TryOnService {
     ) {
         return new TryOnGenerationRequest(
                 job.getId(),
-                avatar.getId(),
-                avatar.getImageUrl(),
+                toGenerationContext(job),
+                toGenerationAvatar(avatar),
                 items.stream()
                         .map(item -> new TryOnGenerationRequest.Item(
                                 item.product().getId(),
                                 item.slot().name(),
                                 item.product().getImageUrl(),
-                                item.position()
+                                item.product().getSource(),
+                                item.product().getDescription(),
+                                item.sizeProfile()
                         ))
                         .toList(),
                 new TryOnGenerationRequest.WearOptions(
@@ -604,6 +694,33 @@ public class TryOnService {
                         wearOptions.sleeves()
                 ),
                 job.getPrompt()
+        );
+    }
+
+    // 공개 API 는 roomCode 로 방을 식별하지만 생성 서비스 계약은 roomId 를 쓴다.
+    private TryOnGenerationRequest.Context toGenerationContext(TryOnJob job) {
+        Room room = job.getRoom();
+        return new TryOnGenerationRequest.Context(
+                job.getContextType(),
+                room == null ? null : room.getId(),
+                job.getBoardVersion()
+        );
+    }
+
+    /** 아바타 프리셋의 구간 id 를 실제 cm/kg 범위로 풀어서 전달한다. */
+    private TryOnGenerationRequest.Avatar toGenerationAvatar(Avatar avatar) {
+        Optional<HeightRange> height = HeightRange.find(avatar.getHeightId());
+        Optional<WeightRange> weight = WeightRange.find(avatar.getWeightId());
+
+        return new TryOnGenerationRequest.Avatar(
+                avatar.getId(),
+                avatar.getImageUrl(),
+                avatar.getGender(),
+                avatar.getBodyType(),
+                height.map(HeightRange::getMinHeight).orElse(null),
+                height.map(HeightRange::getMaxHeight).orElse(null),
+                weight.map(WeightRange::getMinWeight).orElse(null),
+                weight.map(WeightRange::getMaxWeight).orElse(null)
         );
     }
 
@@ -651,7 +768,9 @@ public class TryOnService {
             Product product,
             RoomItem roomItem,
             CategoryCode slot,
-            int position
+            int position,
+            String sizeName,
+            TryOnGenerationRequest.SizeProfile sizeProfile
     ) {
     }
 
