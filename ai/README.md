@@ -129,6 +129,11 @@ snapshot을 검색에 사용하지 않습니다.
 메모리에 적재합니다. 현재 198건 MVP는 외부 벡터 DB 없이 정확한 cosine
 검색을 사용하며, 성별(동일 성별 또는 `UNISEX`)·카테고리·세부 카테고리·가격
 조건을 점수 계산 전에 적용합니다. 기본 검색 후보는 50건, 최대 200건입니다.
+Compose 배포에서는 Git에서 제외된 인덱스 디렉터리를 `/app/catalog_index`에
+읽기 전용으로 마운트합니다. EC2에서는
+`CATALOG_EMBEDDING_INDEX_HOST_DIR`에 Jenkins workspace 밖의 고정 디렉터리를
+지정하고 그 안에 `catalog-embeddings.json`을 별도로 배치해야 합니다. Git
+push만으로 이 파일이 전송되지는 않습니다.
 
 후보 50건은 `RecommendationPipeline`에서 상품명·설명·세부 카테고리로
 확인되는 색상·계절·스타일 태그와 규칙 기반 궁합 점수를 적용해 상위 10건으로
@@ -157,6 +162,8 @@ embedding snapshot SHA-256을 반환합니다.
 `http://localhost:8000/demo/recommendations`에서 이미지 업로드부터 후보 검색,
 조건·궁합 재정렬, 추천 이유까지 한 화면에서 확인할 수 있습니다. 운영 기본값은
 `false`이며 비활성 상태에서는 페이지와 업로드 API 모두 404를 반환합니다.
+Docker Compose로 실행할 때도 루트 `.env`의 플래그가 AI 컨테이너에
+명시적으로 전달됩니다.
 
 DB의 이미지 URL이 브라우저에서 접근할 수 없는 Docker 내부 주소라면, 검수
 데이터셋 경로를 아래처럼 지정해 FastAPI가 primary 이미지만 로컬 데모에
