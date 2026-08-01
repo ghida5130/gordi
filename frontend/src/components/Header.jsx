@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/useUserStore';
+import { removeAccessToken } from '@/utils/tokenStorage';
 
 export default function Header() {
   const navigate = useNavigate();
-  const { isLogin } = useUserStore();
+  const { isLogin, clearUser } = useUserStore();
   const [hoveredMenu, setHoveredMenu] = useState(null);
-
-  // 🌟 [핵심 기능] 로컬 스토리지에 accessToken이 있는지 확인해서 로그인 상태 판별
-  const isLoggedIn = !!localStorage.getItem('accessToken');
 
   // 로그아웃 처리 함수
   const handleLogout = () => {
-    // 실제 프로젝트의 로그아웃 로직 (예: 토큰 삭제, API 호출 등)을 여기에 작성하세요.
-    localStorage.removeItem('accessToken'); // 예시
+    removeAccessToken();
+    clearUser();
     alert('로그아웃 되었습니다.');
     navigate('/login');
   };
@@ -133,17 +131,17 @@ export default function Header() {
           {/* 우측 프로필 및 로그인/로그아웃 */}
           <div className="flex items-center gap-5" onMouseEnter={() => setHoveredMenu(null)}>
             
-            {/* 🌟 isLoggedIn 상태에 따른 버튼 조건부 렌더링 */}
-            {isLoggedIn ? (
+            {/* 🌟 isLogin 상태에 따른 버튼 조건부 렌더링 */}
+            {isLogin ? (
               <>
                 <button 
                   onClick={handleLogout} 
-                  className="text-sm text-gray-500 transition-all duration-300 hover:-translate-y-1 hover:text-black"
+                  className="text-sm font-semibold text-gray-500 transition-all duration-300 hover:-translate-y-1 hover:text-black"
                 >
                   로그아웃
                 </button>
                 <Link 
-                  to="/profile/edit" 
+                  to="/mypage" 
                   className="w-9 h-9 flex items-center justify-center border-2 border-gray-200 text-gray-500 rounded-full transition-all duration-300 hover:-translate-y-1 hover:border-black hover:text-black hover:shadow-sm active:scale-95"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

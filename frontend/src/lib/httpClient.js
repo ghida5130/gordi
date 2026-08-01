@@ -1,50 +1,41 @@
-import axios from 'axios'
+import axios from "axios";
 
-<<<<<<< HEAD
-import { AuthRequiredError } from '@/api/errors'
-import { useUserStore } from '@/stores/useUserStore'
-=======
 import { AuthRequiredError } from "@/api/errors";
 import { useUserStore } from "@/stores/useUserStore";
->>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 import {
   getAccessToken,
   setAccessToken, // ⭐️ 새 토큰 저장을 위해 추가
   removeAccessToken,
-<<<<<<< HEAD
-} from '@/utils/tokenStorage'
-=======
 } from "@/utils/tokenStorage";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api";
->>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 
 const clientConfig = {
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: apiBaseUrl,
   timeout: 10_000,
-}
+};
 
 // 인증 정보 없이 사용하는 공개 요청용 클라이언트
 export const httpClient = axios.create({
   ...clientConfig,
-})
+});
 
 // 액세스 토큰이 반드시 필요한 인증 요청용 클라이언트
 export const authHttpClient = axios.create({
   ...clientConfig,
-})
+});
 
 authHttpClient.interceptors.request.use((config) => {
   // 토큰이 없으면 서버 요청 전에 인증 오류 반환
-  const accessToken = getAccessToken()
+  const accessToken = getAccessToken();
 
   if (!accessToken) {
-    return Promise.reject(new AuthRequiredError())
+    return Promise.reject(new AuthRequiredError());
   }
 
-  config.headers.Authorization = `Bearer ${accessToken}`
-  return config
-})
+  config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
 
 // ⭐️ 토큰 만료 시 자동 재발급 로직 추가
 authHttpClient.interceptors.response.use(
@@ -60,27 +51,18 @@ authHttpClient.interceptors.response.use(
       try {
         // 1. 순환 참조를 막기 위해 httpClient를 직접 사용하여 재발급 요청
         // 💡 쿠키에 담긴 Refresh Token을 보내려면 withCredentials: true가 반드시 필요합니다!
-<<<<<<< HEAD
-        const refreshResponse = await httpClient.post('/v1/auth/refresh', {}, {
-          withCredentials: true 
-        });
-
-        // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
-        const newAccessToken = refreshResponse.data?.data?.accessToken || refreshResponse.data?.accessToken;
-=======
         const refreshResponse = await httpClient.post(
           "/v1/auth/refresh",
           {},
           {
             withCredentials: true,
-          },
+          }
         );
 
         // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
         const newAccessToken =
           refreshResponse.data?.data?.accessToken ||
           refreshResponse.data?.accessToken;
->>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
 
         if (newAccessToken) {
           // 3. 스토리지에 새 토큰 덮어쓰기
@@ -94,15 +76,6 @@ authHttpClient.interceptors.response.use(
         }
       } catch (refreshError) {
         // Refresh Token마저 만료되었거나 오류가 났을 경우 (완전 로그아웃 처리)
-<<<<<<< HEAD
-        console.error('Refresh Token 만료. 다시 로그인해주세요.');
-        removeAccessToken();
-        useUserStore.getState().clearUser();
-        
-        // 로그인 페이지로 강제 이동
-        window.location.href = '/login';
-        
-=======
         console.error("Refresh Token 만료. 다시 로그인해주세요.");
         removeAccessToken();
         useUserStore.getState().clearUser();
@@ -110,16 +83,11 @@ authHttpClient.interceptors.response.use(
         // 로그인 페이지로 강제 이동
         window.location.href = "/login";
 
->>>>>>> 3c411f36421ba8ef5be3ff9f0034dc4a5f75e377
         return Promise.reject(refreshError);
       }
     }
 
     // 401 에러가 아니거나, 재시도 로직에 해당하지 않는 에러는 그대로 반환
     return Promise.reject(error);
-  },
-<<<<<<< Updated upstream
-)
-=======
+  }
 );
->>>>>>> Stashed changes
