@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Protocol
 
 from app.recommendation.vector_index import (
@@ -48,6 +49,15 @@ _STYLE_KEYWORDS = {
     "ROMANTIC": ("로맨틱", "페미닌", "러블리", "romantic", "feminine"),
     "VINTAGE": ("빈티지", "레트로", "vintage", "retro"),
 }
+_PATTERN_KEYWORDS = {
+    "SOLID": ("무지", "솔리드", "solid", "plain"),
+    "STRIPE": ("스트라이프", "줄무늬", "stripe", "striped"),
+    "CHECK": ("체크", "깅엄", "check", "checked", "plaid", "gingham"),
+    "DOT": ("도트", "물방울", "dot", "polka"),
+    "FLORAL": ("플로럴", "플라워", "꽃무늬", "floral", "flower"),
+    "GRAPHIC": ("그래픽", "프린트", "로고", "graphic", "print", "logo"),
+    "ANIMAL": ("레오파드", "호피", "지브라", "leopard", "zebra", "animal"),
+}
 _COLOR_LABELS = {
     "BLACK": "블랙",
     "WHITE": "화이트",
@@ -78,6 +88,16 @@ _STYLE_LABELS = {
     "ROMANTIC": "로맨틱",
     "VINTAGE": "빈티지",
 }
+_PATTERN_LABELS = {
+    "SOLID": "무지",
+    "STRIPE": "스트라이프",
+    "CHECK": "체크",
+    "DOT": "도트",
+    "FLORAL": "플로럴",
+    "GRAPHIC": "그래픽",
+    "ANIMAL": "애니멀",
+}
+_PATTERN_NEUTRALS = {"SOLID"}
 _NEUTRAL_COLORS = {"BLACK", "WHITE", "GRAY", "NAVY", "BEIGE", "BROWN"}
 _HARMONIOUS_COLOR_PAIRS = {
     frozenset(("BLUE", "ORANGE")),
@@ -113,6 +133,9 @@ _SUBCATEGORY_STYLES = {
 }
 
 
+_logger = logging.getLogger(__name__)
+
+
 class RecommendationPipelineError(RuntimeError):
     """Raised when a recommendation request cannot be processed."""
 
@@ -122,6 +145,15 @@ class GarmentTags:
     colors: frozenset[str] = frozenset()
     seasons: frozenset[str] = frozenset()
     styles: frozenset[str] = frozenset()
+    patterns: frozenset[str] = frozenset()
+
+    def merge(self, other: "GarmentTags") -> "GarmentTags":
+        return GarmentTags(
+            colors=self.colors | other.colors,
+            seasons=self.seasons | other.seasons,
+            styles=self.styles | other.styles,
+            patterns=self.patterns | other.patterns,
+        )
 
 
 @dataclass(frozen=True)
@@ -136,9 +168,11 @@ class CompatibilityScore:
     color: float | None
     season: float | None
     style: float | None
-    matched_colors: tuple[str, ...]
-    matched_seasons: tuple[str, ...]
-    matched_styles: tuple[str, ...]
+    pattern: float | None = None
+    matched_colors: tuple[str, ...] = ()
+    matched_seasons: tuple[str, ...] = ()
+    matched_styles: tuple[str, ...] = ()
+    matched_patterns: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -174,6 +208,16 @@ class CompatibilityModel(Protocol):
         """Score grounded color, season, and style compatibility."""
 
 
+class ImageIntentExtractor(Protocol):
+    def extract(
+        self,
+        *,
+        image: bytes,
+        mime_type: str,
+    ) -> GarmentTags:
+        """Extract closed-vocabulary garment tags from a query image."""
+
+
 class RecommendationReasonGenerator(Protocol):
     def generate(
         self,
@@ -207,9 +251,14 @@ class RuleBasedCompatibilityModel:
             intent.tags.styles,
             product_tags.styles,
         )
+        pattern, matched_patterns = _set_compatibility(
+            intent.tags.patterns,
+            product_tags.patterns,
+            pattern_mode=True,
+        )
         components = [
             component
-            for component in (color, season, style)
+            for component in (color, season, style, pattern)
             if component is not None
         ]
         total = sum(components) / len(components) if components else 0.5
@@ -218,9 +267,11 @@ class RuleBasedCompatibilityModel:
             color=color,
             season=season,
             style=style,
+            pattern=pattern,
             matched_colors=tuple(sorted(matched_colors)),
             matched_seasons=tuple(sorted(matched_seasons)),
             matched_styles=tuple(sorted(matched_styles)),
+            matched_patterns=tuple(sorted(matched_patterns)),
         )
 
 
@@ -254,6 +305,12 @@ class GroundedReasonGenerator:
                 _STYLE_LABELS,
             )
             parts.append(f"{labels} 무드가 이어집니다")
+        if compatibility.matched_patterns:
+            labels = _labels(
+                compatibility.matched_patterns,
+                _PATTERN_LABELS,
+            )
+            parts.append(f"{labels} 패턴 결이 같습니다")
         if not parts:
             parts.append(
                 "입력 이미지와 텍스트의 멀티모달 특징이 유사합니다"
@@ -277,6 +334,7 @@ class RecommendationPipeline:
         *,
         compatibility_model: CompatibilityModel | None = None,
         reason_generator: RecommendationReasonGenerator | None = None,
+        image_intent_extractor: ImageIntentExtractor | None = None,
         index_version: str = "0" * 64,
     ) -> None:
         if len(index_version) != 64 or any(
@@ -294,6 +352,7 @@ class RecommendationPipeline:
         self._reason_generator = (
             reason_generator or GroundedReasonGenerator()
         )
+        self._image_intent_extractor = image_intent_extractor
 
     def recommend(
         self,
@@ -314,6 +373,29 @@ class RecommendationPipeline:
                 "candidate_limit must be greater than or equal to result_limit"
             )
         intent = parse_recommendation_intent(text)
+        if (
+            image is not None
+            and mime_type is not None
+            and self._image_intent_extractor is not None
+        ):
+            try:
+                image_tags = self._image_intent_extractor.extract(
+                    image=image,
+                    mime_type=mime_type,
+                )
+            except Exception:
+                # Image attributes only sharpen soft scoring; a VLM
+                # outage must not take recommendations down with it.
+                _logger.warning(
+                    "image attribute extraction failed; "
+                    "continuing with text-only intent",
+                    exc_info=True,
+                )
+            else:
+                intent = replace(
+                    intent,
+                    tags=intent.tags.merge(image_tags),
+                )
         candidates = self._retriever.retrieve(
             text=text,
             image=image,
@@ -400,6 +482,7 @@ def _infer_tags(
     colors = _match_keywords(lowered, _COLOR_KEYWORDS)
     seasons = set(_match_keywords(lowered, _SEASON_KEYWORDS))
     styles = set(_match_keywords(lowered, _STYLE_KEYWORDS))
+    patterns = _match_keywords(lowered, _PATTERN_KEYWORDS)
     if subcategory:
         seasons.update(_SUBCATEGORY_SEASONS.get(subcategory, set()))
         styles.update(_SUBCATEGORY_STYLES.get(subcategory, set()))
@@ -407,6 +490,7 @@ def _infer_tags(
         colors=frozenset(colors),
         seasons=frozenset(seasons),
         styles=frozenset(styles),
+        patterns=frozenset(patterns),
     )
 
 
@@ -436,6 +520,7 @@ def _set_compatibility(
     candidate: frozenset[str],
     *,
     color_mode: bool = False,
+    pattern_mode: bool = False,
 ) -> tuple[float | None, set[str]]:
     if not requested:
         return None, set()
@@ -453,6 +538,10 @@ def _set_compatibility(
             for right in candidate
         ):
             return 0.75, set()
+    if pattern_mode and (
+        requested & _PATTERN_NEUTRALS or candidate & _PATTERN_NEUTRALS
+    ):
+        return 0.8, set()
     return 0.2, set()
 
 
@@ -465,10 +554,13 @@ def _clamp(value: float) -> float:
 
 
 __all__ = [
+    "COMPATIBILITY_WEIGHT",
     "CandidateRetriever",
     "CompatibilityScore",
     "GarmentTags",
     "GroundedReasonGenerator",
+    "ImageIntentExtractor",
+    "RETRIEVAL_WEIGHT",
     "RecommendationIntent",
     "RecommendationPipeline",
     "RecommendationPipelineError",

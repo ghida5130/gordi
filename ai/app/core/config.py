@@ -41,6 +41,17 @@ class Settings(BaseSettings):
     openrouter_app_title: str = "Gordi AI"
     openrouter_provider_order: str = "google-vertex"
     openrouter_allow_fallbacks: bool = False
+    recommendation_vlm_model: str = "openai/gpt-5.6-luna"
+    recommendation_vlm_endpoint: str = (
+        "https://openrouter.ai/api/v1/chat/completions"
+    )
+    recommendation_vlm_api_key: str = ""
+    recommendation_vlm_timeout_seconds: float = Field(
+        default=20.0,
+        gt=0.0,
+        le=120.0,
+    )
+    recommendation_image_attributes_enabled: bool = False
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )
