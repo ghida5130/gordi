@@ -117,6 +117,10 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
             product_image_fetcher=QueryImageFetcher.create(
                 settings.recommendation_image_allowed_hosts
             ),
+            reasoning_effort=(
+                settings.recommendation_vlm_reasoning_effort.strip()
+                or None
+            ),
         )
     reason_generator = None
     if settings.recommendation_llm_reasons_enabled:

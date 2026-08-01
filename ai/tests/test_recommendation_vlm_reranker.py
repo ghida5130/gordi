@@ -31,12 +31,14 @@ class RecordingVLMClient:
         system: str,
         user_parts: list[dict[str, Any]],
         max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
         self.requests.append(
             {
                 "system": system,
                 "user_parts": user_parts,
                 "max_tokens": max_tokens,
+                "reasoning_effort": reasoning_effort,
             }
         )
         return self.payload
@@ -66,6 +68,7 @@ def test_score_pair_sends_query_and_candidate_evidence() -> None:
     model = VLMPairwiseCompatibilityModel(
         client,
         product_image_fetcher=fetcher,
+        reasoning_effort="low",
     )
     intent = parse_recommendation_intent("블랙 미니멀 코디")
 
@@ -77,7 +80,8 @@ def test_score_pair_sends_query_and_candidate_evidence() -> None:
     )
 
     assert judgment == PairwiseJudgment(0.9)
-    assert client.requests[0]["max_tokens"] == 64
+    assert client.requests[0]["max_tokens"] == 256
+    assert client.requests[0]["reasoning_effort"] == "low"
     assert fetcher.urls == ["https://images.internal/1.jpg"]
     parts = client.requests[0]["user_parts"]
     kinds = [part["type"] for part in parts]
@@ -87,6 +91,20 @@ def test_score_pair_sends_query_and_candidate_evidence() -> None:
     )
     assert "블랙 미니멀 코디" in texts
     assert "블랙 슬랙스" in texts
+
+
+def test_score_pair_omits_reasoning_effort_by_default() -> None:
+    client = RecordingVLMClient({"compatibility": 0.5})
+    model = VLMPairwiseCompatibilityModel(client)
+
+    model.score_pair(
+        intent=parse_recommendation_intent("캐주얼"),
+        query_image=None,
+        query_mime_type=None,
+        product=product(1, name="니트", description="가을"),
+    )
+
+    assert client.requests[0]["reasoning_effort"] is None
 
 
 def test_score_pair_degrades_to_metadata_when_image_fetch_fails() -> None:

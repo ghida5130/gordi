@@ -106,10 +106,20 @@ class OpenAICompatibleVLMClient:
         system: str,
         user_parts: list[dict[str, Any]],
         max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ) -> str:
         if max_tokens is not None and max_tokens <= 0:
             raise VLMError("max_tokens override must be positive")
-        payload = {
+        if reasoning_effort is not None and reasoning_effort not in {
+            "minimal",
+            "low",
+            "medium",
+            "high",
+        }:
+            raise VLMError(
+                "reasoning_effort must be minimal, low, medium, or high"
+            )
+        payload: dict[str, Any] = {
             "model": self._settings.model,
             "messages": [
                 {"role": "system", "content": system},
@@ -122,6 +132,11 @@ class OpenAICompatibleVLMClient:
             ),
             "temperature": self._settings.temperature,
         }
+        if reasoning_effort is not None:
+            # OpenRouter normalizes this across reasoning models and
+            # ignores it elsewhere; reasoning tokens count against
+            # max_tokens, so judgments must keep the effort bounded.
+            payload["reasoning"] = {"effort": reasoning_effort}
         try:
             response = self._client.post(
                 self._settings.endpoint,
@@ -156,11 +171,13 @@ class OpenAICompatibleVLMClient:
         system: str,
         user_parts: list[dict[str, Any]],
         max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
         content = self.complete_text(
             system=system,
             user_parts=user_parts,
             max_tokens=max_tokens,
+            reasoning_effort=reasoning_effort,
         )
         parsed = _parse_json_object(content)
         if parsed is None:

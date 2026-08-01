@@ -37,9 +37,10 @@ _SYSTEM_PROMPT = (
     "0.5 = neutral, 1.0 = excellent match."
 )
 
-# Score-only answers are ~10 tokens; a tight output cap keeps decode
-# time negligible even on low-throughput providers.
-_JUDGMENT_MAX_TOKENS = 64
+# Score-only answers are ~10 tokens, but reasoning models spend a
+# variable number of hidden reasoning tokens against the same cap, so
+# leave headroom instead of squeezing the cap.
+_JUDGMENT_MAX_TOKENS = 256
 
 
 class VLMClient(Protocol):
@@ -49,6 +50,7 @@ class VLMClient(Protocol):
         system: str,
         user_parts: list[dict[str, Any]],
         max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
         """Return one parsed JSON object from the model."""
 
@@ -82,9 +84,15 @@ class VLMPairwiseCompatibilityModel:
         client: VLMClient,
         *,
         product_image_fetcher: ProductImageFetcher | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
+        # Reasoning control is per-model: OpenAI reasoning models need
+        # a bounded effort or hidden reasoning eats the token cap, but
+        # some providers (e.g. Gemma) reject the field outright, so it
+        # must stay configurable instead of hardcoded.
         self._client = client
         self._product_image_fetcher = product_image_fetcher
+        self._reasoning_effort = reasoning_effort
 
     def score_pair(
         self,
@@ -118,6 +126,7 @@ class VLMPairwiseCompatibilityModel:
             system=_SYSTEM_PROMPT,
             user_parts=user_parts,
             max_tokens=_JUDGMENT_MAX_TOKENS,
+            reasoning_effort=self._reasoning_effort,
         )
         return _judgment_from_payload(payload)
 

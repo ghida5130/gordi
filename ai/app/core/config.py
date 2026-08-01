@@ -64,6 +64,9 @@ class Settings(BaseSettings):
         ge=1,
         le=32,
     )
+    # 기본 모델(gpt-5.6-luna 등 OpenAI reasoning 계열)은 low가 필요하고,
+    # Gemma처럼 reasoning 필드를 거부하는 모델은 빈 값으로 둔다.
+    recommendation_vlm_reasoning_effort: str = "low"
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )

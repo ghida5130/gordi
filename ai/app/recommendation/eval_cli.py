@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -33,6 +34,14 @@ from app.recommendation.vector_index import (
     CandidateRetriever,
     CatalogVectorIndex,
     VectorIndexError,
+)
+from app.recommendation.vlm import (
+    OpenAICompatibleVLMClient,
+    VLMError,
+    VLMSettings,
+)
+from app.recommendation.vlm_reranker import (
+    VLMPairwiseCompatibilityModel,
 )
 
 DEFAULT_INDEX_PATH = Path("catalog_index/catalog-embeddings.json")
@@ -77,7 +86,69 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--result-limit", type=int, default=10)
     run.add_argument("--candidate-limit", type=int, default=50)
+    run.add_argument(
+        "--rerank-model",
+        help=(
+            "Enable VLM pairwise reranking with this model "
+            "(needs OPENROUTER_API_KEY or RECOMMENDATION_VLM_API_KEY); "
+            "judgments are metadata-only so model comparison stays fair"
+        ),
+    )
+    run.add_argument("--rerank-top-k", type=int, default=20)
+    run.add_argument("--rerank-concurrency", type=int, default=8)
+    run.add_argument(
+        "--rerank-reasoning-effort",
+        default="low",
+        help=(
+            "reasoning effort for judgment calls (minimal/low/medium/"
+            "high); pass 'none' for models that reject the field"
+        ),
+    )
+    run.add_argument(
+        "--rerank-endpoint",
+        default="https://openrouter.ai/api/v1/chat/completions",
+    )
     return parser
+
+
+class _CountingReranker:
+    """Wrap a pairwise model to count judgments and failures."""
+
+    def __init__(self, inner: VLMPairwiseCompatibilityModel) -> None:
+        self._inner = inner
+        self.judged = 0
+        self.failed = 0
+
+    def score_pair(self, **kwargs: Any) -> Any:
+        self.judged += 1
+        try:
+            return self._inner.score_pair(**kwargs)
+        except Exception:
+            self.failed += 1
+            raise
+
+
+def _build_reranker(args: argparse.Namespace) -> _CountingReranker:
+    api_key = (
+        os.environ.get("RECOMMENDATION_VLM_API_KEY", "").strip()
+        or os.environ.get("OPENROUTER_API_KEY", "").strip()
+    )
+    client = OpenAICompatibleVLMClient(
+        VLMSettings(
+            model=args.rerank_model,
+            endpoint=args.rerank_endpoint,
+            api_key=api_key,
+        )
+    )
+    effort = args.rerank_reasoning_effort.strip().lower()
+    return _CountingReranker(
+        VLMPairwiseCompatibilityModel(
+            client,
+            reasoning_effort=(
+                None if effort in {"", "none"} else effort
+            ),
+        )
+    )
 
 
 def _run_offline(
@@ -86,10 +157,16 @@ def _run_offline(
     *,
     result_limit: int,
     candidate_limit: int,
+    reranker: _CountingReranker | None = None,
+    rerank_top_k: int = 20,
+    rerank_concurrency: int = 8,
 ) -> dict[str, Any]:
     retriever = OfflineProductQueryRetriever(index)
     pipeline = RecommendationPipeline(
         retriever,
+        pairwise_reranker=reranker,
+        rerank_top_k=rerank_top_k,
+        rerank_concurrency=rerank_concurrency,
         index_version=index.snapshot_sha256,
     )
 
@@ -117,10 +194,16 @@ def _run_live(
     *,
     result_limit: int,
     candidate_limit: int,
+    reranker: _CountingReranker | None = None,
+    rerank_top_k: int = 20,
+    rerank_concurrency: int = 8,
 ) -> dict[str, Any]:
     provider = OpenRouterEmbeddingProvider(EmbeddingSettings.from_env())
     pipeline = RecommendationPipeline(
         CandidateRetriever(index, provider),
+        pairwise_reranker=reranker,
+        rerank_top_k=rerank_top_k,
+        rerank_concurrency=rerank_concurrency,
         index_version=index.snapshot_sha256,
     )
 
@@ -171,18 +254,25 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
         queries = load_eval_queries(args.dataset)
+        reranker = (
+            _build_reranker(args) if args.rerank_model else None
+        )
         runner = _run_offline if args.mode == "offline" else _run_live
         report_body = runner(
             index,
             queries,
             result_limit=args.result_limit,
             candidate_limit=args.candidate_limit,
+            reranker=reranker,
+            rerank_top_k=args.rerank_top_k,
+            rerank_concurrency=args.rerank_concurrency,
         )
     except (
         EvaluationError,
         RecommendationPipelineError,
         VectorIndexError,
         CatalogEmbeddingError,
+        VLMError,
     ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -205,6 +295,18 @@ def main(argv: list[str] | None = None) -> int:
             "retrieval_weight": RETRIEVAL_WEIGHT,
             "compatibility_weight": COMPATIBILITY_WEIGHT,
         },
+        "rerank": (
+            {
+                "model": args.rerank_model,
+                "top_k": args.rerank_top_k,
+                "concurrency": args.rerank_concurrency,
+                "reasoning_effort": args.rerank_reasoning_effort,
+                "judged": reranker.judged,
+                "failed": reranker.failed,
+            }
+            if reranker is not None
+            else None
+        ),
         **report_body,
     }
     rendered = json.dumps(report, ensure_ascii=False, indent=2)

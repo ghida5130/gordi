@@ -121,14 +121,28 @@ def test_client_max_tokens_override_reaches_payload() -> None:
         return chat_response("{}")
 
     client = make_client(handler)
-    client.complete_json(system="s", user_parts=[], max_tokens=64)
+    client.complete_json(
+        system="s",
+        user_parts=[],
+        max_tokens=64,
+        reasoning_effort="low",
+    )
     assert seen["payload"]["max_tokens"] == 64
+    assert seen["payload"]["reasoning"] == {"effort": "low"}
 
     client.complete_json(system="s", user_parts=[])
     assert seen["payload"]["max_tokens"] == VLMSettings().max_output_tokens
+    assert "reasoning" not in seen["payload"]
 
     with pytest.raises(VLMError, match="max_tokens"):
         client.complete_text(system="s", user_parts=[], max_tokens=0)
+
+    with pytest.raises(VLMError, match="reasoning_effort"):
+        client.complete_text(
+            system="s",
+            user_parts=[],
+            reasoning_effort="extreme",
+        )
 
 
 def test_client_parses_fenced_json() -> None:
