@@ -1,4 +1,4 @@
-package com.ssafy.backend.dto.room;
+package com.ssafy.backend.websocket.dto;
 
 /**
  * PARTICIPANT_JOINED / PARTICIPANT_LEFT 이벤트의 data payload.

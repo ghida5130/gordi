@@ -44,6 +44,17 @@ services:
     networks:
       - app-network
   
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: gordi-livekit
+    restart: unless-stopped
+    command: --dev --bind 0.0.0.0
+    ports:
+      - "7881:7881"
+      - "50000-50100:50000-50100/udp"
+    networks:
+      - app-network
+  
   # 🚀 로컬용 Nginx 서비스 추가
   nginx:
     image: nginx:alpine

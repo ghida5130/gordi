@@ -1,4 +1,4 @@
-package com.ssafy.backend.websocket;
+package com.ssafy.backend.websocket.event;
 
 /**
  * 참여자 입장(신규 입장/재입장) 도메인 이벤트.
