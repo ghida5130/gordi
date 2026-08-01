@@ -1,9 +1,10 @@
-// src/components/Header.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useUserStore } from '@/stores/useUserStore';
 
 export default function Header() {
   const navigate = useNavigate();
+  const { isLogin } = useUserStore();
   const [hoveredMenu, setHoveredMenu] = useState(null);
 
   // 🌟 [핵심 기능] 로컬 스토리지에 accessToken이 있는지 확인해서 로그인 상태 판별
@@ -11,23 +12,56 @@ export default function Header() {
 
   // 로그아웃 처리 함수
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
+    // 실제 프로젝트의 로그아웃 로직 (예: 토큰 삭제, API 호출 등)을 여기에 작성하세요.
+    localStorage.removeItem('accessToken'); // 예시
     alert('로그아웃 되었습니다.');
     navigate('/login');
   };
 
-  // Jitter 스타일 메가 드롭다운 내용 정의 (무채색 톤 적용)
+  // 방 생성하기 클릭 핸들러 (로그인 여부 판별)
+  const handleCreateRoomClick = (e) => {
+    e.preventDefault();
+    setHoveredMenu(null);
+    if (!isLogin) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+    } else {
+      navigate('/rooms/create');
+    }
+  };
+
+  // 참여하기 클릭 핸들러 (로그인 여부 판별)
+  const handleJoinRoomClick = (e) => {
+    e.preventDefault();
+    setHoveredMenu(null);
+    if (!isLogin) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+    } else {
+      navigate('/rooms', { state: { openJoinForm: true } });
+    }
+  };
+
+  // Jitter 스타일 메가 드롭다운 내용 정의
   const dropdownContent = {
     tier: (
       <div className="flex gap-4">
-        <Link to="/rooms/create" className="block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg">
+        <a 
+          href="/rooms/create" 
+          onClick={handleCreateRoomClick} 
+          className="block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer"
+        >
           <h3 className="text-xl font-bold mb-2">방 생성하기</h3>
           <p className="text-sm text-gray-300 font-light">새로운 티어 게임 방을 만들어<br/>친구들을 초대해보세요 &rarr;</p>
-        </Link>
-        <div className="block w-64 p-6 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 cursor-not-allowed">
+        </a>
+        <a 
+          href="/rooms" 
+          onClick={handleJoinRoomClick} 
+          className="block w-64 p-6 bg-[#1a1a1a] hover:bg-black hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer"
+        >
           <h3 className="text-xl font-bold mb-2">참여하기</h3>
-          <p className="text-sm text-gray-400 font-light">진행 중인 티어 게임에<br/>참여하는 기능입니다. (준비 중) &rarr;</p>
-        </div>
+          <p className="text-sm text-gray-300 font-light">초대 코드를 입력하고<br/>진행 중인 티어 게임방에 입장해 보세요 &rarr;</p>
+        </a>
       </div>
     ),
     clothes: (
