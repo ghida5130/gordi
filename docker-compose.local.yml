@@ -11,12 +11,12 @@ services:
       - ./.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - MYSQL_HOST=gordi-mysql
+      - MYSQL_HOST=gordi-mysql 
       - REDIS_HOST=gordi-redis
       - RABBITMQ_HOST=gordi-rabbitmq
     networks:
       - app-network
-
+    
   frontend:
     build:
       context: ./frontend
@@ -33,11 +33,36 @@ services:
     container_name: gordi-ai
     restart: unless-stopped
     environment:
-      - ENVIRONMENT=prod
-      - API_PREFIX=/ai/v1
+      ENVIRONMENT: prod
+      API_PREFIX: /ai/v1
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_EMBEDDING_MODEL: ${OPENROUTER_EMBEDDING_MODEL:-google/gemini-embedding-2}
+      OPENROUTER_EMBEDDING_DIMENSIONS: ${OPENROUTER_EMBEDDING_DIMENSIONS:-768}
+      OPENROUTER_EMBEDDING_ENDPOINT: ${OPENROUTER_EMBEDDING_ENDPOINT:-https://openrouter.ai/api/v1/embeddings}
+      OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER:-}
+      OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-Gordi AI}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      CATALOG_EMBEDDING_INDEX_PATH: ${CATALOG_EMBEDDING_INDEX_PATH:-/app/catalog_index/catalog-embeddings.json}
+      RECOMMENDATION_IMAGE_ALLOWED_HOSTS: ${RECOMMENDATION_IMAGE_ALLOWED_HOSTS:-["localhost","gordi-nginx"]}
+      ENABLE_RECOMMENDATION_DEMO: ${ENABLE_RECOMMENDATION_DEMO:-false}
+      RECOMMENDATION_VLM_MODEL: ${RECOMMENDATION_VLM_MODEL:-openai/gpt-5.6-luna}
+      RECOMMENDATION_VLM_ENDPOINT: ${RECOMMENDATION_VLM_ENDPOINT:-https://openrouter.ai/api/v1/chat/completions}
+      RECOMMENDATION_VLM_API_KEY: ${RECOMMENDATION_VLM_API_KEY:-}
+      RECOMMENDATION_VLM_TIMEOUT_SECONDS: ${RECOMMENDATION_VLM_TIMEOUT_SECONDS:-20}
+      RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED: ${RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED:-false}
+      RECOMMENDATION_VLM_RERANK_ENABLED: ${RECOMMENDATION_VLM_RERANK_ENABLED:-false}
+      RECOMMENDATION_VLM_RERANK_TOP_K: ${RECOMMENDATION_VLM_RERANK_TOP_K:-20}
+      RECOMMENDATION_VLM_RERANK_CONCURRENCY: ${RECOMMENDATION_VLM_RERANK_CONCURRENCY:-8}
+      RECOMMENDATION_VLM_REASONING_EFFORT: ${RECOMMENDATION_VLM_REASONING_EFFORT:-low}
+      RECOMMENDATION_LLM_REASONS_ENABLED: ${RECOMMENDATION_LLM_REASONS_ENABLED:-false}
+    volumes:
+      - type: bind
+        source: ${CATALOG_EMBEDDING_INDEX_HOST_DIR:-./ai/catalog_index}
+        target: /app/catalog_index
+        read_only: true
     networks:
       - app-network
-
+  
   livekit:
     image: livekit/livekit-server:latest
     container_name: gordi-livekit
@@ -45,10 +70,10 @@ services:
     command: --dev --bind 0.0.0.0
     ports:
       - "7881:7881"
-      - "50300-50400:50300-50400/udp"
+      - "50000-50100:50000-50100/udp"
     networks:
       - app-network
-
+  
   # 🚀 로컬용 Nginx 서비스 추가
   nginx:
     image: nginx:alpine
@@ -63,4 +88,4 @@ services:
 
 networks:
   app-network:
-    external: true
+      external: true
