@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     )
     recommendation_image_attributes_enabled: bool = False
     recommendation_vlm_rerank_enabled: bool = False
+    recommendation_llm_reasons_enabled: bool = False
     recommendation_vlm_rerank_top_k: int = Field(
         default=20,
         ge=1,

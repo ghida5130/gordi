@@ -20,6 +20,7 @@ from app.recommendation.vector_index import (
     VectorIndexError,
 )
 from app.recommendation.image_fetcher import QueryImageFetcher
+from app.recommendation.llm_reasons import LLMGroundedReasonGenerator
 from app.recommendation.vlm import (
     OpenAICompatibleVLMClient,
     VLMError,
@@ -117,10 +118,16 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
                 settings.recommendation_image_allowed_hosts
             ),
         )
+    reason_generator = None
+    if settings.recommendation_llm_reasons_enabled:
+        reason_generator = LLMGroundedReasonGenerator(
+            get_vlm_client()
+        )
     return RecommendationPipeline(
         retriever,
         image_intent_extractor=image_intent_extractor,
         pairwise_reranker=pairwise_reranker,
         rerank_top_k=settings.recommendation_vlm_rerank_top_k,
+        reason_generator=reason_generator,
         index_version=index.snapshot_sha256,
     )
