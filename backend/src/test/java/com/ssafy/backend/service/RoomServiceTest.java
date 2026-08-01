@@ -22,7 +22,7 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
-import com.ssafy.backend.websocket.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

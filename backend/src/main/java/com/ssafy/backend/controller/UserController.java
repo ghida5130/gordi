@@ -5,11 +5,13 @@ import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
 import com.ssafy.backend.dto.avatar.AvatarSelectRequestDTO;
 import com.ssafy.backend.dto.avatar.UserAvatarResponseDTO;
 import com.ssafy.backend.dto.results.MyResultListResponseDTO;
+import com.ssafy.backend.dto.room.MyActiveRoomResponseDTO;
 import com.ssafy.backend.dto.users.NicknameRequestDTO;
 import com.ssafy.backend.dto.users.UserRequestDTO;
 import com.ssafy.backend.dto.users.UserResponseDTO;
 import com.ssafy.backend.service.AvatarService;
 import com.ssafy.backend.service.ResultService;
+import com.ssafy.backend.service.RoomService;
 import com.ssafy.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -25,11 +27,13 @@ public class UserController {
     private final UserService userService;
     private final AvatarService avatarService;
     private final ResultService resultService;
+    private final RoomService roomService;
 
-    public UserController(UserService userService, AvatarService avatarService, ResultService resultService) {
+    public UserController(UserService userService, AvatarService avatarService, ResultService resultService, RoomService roomService) {
         this.userService = userService;
         this.avatarService = avatarService;
         this.resultService = resultService;
+        this.roomService = roomService;
     }
 
     // 내 정보 조회
@@ -74,5 +78,10 @@ public class UserController {
     @GetMapping("/me/results")
     public ApiResponse<MyResultListResponseDTO> readMyResults(Authentication authentication) {
         return ApiResponse.success(resultService.readMyResults(authentication.getName()));
+    }
+
+    @GetMapping("/me/active-room")
+    public ApiResponse<MyActiveRoomResponseDTO> readMyActiveRoom(Authentication authentication) {
+        return ApiResponse.success(roomService.readMyActiveRoom(authentication.getName()));
     }
 }
