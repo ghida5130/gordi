@@ -10,6 +10,7 @@ import com.ssafy.backend.handler.OAuth2SuccessHandler;
 import com.ssafy.backend.service.CustomOAuth2UserService;
 import com.ssafy.backend.service.JwtService;
 import com.ssafy.backend.util.JWTUtil;
+import com.ssafy.backend.util.RoomTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +36,7 @@ public class SecurityConfig {
     private final ApiErrorResponseWriter errorResponseWriter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final RoomTokenProvider roomTokenProvider;
 
     @Value("${oauth2.failure-redirect-url}")
     private String oauthFailureRedirectUrl;
@@ -46,7 +48,8 @@ public class SecurityConfig {
             JWTUtil jwtUtil,
             ApiErrorResponseWriter errorResponseWriter,
             CustomOAuth2UserService customOAuth2UserService,
-            OAuth2SuccessHandler oAuth2SuccessHandler
+            OAuth2SuccessHandler oAuth2SuccessHandler,
+            RoomTokenProvider roomTokenProvider
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
@@ -55,6 +58,7 @@ public class SecurityConfig {
         this.errorResponseWriter = errorResponseWriter;
         this.customOAuth2UserService = customOAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.roomTokenProvider = roomTokenProvider;
     }
 
     // 로그인 필터 AuthenticationManager
@@ -87,9 +91,13 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // WebSocket 핸드셰이크는 열어두고, 인증은 STOMP CONNECT 인터셉터에서 수행
                         .requestMatchers("/ws/v1/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rooms").hasRole("USER")
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers("/api/v1/recommendation-options").hasRole("USER")
                         .requestMatchers("/api/v1/recommendations/**").hasRole("USER")
+                        .requestMatchers("/api/v1/products/**").hasRole("USER")
+                        .requestMatchers("/api/v1/candidates/**").hasRole("USER")
+                        .requestMatchers("/api/v1/avatars/**").hasRole("USER")
                         .requestMatchers(
                                 "/api/swagger-ui.html",
                                 "/api/swagger-ui/**",
@@ -120,7 +128,7 @@ public class SecurityConfig {
         );
 
         // JWT 인가 필터 등록 (JWTUtil static 접근이므로 기본 생성자로 생성)
-        http.addFilterBefore(new JWTFilter(jwtUtil, errorResponseWriter), LogoutFilter.class);
+        http.addFilterBefore(new JWTFilter(jwtUtil, roomTokenProvider, errorResponseWriter), LogoutFilter.class);
 
         // 로그아웃 핸들러 등록
         http.logout(logout -> logout
