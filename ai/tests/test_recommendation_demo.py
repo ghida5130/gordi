@@ -76,7 +76,7 @@ def test_demo_page_is_served_by_fastapi(
     response = client.get("/demo/recommendations")
 
     assert response.status_code == 200
-    assert "Gordi AI Lab" in response.text
+    assert "추천 파이프라인 데모" in response.text
     assert "/api/v1/demo/recommendations" in response.text
 
 
