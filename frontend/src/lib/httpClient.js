@@ -56,7 +56,7 @@ authHttpClient.interceptors.response.use(
           {},
           {
             withCredentials: true,
-          },
+          }
         );
 
         // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
@@ -89,5 +89,5 @@ authHttpClient.interceptors.response.use(
 
     // 401 에러가 아니거나, 재시도 로직에 해당하지 않는 에러는 그대로 반환
     return Promise.reject(error);
-  },
+  }
 );
