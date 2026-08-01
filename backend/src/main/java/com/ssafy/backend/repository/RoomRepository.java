@@ -21,6 +21,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByRoomCode(String roomCode);
 
+    // 읽기 전용 조회 (잠금 불필요한 경로용 — 예: 음성 토큰 발급)
+    Optional<Room> findByRoomCode(String roomCode);
+
     Optional<Room> findByHostUserIdAndIdempotencyKey(Long hostUserId, String idempotencyKey);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
