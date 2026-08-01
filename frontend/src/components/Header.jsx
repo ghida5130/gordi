@@ -8,6 +8,9 @@ export default function Header() {
   const { isLogin, clearUser } = useUserStore();
   const [hoveredMenu, setHoveredMenu] = useState(null);
 
+  // Zustand 로그인 상태 또는 로컬 스토리지의 토큰(at) 존재 여부로 로그인 상태 판별
+  const isLoggedIn = isLogin || !!localStorage.getItem('at');
+
   // 로그아웃 처리 함수
   const handleLogout = () => {
     removeAccessToken();
@@ -20,7 +23,7 @@ export default function Header() {
   const handleCreateRoomClick = (e) => {
     e.preventDefault();
     setHoveredMenu(null);
-    if (!isLogin) {
+    if (!isLoggedIn) {
       alert('로그인이 필요한 서비스입니다.');
       navigate('/login');
     } else {
@@ -32,7 +35,7 @@ export default function Header() {
   const handleJoinRoomClick = (e) => {
     e.preventDefault();
     setHoveredMenu(null);
-    if (!isLogin) {
+    if (!isLoggedIn) {
       alert('로그인이 필요한 서비스입니다.');
       navigate('/login');
     } else {
@@ -131,8 +134,8 @@ export default function Header() {
           {/* 우측 프로필 및 로그인/로그아웃 */}
           <div className="flex items-center gap-5" onMouseEnter={() => setHoveredMenu(null)}>
             
-            {/* 🌟 isLogin 상태에 따른 버튼 조건부 렌더링 */}
-            {isLogin ? (
+            {/* 🌟 isLoggedIn 상태에 따른 버튼 조건부 렌더링 */}
+            {isLoggedIn ? (
               <>
                 <button 
                   onClick={handleLogout} 
