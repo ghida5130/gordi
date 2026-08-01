@@ -45,6 +45,7 @@ class CollectorSettings:
     max_retries: int = MAX_RETRIES
     user_agent: str = DEFAULT_USER_AGENT
     dry_run: bool = False
+    skip_existing: bool = False
 
     def __post_init__(self) -> None:
         if self.max_items < 1:

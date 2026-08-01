@@ -183,6 +183,18 @@ class CollectionPipeline:
         product_client: SlowHttpClient,
         image_client: SlowHttpClient,
     ) -> ProductOutcome:
+        if self.settings.skip_existing:
+            existing = self.storage.normalized_path(
+                self.adapter.name, product_id
+            )
+            if existing.exists():
+                logger.info("skip existing product %s", product_id)
+                return ProductOutcome(
+                    product_id=product_id,
+                    status="skipped",
+                    error="already collected",
+                )
+
         url = self.adapter.product_url(product_id)
         logger.info("fetch product %s %s", product_id, url)
 

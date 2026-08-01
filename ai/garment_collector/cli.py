@@ -92,6 +92,14 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Resolve IDs and exit without network writes",
     )
+    collect.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip IDs whose normalized JSON already exists in "
+            "--dataset-root (safe batch resume without re-fetching)"
+        ),
+    )
 
     validate = sub.add_parser(
         "validate", help="Re-validate normalized JSON files"
@@ -137,7 +145,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     export_seed = sub.add_parser(
         "export-seed",
-        help="Export the strict 198-product backend seed manifest",
+        help=(
+            "Export the strict backend seed manifest "
+            "(defaults to the original 198-product split)"
+        ),
     )
     export_seed.add_argument(
         "--dataset-root",
@@ -156,6 +167,23 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Output manifest path (kept outside Git)",
+    )
+    export_seed.add_argument(
+        "--expected-counts-file",
+        type=Path,
+        help=(
+            "JSON file overriding expected group counts, e.g. "
+            '{"MALE/TOP": 100, "FEMALE/BOTTOM": 100}; '
+            "defaults to the original 198-product split"
+        ),
+    )
+    export_seed.add_argument(
+        "--expected-size-rows",
+        type=int,
+        help=(
+            "Expected total size-row count for the expanded selection; "
+            "required together with --expected-counts-file"
+        ),
     )
 
     upload_s3 = sub.add_parser(
@@ -257,6 +285,7 @@ def cmd_collect(args: argparse.Namespace) -> int:
         "dataset_root": args.dataset_root.resolve(),
         "max_items": args.max_items,
         "dry_run": args.dry_run,
+        "skip_existing": args.skip_existing,
     }
     if args.product_delay is not None:
         kwargs["product_delay_sec"] = args.product_delay
@@ -336,14 +365,50 @@ def cmd_reprocess(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_expected_counts(path: Path) -> dict[str, int]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or not payload:
+        raise ManifestError(
+            "expected-counts file must be a non-empty JSON object"
+        )
+    counts: dict[str, int] = {}
+    for group, count in payload.items():
+        if (
+            not isinstance(group, str)
+            or isinstance(count, bool)
+            or not isinstance(count, int)
+            or count < 1
+        ):
+            raise ManifestError(
+                "expected-counts entries must map group names to "
+                "positive integers"
+            )
+        counts[group] = count
+    return counts
+
+
 def cmd_export_seed(args: argparse.Namespace) -> int:
     try:
+        if (args.expected_counts_file is None) != (
+            args.expected_size_rows is None
+        ):
+            raise ManifestError(
+                "--expected-counts-file and --expected-size-rows "
+                "must be provided together"
+            )
+        expected_group_counts = None
+        if args.expected_counts_file is not None:
+            expected_group_counts = _load_expected_counts(
+                args.expected_counts_file
+            )
         manifest = export_seed_manifest(
             args.dataset_root,
             args.selection_file,
             args.output,
+            expected_group_counts=expected_group_counts,
+            expected_size_rows=args.expected_size_rows,
         )
-    except ManifestError as exc:
+    except (ManifestError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     print(
