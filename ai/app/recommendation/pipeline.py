@@ -15,6 +15,8 @@ from app.recommendation.vector_index import (
 
 DEFAULT_RESULT_LIMIT = 10
 MAX_RESULT_LIMIT = 50
+RETRIEVAL_WEIGHT = 0.65
+COMPATIBILITY_WEIGHT = 0.35
 
 _COLOR_KEYWORDS = {
     "BLACK": ("블랙", "검정", "검은", "black"),
@@ -328,7 +330,10 @@ class RecommendationPipeline:
                 candidate.product,
             )
             retrieval = (candidate.score + 1.0) / 2.0
-            final_score = 0.65 * retrieval + 0.35 * compatibility.total
+            final_score = (
+                RETRIEVAL_WEIGHT * retrieval
+                + COMPATIBILITY_WEIGHT * compatibility.total
+            )
             scored.append(
                 (
                     final_score,

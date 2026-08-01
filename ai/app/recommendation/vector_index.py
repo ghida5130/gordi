@@ -154,6 +154,23 @@ class CatalogVectorIndex:
     def product_count(self) -> int:
         return len(self._items)
 
+    @property
+    def products(self) -> list[dict[str, Any]]:
+        return [dict(item.product) for item in self._items]
+
+    def embedding_of(
+        self,
+        source: str,
+        external_id: str,
+    ) -> list[float] | None:
+        for item in self._items:
+            if (
+                item.product["source"] == source
+                and item.product["external_id"] == external_id
+            ):
+                return list(item.embedding)
+        return None
+
     def search(
         self,
         query_embedding: list[float],
