@@ -34,6 +34,42 @@ X-Internal-Api-Key: ${INTERNAL_API_KEY}
 최대 `limit`건을 반환합니다. 모델을 연결할 때는
 `app/services/recommendation_ranker.py`의 구현을 교체합니다.
 
+## 추천 VLM 기능 (기본 비활성)
+
+이미지 속성 추출, pairwise 코디 궁합 재정렬, LLM 추천 이유는 모두
+OpenAI 호환 chat completions 클라이언트(`app/recommendation/vlm.py`)를
+공유하며 플래그로 각각 켠다. 어느 기능이든 VLM 호출이 실패하면 기존
+규칙 기반 동작으로 자동 강등되므로 추천 가용성에는 영향이 없다.
+
+```env
+RECOMMENDATION_VLM_MODEL=openai/gpt-5.6-luna
+RECOMMENDATION_VLM_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
+RECOMMENDATION_VLM_API_KEY=            # 비우면 OPENROUTER_API_KEY 재사용
+RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED=false  # query 이미지 → 색상/계절/스타일/패턴 intent
+RECOMMENDATION_VLM_RERANK_ENABLED=false        # 상위 N 후보 pairwise 궁합 재정렬
+RECOMMENDATION_VLM_RERANK_TOP_K=20
+RECOMMENDATION_LLM_REASONS_ENABLED=false       # 검증된 사실 기반 LLM 추천 이유
+```
+
+로컬 소형 멀티모달 모델을 쓰려면 endpoint를 Ollama/vLLM 등
+OpenAI 호환 서버로 바꾼다 (예:
+`RECOMMENDATION_VLM_ENDPOINT=http://localhost:11434/v1/chat/completions`,
+`RECOMMENDATION_VLM_MODEL=qwen3-vl:8b`, API 키는 비워도 된다).
+
+LLM 추천 이유는 일치 태그·예산·점수 등 검증된 사실만 프롬프트로
+전달하고, 사실에 없는 태그 라벨이 출력에 나타나면 폐기 후 규칙 기반
+이유로 대체한다.
+
+## 추천 품질 평가
+
+`ai/eval/README.md` 참고. 파이프라인을 바꾸기 전 반드시
+`eval/queries-seed-v1.jsonl` 오프라인 평가로 baseline 대비 회귀를
+확인한다.
+
+```powershell
+python -m app.recommendation.eval_cli run --dataset eval/queries-seed-v1.jsonl --mode offline
+```
+
 ## 테스트
 
 ```powershell
