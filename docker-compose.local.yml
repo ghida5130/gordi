@@ -11,12 +11,12 @@ services:
       - ./.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - MYSQL_HOST=gordi-mysql 
+      - MYSQL_HOST=gordi-mysql
       - REDIS_HOST=gordi-redis
       - RABBITMQ_HOST=gordi-rabbitmq
     networks:
       - app-network
-    
+
   frontend:
     build:
       context: ./frontend
@@ -37,7 +37,7 @@ services:
       - API_PREFIX=/ai/v1
     networks:
       - app-network
-  
+
   livekit:
     image: livekit/livekit-server:latest
     container_name: gordi-livekit
@@ -45,10 +45,10 @@ services:
     command: --dev --bind 0.0.0.0
     ports:
       - "7881:7881"
-      - "50000-50100:50000-50100/udp"
+      - "50300-50400:50300-50400/udp"
     networks:
       - app-network
-  
+
   # 🚀 로컬용 Nginx 서비스 추가
   nginx:
     image: nginx:alpine
@@ -63,4 +63,4 @@ services:
 
 networks:
   app-network:
-      external: true
+    external: true

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { joinRoom } from "@/api/rooms";
 import PageContainer from "@/components/common/PageContainer";
@@ -9,6 +9,7 @@ import { setRoomSession } from "@/utils/roomSessionStorage";
 
 function RoomLobbyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isJoinFormOpen, setIsJoinFormOpen] = useState(false);
   const [joinForm, setJoinForm] = useState({
     roomCode: "",
@@ -50,6 +51,11 @@ function RoomLobbyPage() {
     <main className="flex min-h-screen items-center bg-slate-100 py-12">
       <PageContainer>
         <section className="mx-auto max-w-2xl text-center">
+          {location.state?.roomNotice && (
+            <p className="mb-6 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+              {location.state.roomNotice}
+            </p>
+          )}
           <p className="text-sm font-semibold text-brand-600">ROOM</p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight">
             어떻게 시작할까요?

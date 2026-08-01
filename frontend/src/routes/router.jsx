@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
         element: <ApiExamplePage />,
       },
       {
-        path: "tierm",
+        path: "rooms/:roomId/tier-maker",
         element: <TierMakerRoomPage />,
       },
       {
