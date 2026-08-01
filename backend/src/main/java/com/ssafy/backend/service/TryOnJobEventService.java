@@ -14,11 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,7 +38,6 @@ public class TryOnJobEventService {
 
     private final TryOnJobRepository tryOnJobRepository;
     private final TryOnJobEventRepository tryOnJobEventRepository;
-    private final ObjectMapper objectMapper;
 
     public void apply(Long jobId, TryOnJobEventRequest request) {
         TryOnJobEventType eventType = parseEventType(request.eventType());
@@ -105,7 +102,7 @@ public class TryOnJobEventService {
                 result.imageUrl(),
                 result.width(),
                 result.height(),
-                writeFitSummary(job.getId(), result.fitSummary()),
+                result.fitSummary(),
                 result.disclaimer(),
                 request.modelVersion(),
                 request.promptVersion(),
@@ -142,23 +139,6 @@ public class TryOnJobEventService {
     private boolean isStale(TryOnJob job, Long sequence) {
         Long last = job.getLastEventSequence();
         return last != null && sequence <= last;
-    }
-
-    // 문구 목록을 JSON 배열 문자열로 저장한다. 직렬화가 실패해도 상태 전이는 막지 않는다.
-    private String writeFitSummary(Long jobId, List<String> fitSummary) {
-        if (fitSummary == null || fitSummary.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(fitSummary);
-        } catch (Exception exception) {
-            log.warn(
-                    "fitSummary could not be serialized. jobId={}, exceptionType={}",
-                    jobId,
-                    exception.getClass().getName()
-            );
-            return null;
-        }
     }
 
     // 발신 시각이 없으면 수신 시각을 사용한다.

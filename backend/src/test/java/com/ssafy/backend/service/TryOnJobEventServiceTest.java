@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -45,14 +44,12 @@ class TryOnJobEventServiceTest {
     @Mock
     private TryOnJobEventRepository tryOnJobEventRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private TryOnJobEventService tryOnJobEventService;
 
     @BeforeEach
     void setUp() {
         tryOnJobEventService = new TryOnJobEventService(
-                tryOnJobRepository, tryOnJobEventRepository, objectMapper);
+                tryOnJobRepository, tryOnJobEventRepository);
     }
 
     /* ==================== 상태 전이 ==================== */
@@ -89,15 +86,13 @@ class TryOnJobEventServiceTest {
     }
 
     @Test
-    void SUCCEEDED_이벤트의_fitSummary는_JSON_배열로_저장된다() {
+    void SUCCEEDED_이벤트의_fitSummary가_반영된다() {
         TryOnJob job = queuedJob();
         stubJob(job);
 
         tryOnJobEventService.apply(JOB_ID, succeededEvent(2L));
 
-        assertThat(job.getFitSummaryJson()).isNotNull();
-        String[] restored = objectMapper.readValue(job.getFitSummaryJson(), String[].class);
-        assertThat(restored).containsExactly("여유로운 상의 핏");
+        assertThat(job.getFitSummary()).containsExactly("여유로운 상의 핏");
     }
 
     @Test

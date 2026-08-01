@@ -85,8 +85,6 @@ class TryOnServiceTest {
     @Mock
     private Authentication authentication;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private TryOnService tryOnService;
 
     @BeforeEach
@@ -100,10 +98,9 @@ class TryOnServiceTest {
                 avatarRepository,
                 roomAuthResolver,
                 // 해시 계산은 실제 구현을 사용하고 저장소만 대체한다.
-                new IdempotencyService(idempotencyRecordRepository, objectMapper),
+                new IdempotencyService(idempotencyRecordRepository, new ObjectMapper()),
                 tryOnGenerationClient,
-                new TryOnPolicy(20, 1500L, 5),
-                objectMapper
+                new TryOnPolicy(20, 1500L, 5, 120_000L, 20)
         );
     }
 
@@ -121,7 +118,7 @@ class TryOnServiceTest {
                     "https://cdn.example.com/fittings/71.webp",
                     1024,
                     1536,
-                    "[\"여유로운 상의 핏\"]",
+                    List.of("여유로운 상의 핏"),
                     "생성 이미지는 실제 핏과 다를 수 있습니다.",
                     "provider-model-version",
                     "v1",
@@ -166,10 +163,10 @@ class TryOnServiceTest {
         }
 
         @Test
-        void 깨진_fitSummary는_조회를_실패시키지_않고_빈_목록이_된다() {
+        void fitSummary가_비어있어도_조회된다() {
             TryOnJob job = soloJob(MEMBER_ID);
             job.setId(GENERATED_JOB_ID);
-            job.markSucceeded("url", 1, 1, "{ not json array", null, null, null, CREATED_AT);
+            job.markSucceeded("url", 1, 1, List.of(), null, null, null, CREATED_AT);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
@@ -260,7 +257,7 @@ class TryOnServiceTest {
         @Test
         void 동일_구성_성공_Job이_있으면_재생성하지_않고_결과를_재사용한다() {
             TryOnJob cached = soloJob(OTHER_MEMBER_ID);
-            cached.markSucceeded("https://cdn/cached.webp", 1024, 1536, "[\"핏\"]",
+            cached.markSucceeded("https://cdn/cached.webp", 1024, 1536, List.of("핏"),
                     "안내", "model-1", "v1", CREATED_AT);
 
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
@@ -473,7 +470,7 @@ class TryOnServiceTest {
         void HOST가_성공한_Job을_확정하면_방_버전이_증가한다() {
             Room room = room(ROOM_VERSION);
             TryOnJob job = roomJob(room);
-            job.markSucceeded("https://cdn/71.webp", 1024, 1536, "[]", null, "m", "v1", CREATED_AT);
+            job.markSucceeded("https://cdn/71.webp", 1024, 1536, List.of(), null, "m", "v1", CREATED_AT);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
             when(roomAuthResolver.requireParticipant(authentication, room))
@@ -544,7 +541,7 @@ class TryOnServiceTest {
             otherRoom.setId(ROOM_ID + 1);
 
             TryOnJob job = roomJob(otherRoom);
-            job.markSucceeded("url", 1, 1, "[]", null, "m", "v1", CREATED_AT);
+            job.markSucceeded("url", 1, 1, List.of(), null, "m", "v1", CREATED_AT);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
             when(roomAuthResolver.requireParticipant(authentication, room))

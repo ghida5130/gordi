@@ -3,6 +3,7 @@ package com.ssafy.backend.domain;
 import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -21,6 +22,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 착장 이미지 생성 Job.
@@ -153,9 +155,10 @@ public class TryOnJob {
     @Column(name = "result_height")
     private Integer resultHeight;
 
-    // 핏 설명 문구 목록의 JSON 배열 표현. 표현 계층에서 List<String> 으로 변환한다.
+    // 핏 설명 문구 목록. JSON 배열 문자열로 저장된다.
+    @Convert(converter = FitSummaryConverter.class)
     @Column(name = "fit_summary", columnDefinition = "TEXT")
-    private String fitSummaryJson;
+    private List<String> fitSummary;
 
     @Column(name = "disclaimer", length = 500)
     private String disclaimer;
@@ -222,7 +225,7 @@ public class TryOnJob {
             String imageUrl,
             Integer width,
             Integer height,
-            String fitSummaryJson,
+            List<String> fitSummary,
             String disclaimer,
             String modelVersion,
             String promptVersion,
@@ -232,7 +235,7 @@ public class TryOnJob {
         this.resultImageUrl = imageUrl;
         this.resultWidth = width;
         this.resultHeight = height;
-        this.fitSummaryJson = fitSummaryJson;
+        this.fitSummary = fitSummary;
         this.disclaimer = disclaimer;
         this.modelVersion = modelVersion;
         this.promptVersion = promptVersion;

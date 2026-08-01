@@ -1,12 +1,14 @@
 package com.ssafy.backend.repository;
 
 import com.ssafy.backend.domain.TryOnJob;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -37,4 +39,16 @@ public interface TryOnJobRepository extends JpaRepository<TryOnJob, Long> {
 
     /** 요청자별 생성 한도 집계 */
     long countByOwnerUserIdAndCreatedAtGreaterThanEqual(Long ownerUserId, LocalDateTime from);
+
+    /**
+     * 콜백이 오지 않아 아직 끝나지 않은 Job (정합 복구 대상).
+     * 오래 기다린 것부터 처리한다.
+     */
+    @Query("""
+            select job.id from TryOnJob job
+            where job.status in ('QUEUED', 'RUNNING')
+              and job.createdAt < :threshold
+            order by job.createdAt asc
+            """)
+    List<Long> findStaleJobIds(@Param("threshold") LocalDateTime threshold, Pageable pageable);
 }

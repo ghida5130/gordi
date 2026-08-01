@@ -39,18 +39,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -88,7 +85,6 @@ public class TryOnService {
     private final IdempotencyService idempotencyService;
     private final TryOnGenerationClient tryOnGenerationClient;
     private final TryOnPolicy tryOnPolicy;
-    private final ObjectMapper objectMapper;
 
     /* ==================== 조회 ==================== */
 
@@ -552,7 +548,7 @@ public class TryOnService {
                 source.getResultImageUrl(),
                 source.getResultWidth(),
                 source.getResultHeight(),
-                source.getFitSummaryJson(),
+                source.getFitSummary(),
                 source.getDisclaimer(),
                 source.getModelVersion(),
                 source.getPromptVersion(),
@@ -619,7 +615,7 @@ public class TryOnService {
                 job.getResultImageUrl(),
                 job.getResultWidth(),
                 job.getResultHeight(),
-                readFitSummary(job),
+                job.getFitSummary(),
                 job.getDisclaimer()
         )
                 : null;
@@ -643,25 +639,6 @@ public class TryOnService {
                 toInstant(job.getCreatedAt()),
                 toInstant(job.getCompletedAt())
         );
-    }
-
-    // 저장된 JSON 배열을 문구 목록으로 복원. 깨진 값이면 조회를 실패시키지 않고 빈 목록으로 둔다.
-    private List<String> readFitSummary(TryOnJob job) {
-        String json = job.getFitSummaryJson();
-        if (!StringUtils.hasText(json)) {
-            return List.of();
-        }
-        try {
-            String[] values = objectMapper.readValue(json, String[].class);
-            return Arrays.stream(values).filter(Objects::nonNull).toList();
-        } catch (Exception exception) {
-            log.warn(
-                    "Stored fitSummary could not be parsed. jobId={}, exceptionType={}",
-                    job.getId(),
-                    exception.getClass().getName()
-            );
-            return List.of();
-        }
     }
 
     private Instant toInstant(LocalDateTime value) {
