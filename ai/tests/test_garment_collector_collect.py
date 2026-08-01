@@ -6,9 +6,18 @@ from pathlib import Path
 import pytest
 
 from garment_collector.adapters.base import SourceAdapter
+from garment_collector.adapters.musinsa.parser import (
+    classify_slot,
+    map_backend_codes,
+)
 from garment_collector.cli import _load_expected_counts
 from garment_collector.config import CollectorSettings
-from garment_collector.models import ParsedProduct
+from garment_collector.models import (
+    BackendCategory,
+    BackendSubcategory,
+    ParsedProduct,
+    Slot,
+)
 from garment_collector.pipeline import CollectionPipeline
 from garment_collector.seed_manifest import ManifestError
 
@@ -95,3 +104,36 @@ def test_load_expected_counts_rejects_invalid(
 
     with pytest.raises(ManifestError):
         _load_expected_counts(path)
+
+
+@pytest.mark.parametrize(
+    ("subcategory", "expected_subcategory"),
+    [
+        ("코트", BackendSubcategory.COAT),
+        ("가디건", BackendSubcategory.CARDIGAN),
+        ("패딩", BackendSubcategory.PADDING),
+        ("블루종", BackendSubcategory.JACKET),
+    ],
+)
+def test_outer_maps_to_top_by_team_rule(
+    subcategory: str,
+    expected_subcategory: BackendSubcategory,
+) -> None:
+    category, backend_subcategory = map_backend_codes(
+        Slot.OUTER,
+        "아우터",
+        subcategory,
+    )
+
+    assert category is BackendCategory.TOP
+    assert backend_subcategory is expected_subcategory
+
+
+def test_skirt_bottom_and_dress_top_team_rules() -> None:
+    skirt_slot, skirt_note = classify_slot("스커트", "", "미니 스커트")
+    dress_slot, dress_note = classify_slot("원피스", "", "셔츠 원피스")
+
+    assert skirt_slot is Slot.BOTTOM
+    assert "BOTTOM" in (skirt_note or "")
+    assert dress_slot is Slot.TOP
+    assert "TOP" in (dress_note or "")

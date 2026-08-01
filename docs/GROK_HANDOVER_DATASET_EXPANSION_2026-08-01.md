@@ -61,6 +61,18 @@ python -m venv .venv           # 이미 있으면 생략
   서브카테고리별 최소 8개 이상(평가셋 anchor 그룹 최소 크기 4의 여유분).
 - 기존 수집분과 겹쳐도 된다 — `--skip-existing`이 걸러준다.
 
+**상품군 분류 규칙 (팀 확정, 파서가 자동 적용):** 백엔드 카탈로그는
+TOP/BOTTOM 두 카테고리만 저장한다.
+
+| 상품군 | 저장 분류 |
+|---|---|
+| 스커트 | BOTTOM / SKIRT |
+| 원피스·드레스 | TOP / DRESS |
+| 아우터(재킷·코트·가디건·패딩) | TOP / JACKET·COAT·CARDIGAN·PADDING |
+
+따라서 스커트·원피스·아우터 상품 ID도 수집 대상에 포함해도 된다.
+분류 사유는 `temporary_classification_reason`에 기록되므로 별도 처리 불필요.
+
 ids 파일 형식 (한 줄 하나, `#` 주석 허용):
 
 ```text
