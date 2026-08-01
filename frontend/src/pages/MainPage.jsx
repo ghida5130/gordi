@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/useUserStore';
-import bgImage from '@/assets/background-placeholder.jpg';
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -13,7 +12,7 @@ const MainPage = () => {
       
       {/* 1. Hero Section */}
       <section className="relative w-full h-screen flex flex-col justify-center items-center text-center bg-gray-200 bg-cover bg-center"
-        style={{ backgroundImage: `url(${bgImage})` }} // 실제 배경 이미지 경로로 수정 필요
+        style={{ backgroundImage: "url('/images/hero_background.jpg')" }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
 
