@@ -41,6 +41,15 @@ services:
       OPENROUTER_EMBEDDING_ENDPOINT: ${OPENROUTER_EMBEDDING_ENDPOINT:-https://openrouter.ai/api/v1/embeddings}
       OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER:-}
       OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-Gordi AI}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      CATALOG_EMBEDDING_INDEX_PATH: ${CATALOG_EMBEDDING_INDEX_PATH:-/app/catalog_index/catalog-embeddings.json}
+      RECOMMENDATION_IMAGE_ALLOWED_HOSTS: ${RECOMMENDATION_IMAGE_ALLOWED_HOSTS:-["localhost","gordi-nginx"]}
+      ENABLE_RECOMMENDATION_DEMO: ${ENABLE_RECOMMENDATION_DEMO:-false}
+    volumes:
+      - type: bind
+        source: ${CATALOG_EMBEDDING_INDEX_HOST_DIR:-./ai/catalog_index}
+        target: /app/catalog_index
+        read_only: true
     networks:
       - app-network
   
