@@ -11,31 +11,31 @@ import {
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api";
 
 const clientConfig = {
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: apiBaseUrl,
   timeout: 10_000,
-}
+};
 
 // 인증 정보 없이 사용하는 공개 요청용 클라이언트
 export const httpClient = axios.create({
   ...clientConfig,
-})
+});
 
 // 액세스 토큰이 반드시 필요한 인증 요청용 클라이언트
 export const authHttpClient = axios.create({
   ...clientConfig,
-})
+});
 
 authHttpClient.interceptors.request.use((config) => {
   // 토큰이 없으면 서버 요청 전에 인증 오류 반환
-  const accessToken = getAccessToken()
+  const accessToken = getAccessToken();
 
   if (!accessToken) {
-    return Promise.reject(new AuthRequiredError())
+    return Promise.reject(new AuthRequiredError());
   }
 
-  config.headers.Authorization = `Bearer ${accessToken}`
-  return config
-})
+  config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
 
 // ⭐️ 토큰 만료 시 자동 재발급 로직 추가
 authHttpClient.interceptors.response.use(
@@ -56,7 +56,7 @@ authHttpClient.interceptors.response.use(
           {},
           {
             withCredentials: true,
-          },
+          }
         );
 
         // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
@@ -89,5 +89,9 @@ authHttpClient.interceptors.response.use(
 
     // 401 에러가 아니거나, 재시도 로직에 해당하지 않는 에러는 그대로 반환
     return Promise.reject(error);
+<<<<<<< HEAD
   },
+=======
+  }
+>>>>>>> b1a8c3e1432ddd0fb75653748e96383a57fa3cb8
 );
