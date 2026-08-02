@@ -1,5 +1,7 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.error.ApiException;
+import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Result;
@@ -8,15 +10,20 @@ import com.ssafy.backend.domain.ResultTier;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.results.MyResultListResponseDTO;
+import com.ssafy.backend.dto.results.RoomResultResponseDTO;
 import com.ssafy.backend.repository.ResultBoardItemRepository;
 import com.ssafy.backend.repository.ResultRepository;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ResultServiceTest {
@@ -24,9 +31,11 @@ class ResultServiceTest {
     private final ResultRepository resultRepository = mock(ResultRepository.class);
     private final ResultBoardItemRepository resultBoardItemRepository =
             mock(ResultBoardItemRepository.class);
+    private final RoomAccessValidator roomAccessValidator = mock(RoomAccessValidator.class);
     private final ResultService resultService = new ResultService(
             resultRepository,
-            resultBoardItemRepository
+            resultBoardItemRepository,
+            roomAccessValidator
     );
 
     @Test
@@ -69,6 +78,102 @@ class ResultServiceTest {
         assertThat(response.items().get(0).topItems())
                 .extracting(MyResultListResponseDTO.TopItem::productId)
                 .containsExactly(101L, 102L);
+    }
+
+    @Test
+    void readRoomResultReturnsRankedItemsFromHighestNonEmptyTier() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 7, 23, 11, 0);
+        Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
+        TryOnJob tryOnJob = TryOnJob.builder()
+                .id(71L)
+                .resultImageUrl("https://cdn.example.com/fittings/71.webp")
+                .build();
+        Result result = Result.builder()
+                .id(51L)
+                .room(room)
+                .tryOnJob(tryOnJob)
+                .boardVersion(17L)
+                .createdAt(createdAt)
+                .build();
+        ResultTier tierS = ResultTier.builder()
+                .id(81L)
+                .result(result)
+                .name("S")
+                .position(0)
+                .build();
+        ResultTier tierA = ResultTier.builder()
+                .id(82L)
+                .result(result)
+                .name("A")
+                .position(1)
+                .build();
+        ResultBoardItem first = boardItem(result, tierS, product(101L), 10_000);
+        ResultBoardItem second = boardItem(result, tierS, product(102L), 20_000);
+        ResultBoardItem third = boardItem(result, tierS, product(103L), 30_000);
+        ResultBoardItem fourth = boardItem(result, tierS, product(104L), 40_000);
+        ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 10_000);
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "guest", "PARTICIPANTS");
+
+        when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(result));
+        when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
+                .thenReturn(List.of(lowerTier, fourth, second, third, first));
+
+        RoomResultResponseDTO response = resultService.readRoomResult(
+                " a7k9q2 ",
+                principal
+        );
+
+        assertThat(response.resultId()).isEqualTo(51L);
+        assertThat(response.roomCode()).isEqualTo("A7K9Q2");
+        assertThat(response.boardVersion()).isEqualTo(17L);
+        assertThat(response.topItems())
+                .extracting(
+                        RoomResultResponseDTO.TopItem::rank,
+                        RoomResultResponseDTO.TopItem::productId
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(1, 101L),
+                        org.assertj.core.groups.Tuple.tuple(2, 102L),
+                        org.assertj.core.groups.Tuple.tuple(3, 103L)
+                );
+        assertThat(response.snapshotImageUrl())
+                .isEqualTo("https://cdn.example.com/fittings/71.webp");
+        assertThat(response.fitSummary()).isEmpty();
+        assertThat(response.disclaimer())
+                .isEqualTo("생성 이미지는 실제 핏과 다를 수 있습니다.");
+        assertThat(response.createdAt())
+                .isEqualTo(createdAt.atZone(AppZone.KST).toInstant());
+        verify(roomAccessValidator).requireParticipant(31L, principal);
+    }
+
+    @Test
+    void readRoomResultByAccessTokenValidatesMemberParticipation() {
+        Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
+        Result result = Result.builder()
+                .id(51L)
+                .room(room)
+                .tryOnJob(TryOnJob.builder().resultImageUrl("https://cdn/result.webp").build())
+                .boardVersion(17L)
+                .createdAt(LocalDateTime.now(AppZone.KST))
+                .build();
+        when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(result));
+        when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
+                .thenReturn(List.of());
+
+        resultService.readRoomResultByAccessToken("A7K9Q2", "member@example.com");
+
+        verify(roomAccessValidator).requireParticipant(31L, "member@example.com");
+    }
+
+    @Test
+    void readRoomResultThrowsResultNotFoundWhenSnapshotDoesNotExist() {
+        when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> resultService.readRoomResult(
+                "A7K9Q2",
+                new RoomPrincipal(42L, 31L, "guest", "PARTICIPANTS")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESULT_NOT_FOUND));
     }
 
     private ResultBoardItem boardItem(
