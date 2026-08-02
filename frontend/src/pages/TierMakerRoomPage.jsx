@@ -13,6 +13,7 @@ import SharedCursorLayer from "@/components/tierMaker/SharedCursorLayer";
 import TierBoard from "@/components/tierMaker/TierBoard";
 import TierMakerIcon from "@/components/tierMaker/TierMakerIcon";
 import { useRoomEvents } from "@/hooks/useRoomEvents";
+import { useToast } from "@/hooks/useToast";
 import { getApiErrorMessage } from "@/utils/apiError";
 import {
   getRoomSession,
@@ -225,11 +226,19 @@ const emptyTryOn = {
   reason: "",
 };
 
+function getLockConflictMessage(ownerNickname) {
+  const owner = ownerNickname ? `${ownerNickname} 사용자가` : "다른 사용자가";
+  return `이미 ${owner} 이동하고 있습니다.`;
+}
+
 function TierMakerRoomPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const sharedBoardRef = useRef(null);
   const completedDropItemIdsRef = useRef(new Set());
+  const activeDragRef = useRef(null);
+  const cancelledDragItemIdsRef = useRef(new Set());
   const [roomSession] = useState(getRoomSession);
   const [fittingCandidates, setFittingCandidates] = useState([]);
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
@@ -357,6 +366,23 @@ function TierMakerRoomPage() {
     });
   }, [navigate, roomEvents.terminalEvent]);
 
+  useEffect(() => {
+    const rejection = roomEvents.lockRejection;
+    const activeDrag = activeDragRef.current;
+
+    if (!rejection) return;
+
+    if (
+      activeDrag &&
+      String(activeDrag.roomItemId) ===
+      String(rejection.roomItemId)
+    ) {
+      cancelledDragItemIdsRef.current.add(activeDrag.itemId);
+    }
+
+    toast.warning(getLockConflictMessage(rejection.ownerNickname));
+  }, [roomEvents.lockRejection, toast]);
+
   const tryOnMutation = useMutation({
     mutationFn: async () => {
       const avatarResponse = await getMyAvatar();
@@ -412,8 +438,14 @@ function TierMakerRoomPage() {
       String(lock.ownerParticipantId) !==
         String(roomSession.participantId);
 
-    if (!item || isLockedByOther) {
+    if (!item) {
       event.preventDefault();
+      return;
+    }
+
+    if (isLockedByOther) {
+      event.preventDefault();
+      toast.warning(getLockConflictMessage(lock.ownerNickname));
       return;
     }
 
@@ -422,12 +454,23 @@ function TierMakerRoomPage() {
       return;
     }
 
+    activeDragRef.current = {
+      itemId,
+      roomItemId: item.roomItemId,
+    };
+    cancelledDragItemIdsRef.current.delete(itemId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", itemId);
   };
 
-  const handleDragEnd = (_event, itemId) => {
+  const handleDragEnd = (event, itemId) => {
     const item = clothesById[itemId];
+    const wasCancelled = cancelledDragItemIdsRef.current.delete(itemId);
+    activeDragRef.current = null;
+
+    if (wasCancelled) {
+      event.dataTransfer.dropEffect = "none";
+    }
 
     if (completedDropItemIdsRef.current.delete(itemId)) {
       return;
@@ -450,6 +493,8 @@ function TierMakerRoomPage() {
   };
 
   const handleDropTier = (itemId, targetTierId, requestedIndex) => {
+    if (cancelledDragItemIdsRef.current.has(itemId)) return;
+
     const item = clothesById[itemId];
     const targetTier = tiers.find((tier) => tier.id === targetTierId);
 
@@ -521,6 +566,8 @@ function TierMakerRoomPage() {
   };
 
   const handleDropCandidate = (itemId) => {
+    if (cancelledDragItemIdsRef.current.has(itemId)) return;
+
     const nextItem = clothesById[itemId];
 
     if (!nextItem) return;
@@ -634,19 +681,16 @@ function TierMakerRoomPage() {
 
       <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8">
         {(roomEvents.connectionError ||
-          roomEvents.lockRejection ||
           candidateQuery.isError ||
           productQueries.some((query) => query.isError)) && (
           <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {roomEvents.connectionError ||
-              (roomEvents.lockRejection
-                ? `${roomEvents.lockRejection.ownerNickname ?? "다른 참여자"}님이 이미 해당 아이템을 이동하고 있습니다.`
-                : candidateQuery.isError
-                  ? getApiErrorMessage(
-                      candidateQuery.error,
-                      "후보 상품을 불러오지 못했습니다.",
-                    )
-                  : "일부 상품 정보를 불러오지 못했습니다.")}
+              (candidateQuery.isError
+                ? getApiErrorMessage(
+                    candidateQuery.error,
+                    "후보 상품을 불러오지 못했습니다.",
+                  )
+                : "일부 상품 정보를 불러오지 못했습니다.")}
           </p>
         )}
 

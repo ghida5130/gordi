@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getAvatarTemplates } from '@/api/avatar';
+import { useToast } from '@/hooks/useToast';
 
 // 키(cm) -> 키 ID 매핑
 function mapHeightToId(height) {
@@ -31,6 +32,7 @@ const BODY_TYPE_LABELS = {
 
 export default function AvatarSetupPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [step, setStep] = useState(1);
 
   // 1단계 입력 폼 상태
@@ -60,24 +62,24 @@ export default function AvatarSetupPage() {
     },
     onError: (error) => {
       console.error('아바타 템플릿 로딩 실패:', error);
-      alert('신체 정보 로딩에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      toast.error('신체 정보 로딩에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     },
   });
 
   const handleNextStep = (e) => {
     e.preventDefault();
     if (!gender) {
-      alert('성별을 선택해 주세요.');
+      toast.warning('성별을 선택해 주세요.');
       return;
     }
     const h = Number(height);
     const w = Number(weight);
     if (h < 140 || h > 190) {
-      alert('키는 140cm ~ 190cm 사이로 입력해 주세요.');
+      toast.warning('키는 140cm ~ 190cm 사이로 입력해 주세요.');
       return;
     }
     if (w < 40 || w > 90) {
-      alert('몸무게는 40kg ~ 90kg 사이로 입력해 주세요.');
+      toast.warning('몸무게는 40kg ~ 90kg 사이로 입력해 주세요.');
       return;
     }
 
