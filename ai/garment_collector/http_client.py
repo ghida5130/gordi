@@ -58,13 +58,23 @@ class SlowHttpClient:
     def __exit__(self, *args: object) -> None:
         self.close()
 
-    def get(self, url: str) -> FetchResult:
+    def get(self, url: str, *, pace: bool = True) -> FetchResult:
+        """GET *url*.
+
+        When ``pace`` is True (default), enforce the client delay before the
+        request. When False, skip the wait but still update the limiter clock
+        so the next paced request respects the inter-product/image floor.
+        Use pace=False only for secondary endpoints of the *same* product.
+        """
         if self.stopped:
             raise CollectionStopped(self.stop_reason or "collection already stopped")
 
         last_error: Exception | None = None
         for attempt in range(self._settings.max_retries + 1):
-            self._limiter.wait()
+            if pace:
+                self._limiter.wait()
+            else:
+                self._limiter.touch()
             try:
                 response = self._client.get(url)
             except httpx.HTTPError as exc:

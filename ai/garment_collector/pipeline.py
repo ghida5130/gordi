@@ -97,7 +97,10 @@ class CollectionPipeline:
 
     def run(self, product_ids: Iterable[str]) -> RunReport:
         ids = [str(pid).strip() for pid in product_ids if str(pid).strip()]
-        if len(ids) > self.settings.max_items:
+        if (
+            self.settings.max_items is not None
+            and len(ids) > self.settings.max_items
+        ):
             raise ValueError(
                 f"requested {len(ids)} products exceeds max_items="
                 f"{self.settings.max_items}"

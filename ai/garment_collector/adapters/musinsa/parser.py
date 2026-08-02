@@ -367,6 +367,31 @@ def parse_goods_detail_payload(
     )
 
 
+def sizes_available_without_options(
+    detail_payload: dict[str, Any],
+    actual_size_payload: dict[str, Any] | None,
+) -> bool:
+    """True when sizes can be built without fetching the options endpoint.
+
+    Matches the priority used by :func:`parse_goods_detail_payload` so the
+    adapter can skip the options request when it would be a no-op.
+    """
+    if parse_actual_size_payload(actual_size_payload):
+        return True
+    data = (
+        detail_payload.get("data")
+        if isinstance(detail_payload.get("data"), dict)
+        else detail_payload
+    )
+    if not isinstance(data, dict):
+        return False
+    if parse_sizes_from_goods_contents(data.get("goodsContents") or ""):
+        return True
+    if _parse_size_table_field(data.get("sizeTable")):
+        return True
+    return False
+
+
 def parse_actual_size_payload(
     payload: dict[str, Any] | None,
 ) -> list[SizeRow]:

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from garment_collector.adapters.musinsa import MusinsaAdapter
-from garment_collector.config import MAX_ITEMS_PILOT, CollectorSettings
+from garment_collector.config import CollectorSettings
 from garment_collector.models import GarmentRecord
 from garment_collector.mysql_seeder import (
     MySQLSettings,
@@ -72,14 +72,20 @@ def _build_parser() -> argparse.ArgumentParser:
     collect.add_argument(
         "--max-items",
         type=int,
-        default=MAX_ITEMS_PILOT,
-        help=f"Max products this run (cap {MAX_ITEMS_PILOT})",
+        default=None,
+        help=(
+            "Optional safety cap on this run (default: no cap). "
+            "Expansion target is 500 per gender×slot cell."
+        ),
     )
     collect.add_argument(
         "--product-delay",
         type=float,
         default=None,
-        help="Seconds between product requests (min 3.0)",
+        help=(
+            "Seconds between products / first paced product request "
+            "(min 3.0; same-product secondary APIs are unpaced)"
+        ),
     )
     collect.add_argument(
         "--image-delay",
@@ -274,19 +280,20 @@ def cmd_collect(args: argparse.Namespace) -> int:
     if not ids:
         print("error: provide --ids and/or --ids-file", file=sys.stderr)
         return 2
-    if len(ids) > args.max_items:
+    if args.max_items is not None and len(ids) > args.max_items:
         print(
             f"error: {len(ids)} ids exceeds --max-items {args.max_items}",
             file=sys.stderr,
         )
         return 2
 
-    kwargs = {
+    kwargs: dict = {
         "dataset_root": args.dataset_root.resolve(),
-        "max_items": args.max_items,
         "dry_run": args.dry_run,
         "skip_existing": args.skip_existing,
     }
+    if args.max_items is not None:
+        kwargs["max_items"] = args.max_items
     if args.product_delay is not None:
         kwargs["product_delay_sec"] = args.product_delay
     if args.image_delay is not None:
