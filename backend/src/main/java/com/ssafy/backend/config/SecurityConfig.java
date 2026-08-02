@@ -9,6 +9,7 @@ import com.ssafy.backend.handler.LogoutSuccessHandler;
 import com.ssafy.backend.handler.OAuth2SuccessHandler;
 import com.ssafy.backend.service.CustomOAuth2UserService;
 import com.ssafy.backend.service.JwtService;
+import com.ssafy.backend.util.CookieUtil;
 import com.ssafy.backend.util.JWTUtil;
 import com.ssafy.backend.util.RoomTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,7 @@ public class SecurityConfig {
 
     @Value("${oauth2.failure-redirect-url}")
     private String oauthFailureRedirectUrl;
+    private final CookieUtil cookieUtil;
 
     public SecurityConfig(
             AuthenticationConfiguration authenticationConfiguration,
@@ -49,7 +51,8 @@ public class SecurityConfig {
             ApiErrorResponseWriter errorResponseWriter,
             CustomOAuth2UserService customOAuth2UserService,
             OAuth2SuccessHandler oAuth2SuccessHandler,
-            RoomTokenProvider roomTokenProvider
+            RoomTokenProvider roomTokenProvider,
+            CookieUtil cookieUtil
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
@@ -59,6 +62,7 @@ public class SecurityConfig {
         this.customOAuth2UserService = customOAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
         this.roomTokenProvider = roomTokenProvider;
+        this.cookieUtil = cookieUtil;
     }
 
     // 로그인 필터 AuthenticationManager
@@ -135,7 +139,8 @@ public class SecurityConfig {
                 .logoutUrl("/api/v1/auth/logout")
                 .addLogoutHandler(new LogoutSuccessHandler(
                         jwtService,
-                        jwtUtil
+                        jwtUtil,
+                        cookieUtil
                 ))
                 .logoutSuccessHandler((request, response, authentication) -> {
                     if (!response.isCommitted()) {
