@@ -247,6 +247,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Required with --apply; JSON backup of targeted existing rows",
     )
 
+    review_images = sub.add_parser(
+        "review-images",
+        help=(
+            "Fill primary-image review fields with a small VLM and "
+            "promote clean records to READY"
+        ),
+    )
+    review_images.add_argument(
+        "--dataset-root",
+        type=Path,
+        required=True,
+    )
+    review_images.add_argument(
+        "--model",
+        default=os.environ.get(
+            "RECOMMENDATION_VLM_MODEL",
+            "openai/gpt-5.6-luna",
+        ),
+    )
+    review_images.add_argument(
+        "--endpoint",
+        default="https://openrouter.ai/api/v1/chat/completions",
+    )
+    review_images.add_argument(
+        "--reviewer",
+        default=None,
+        help="Recorded reviewer id (default: vlm:<model>)",
+    )
+    review_images.add_argument("--limit", type=int, default=None)
+    review_images.add_argument("--concurrency", type=int, default=8)
+    review_images.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Count target records without VLM calls or writes",
+    )
+
     return parser
 
 
@@ -514,6 +550,56 @@ def cmd_seed_db(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review_images(args: argparse.Namespace) -> int:
+    from garment_collector.image_review import (
+        ImageReviewError,
+        review_dataset_images,
+    )
+
+    try:
+        if args.dry_run:
+            client = None
+        else:
+            # Reuse the shared OpenAI-compatible client; imported lazily
+            # so the collector stays usable without the app package.
+            from app.recommendation.vlm import (
+                OpenAICompatibleVLMClient,
+                VLMSettings,
+            )
+
+            api_key = (
+                os.environ.get("RECOMMENDATION_VLM_API_KEY", "").strip()
+                or os.environ.get("OPENROUTER_API_KEY", "").strip()
+            )
+            if "openrouter.ai" in args.endpoint and not api_key:
+                raise ImageReviewError(
+                    "OPENROUTER_API_KEY (or RECOMMENDATION_VLM_API_KEY) "
+                    "is required"
+                )
+            client = OpenAICompatibleVLMClient(
+                VLMSettings(
+                    model=args.model,
+                    endpoint=args.endpoint,
+                    api_key=api_key,
+                )
+            )
+        report = review_dataset_images(
+            args.dataset_root,
+            client,
+            reviewer=args.reviewer or f"vlm:{args.model}",
+            limit=args.limit,
+            concurrency=args.concurrency,
+            dry_run=args.dry_run,
+        )
+    except ImageReviewError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    payload = report.to_dict()
+    payload["errors"] = payload["errors"][:20]
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0 if report.failed == 0 else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -533,6 +619,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_upload_s3(args)
     if args.command == "seed-db":
         return cmd_seed_db(args)
+    if args.command == "review-images":
+        return cmd_review_images(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
