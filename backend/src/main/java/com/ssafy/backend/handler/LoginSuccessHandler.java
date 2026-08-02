@@ -25,19 +25,21 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
-
     private final JWTUtil jwtUtil;
+    private final CookieUtil cookieUtil;
 
     public LoginSuccessHandler(
             JwtService jwtService,
             JWTUtil jwtUtil,
             ObjectMapper objectMapper,
-            UserRepository userRepository)
+            UserRepository userRepository,
+            CookieUtil cookieUtil)
     {
         this.jwtService = jwtService;
         this.objectMapper = objectMapper;
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
+        this.cookieUtil = cookieUtil;
     }
 
     @Override
@@ -64,7 +66,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 3. Refresh 토큰 저장소(Redis 또는 DB)에 기록
         jwtService.addRefresh(email, refreshToken);
 
-        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(refreshToken));
+        response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(refreshToken));
 
         // 4. JSON 응답 전송
         response.setContentType("application/json");

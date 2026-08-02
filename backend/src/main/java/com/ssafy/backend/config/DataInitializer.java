@@ -1,6 +1,7 @@
 package com.ssafy.backend.config;
 
 import com.ssafy.backend.config.enums.CategoryCode;
+import com.ssafy.backend.config.enums.GenderCode;
 import com.ssafy.backend.config.enums.RecommendationStatus;
 import com.ssafy.backend.config.enums.SubcategoryCode;
 import com.ssafy.backend.domain.Recommendation;
@@ -82,19 +83,19 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createRecommendations(List<User> users) {
-        record Seed(CategoryCode category, SubcategoryCode subcategory, int budgetMin, int budgetMax) {}
+        record Seed(GenderCode gender, CategoryCode category, SubcategoryCode subcategory, int budgetMin, int budgetMax) {}
 
         List<Seed> seeds = List.of(
-                new Seed(CategoryCode.TOP, SubcategoryCode.SHIRT, 30_000, 120_000),
-                new Seed(CategoryCode.TOP, SubcategoryCode.SHORT_SLEEVE, 15_000, 50_000),
-                new Seed(CategoryCode.TOP, SubcategoryCode.KNIT, 40_000, 150_000),
-                new Seed(CategoryCode.TOP, SubcategoryCode.HOODIE, 30_000, 90_000),
-                new Seed(CategoryCode.BOTTOM, SubcategoryCode.DENIM_PANTS, 40_000, 130_000),
-                new Seed(CategoryCode.BOTTOM, SubcategoryCode.SLACKS, 30_000, 100_000),
-                new Seed(CategoryCode.OUTER, SubcategoryCode.JACKET, 80_000, 250_000),
-                new Seed(CategoryCode.OUTER, SubcategoryCode.CARDIGAN, 40_000, 140_000),
-                new Seed(CategoryCode.SHOES, SubcategoryCode.SNEAKERS, 60_000, 200_000),
-                new Seed(CategoryCode.SHOES, SubcategoryCode.LOAFER, 70_000, 220_000)
+                new Seed(GenderCode.MALE, CategoryCode.TOP, SubcategoryCode.SHIRT, 30_000, 120_000),
+                new Seed(GenderCode.FEMALE, CategoryCode.TOP, SubcategoryCode.SHORT_SLEEVE, 15_000, 50_000),
+                new Seed(GenderCode.MALE, CategoryCode.TOP, SubcategoryCode.KNIT, 40_000, 150_000),
+                new Seed(GenderCode.FEMALE, CategoryCode.TOP, SubcategoryCode.HOODIE, 30_000, 90_000),
+                new Seed(GenderCode.MALE, CategoryCode.BOTTOM, SubcategoryCode.DENIM_PANTS, 40_000, 130_000),
+                new Seed(GenderCode.FEMALE, CategoryCode.BOTTOM, SubcategoryCode.SLACKS, 30_000, 100_000),
+                new Seed(GenderCode.MALE, CategoryCode.OUTER, SubcategoryCode.JACKET, 80_000, 250_000),
+                new Seed(GenderCode.FEMALE, CategoryCode.OUTER, SubcategoryCode.CARDIGAN, 40_000, 140_000),
+                new Seed(GenderCode.UNISEX, CategoryCode.SHOES, SubcategoryCode.SNEAKERS, 60_000, 200_000),
+                new Seed(GenderCode.UNISEX, CategoryCode.SHOES, SubcategoryCode.LOAFER, 70_000, 220_000)
         );
 
         List<Recommendation> recommendations = new ArrayList<>();
@@ -102,6 +103,7 @@ public class DataInitializer implements CommandLineRunner {
             Seed seed = seeds.get(i);
             recommendations.add(Recommendation.builder()
                     .user(users.get(i % users.size()))
+                    .gender(seed.gender().name())
                     .category(seed.category().name())
                     .subcategory(seed.subcategory().name())
                     .budgetMin(seed.budgetMin())

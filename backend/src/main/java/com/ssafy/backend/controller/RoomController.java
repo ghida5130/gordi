@@ -1,5 +1,7 @@
 package com.ssafy.backend.controller;
 
+import com.ssafy.backend.common.error.ApiException;
+import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
 import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
@@ -61,6 +63,9 @@ public class RoomController {
                 || authentication instanceof AnonymousAuthenticationToken) {
             return null;
         }
-        return authentication.getName();
+        if (authentication.getPrincipal() instanceof String email) {
+            return email;
+        }
+        throw new ApiException(ErrorCode.INVALID_TOKEN);
     }
 }

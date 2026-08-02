@@ -4,6 +4,7 @@ import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.config.RecommendationPolicy;
 import com.ssafy.backend.config.enums.EmptyReason;
+import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Recommendation;
 import com.ssafy.backend.domain.RecommendationItem;
@@ -119,7 +120,8 @@ class RecommendationServiceTest {
     void createSnapshotStoresFastApiRankingOrder() {
         Product first = product(101L, 39_000);
         Product second = product(102L, 89_000);
-        when(productRepository.findMatching(eq("TOP"), eq("LONG_SLEEVE"), eq(30_000), eq(120_000), any(Pageable.class)))
+        when(productRepository.findMatching(
+                eq("TOP"), eq("LONG_SLEEVE"), eq("MALE"), eq(30_000), eq(120_000), any(Pageable.class)))
                 .thenReturn(List.of(first, second));
         when(rankClient.rank(any(RankRequest.class))).thenReturn(List.of(
                 new RankedProduct(102L, 1, new BigDecimal("0.8600")),
@@ -141,12 +143,13 @@ class RecommendationServiceTest {
                 );
         assertThat(response.condition().category()).isEqualTo("TOP");
         assertThat(response.condition().subcategory()).isEqualTo("LONG_SLEEVE");
+        assertThat(response.condition().gender()).isEqualTo("MALE");
         assertThat(response.condition().moods()).containsExactly("MINIMAL", "CASUAL");
     }
 
     @Test
     void createSnapshotPassesPolicyResultCountToFastApi() {
-        when(productRepository.findMatching(any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatching(any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of(product(101L, 39_000)));
         when(rankClient.rank(any(RankRequest.class)))
                 .thenReturn(List.of(new RankedProduct(101L, 1, new BigDecimal("0.5000"))));
@@ -157,16 +160,18 @@ class RecommendationServiceTest {
         verify(rankClient).rank(captor.capture());
         assertThat(captor.getValue().limit()).isEqualTo(12);
         assertThat(captor.getValue().candidates()).hasSize(1);
+        assertThat(captor.getValue().condition().gender()).isEqualTo("MALE");
+        assertThat(captor.getValue().candidates().getFirst().gender()).isEqualTo("MALE");
         assertThat(captor.getValue().condition().moods()).containsExactly("MINIMAL", "CASUAL");
     }
 
     // 빈 결과는 오류가 아니라 status=EMPTY 로 반환하며 예산을 자동 확대하지 않는다
     @Test
     void createSnapshotReturnsEmptyStatusWhenNoProductFitsBudget() {
-        when(productRepository.findMatching(any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatching(any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of());
-        when(productRepository.findMinPrice("TOP", "LONG_SLEEVE")).thenReturn(150_000);
-        when(productRepository.findMaxPrice("TOP", "LONG_SLEEVE")).thenReturn(400_000);
+        when(productRepository.findMinPrice("TOP", "LONG_SLEEVE", "MALE")).thenReturn(150_000);
+        when(productRepository.findMaxPrice("TOP", "LONG_SLEEVE", "MALE")).thenReturn(400_000);
 
         RecommendationResponse response = recommendationService.createSnapshot(request(), null);
 
@@ -183,9 +188,9 @@ class RecommendationServiceTest {
 
     @Test
     void createSnapshotMarksCategoryWithoutProductsSeparately() {
-        when(productRepository.findMatching(any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatching(any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of());
-        when(productRepository.findMinPrice("TOP", "LONG_SLEEVE")).thenReturn(null);
+        when(productRepository.findMinPrice("TOP", "LONG_SLEEVE", "MALE")).thenReturn(null);
 
         RecommendationResponse response = recommendationService.createSnapshot(request(), null);
 
@@ -235,6 +240,16 @@ class RecommendationServiceTest {
                 new RecommendationRequest("TOP", "SLACKS", 10_000, 20_000, List.of("MINIMAL"));
 
         assertThatThrownBy(() -> recommendationService.createSnapshot(mismatched, null))
+                .isInstanceOf(ApiException.class)
+                .extracting(exception -> ((ApiException) exception).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
+    void createSnapshotRequiresSelectedAvatar() {
+        owner.setAvatar(null);
+
+        assertThatThrownBy(() -> recommendationService.createSnapshot(request(), null))
                 .isInstanceOf(ApiException.class)
                 .extracting(exception -> ((ApiException) exception).getErrorCode())
                 .isEqualTo(ErrorCode.BAD_REQUEST);
@@ -318,7 +333,8 @@ class RecommendationServiceTest {
         ));
         when(recommendationItemRepository.findAllExposedProductIds(21L))
                 .thenReturn(List.of(101L, 105L, 110L));
-        when(productRepository.findMatchingExcluding(any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatchingExcluding(
+                any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of(product(121L, 61_000)));
         when(rankClient.rank(any(RankRequest.class)))
                 .thenReturn(List.of(new RankedProduct(121L, 1, new BigDecimal("0.9100"))));
@@ -331,7 +347,8 @@ class RecommendationServiceTest {
 
         ArgumentCaptor<java.util.Collection<Long>> excluded = ArgumentCaptor.captor();
         verify(productRepository).findMatchingExcluding(
-                eq("TOP"), eq("LONG_SLEEVE"), eq(30_000), eq(120_000), excluded.capture(), any(Pageable.class)
+                eq("TOP"), eq("LONG_SLEEVE"), eq("MALE"), eq(30_000), eq(120_000),
+                excluded.capture(), any(Pageable.class)
         );
         assertThat(excluded.getValue()).containsExactlyInAnyOrder(101L, 105L, 110L);
 
@@ -357,7 +374,8 @@ class RecommendationServiceTest {
                 item(recommendation, product(105L, 70_000), 1L, 2)
         ));
         when(recommendationItemRepository.findAllExposedProductIds(21L)).thenReturn(List.of(101L, 105L));
-        when(productRepository.findMatchingExcluding(any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatchingExcluding(
+                any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of(product(121L, 61_000)));
         when(rankClient.rank(any(RankRequest.class)))
                 .thenReturn(List.of(new RankedProduct(121L, 1, new BigDecimal("0.9100"))));
@@ -380,7 +398,8 @@ class RecommendationServiceTest {
         when(recommendationItemRepository.findVersionItems(21L, 1L))
                 .thenReturn(List.of(item(recommendation, product(101L, 39_000), 1L, 1)));
         when(recommendationItemRepository.findAllExposedProductIds(21L)).thenReturn(List.of(101L));
-        when(productRepository.findMatchingExcluding(any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(productRepository.findMatchingExcluding(
+                any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of());
 
         ReplacementResponse response = recommendationService.replaceItems(
@@ -460,6 +479,7 @@ class RecommendationServiceTest {
                 .email(id == 1L ? EMAIL : "other" + id + "@example.com")
                 .password("encoded")
                 .nickname("사용자" + id)
+                .avatar(Avatar.builder().id(id).gender("MALE").build())
                 .build();
     }
 
@@ -467,6 +487,7 @@ class RecommendationServiceTest {
         return Recommendation.builder()
                 .id(id)
                 .user(user)
+                .gender("MALE")
                 .category("TOP")
                 .subcategory("LONG_SLEEVE")
                 .budgetMin(30_000)
@@ -481,6 +502,9 @@ class RecommendationServiceTest {
                 .id(id)
                 .name("상품 " + id)
                 .brand("GORDI")
+                .source("MUSINSA")
+                .externalProductId(String.valueOf(id))
+                .gender("MALE")
                 .price(price)
                 .category("TOP")
                 .subcategory("LONG_SLEEVE")

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # 1. Java 21 JDK 이미지를 베이스로 사용
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
@@ -11,11 +13,10 @@ COPY build.gradle settings.gradle ./
 
 # 실행 권한 부여 및 JAR 파일 빌드 (테스트 제외)
 RUN chmod +x ./gradlew
-RUN ./gradlew dependencies --no-daemon || true
-
+RUN --mount=type=cache,target=/root/.gradle ./gradlew dependencies --no-daemon || true
 # 소스코드 복사 및 JAR 빌드
 COPY src src
-RUN ./gradlew clean bootJar -x test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle ./gradlew clean bootJar -x test --no-daemon
 
 # 2. Run Stage
 FROM eclipse-temurin:21-jdk-alpine

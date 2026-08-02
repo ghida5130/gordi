@@ -19,15 +19,18 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
     private final String redirectUrl;
+    private final CookieUtil cookieUtil;
 
     public OAuth2SuccessHandler(
             JwtService jwtService,
             JWTUtil jwtUtil,
+            CookieUtil cookieUtil,
             @Value("${oauth2.redirect-url}") String redirectUrl
     ) {
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
         this.redirectUrl = redirectUrl;
+        this.cookieUtil = cookieUtil;
     }
 
     @Override
@@ -47,7 +50,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String refreshToken = jwtUtil.createJWT(email, role, false);
         jwtService.addRefresh(email, refreshToken);
 
-        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(refreshToken));
+        response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(refreshToken));
         response.sendRedirect(redirectUrl);
     }
 }

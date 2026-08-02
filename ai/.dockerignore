@@ -3,3 +3,12 @@ __pycache__
 *.pyc
 tests
 .pytest_cache
+garment_dataset
+garment_dataset-v2
+**/raw
+**/normalized
+**/images
+**/reports
+**/probe
+**/pilot
+image_demo

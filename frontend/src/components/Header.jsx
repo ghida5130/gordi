@@ -43,6 +43,18 @@ export default function Header() {
     }
   };
 
+  // 의상 추천 클릭 핸들러 (로그인 여부 판별)
+  const handleRecommendClothesClick = (e) => {
+    e.preventDefault();
+    setHoveredMenu(null);
+    if (!isLoggedIn) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+    } else {
+      navigate('/recommend-clothes');
+    }
+  };
+
   // Jitter 스타일 메가 드롭다운 내용 정의
   const dropdownContent = {
     tier: (
@@ -50,27 +62,37 @@ export default function Header() {
         <a 
           href="/rooms/create" 
           onClick={handleCreateRoomClick} 
-          className="block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer"
+          className={isLoggedIn 
+            ? "block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer" 
+            : "block w-64 p-6 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 cursor-not-allowed transition-all duration-300"}
         >
           <h3 className="text-xl font-bold mb-2">방 생성하기</h3>
-          <p className="text-sm text-gray-300 font-light">새로운 티어 게임 방을 만들어<br/>친구들을 초대해보세요 &rarr;</p>
+          <p className={`text-sm font-light ${isLoggedIn ? "text-gray-300" : "text-gray-300 opacity-50"}`}>새로운 티어 게임 방을 만들어<br/>친구들을 초대해보세요 &rarr;</p>
         </a>
         <a 
           href="/rooms" 
           onClick={handleJoinRoomClick} 
-          className="block w-64 p-6 bg-[#1a1a1a] hover:bg-black hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer"
+          className={isLoggedIn 
+            ? "block w-64 p-6 bg-[#1a1a1a] hover:bg-black hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer" 
+            : "block w-64 p-6 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 cursor-not-allowed transition-all duration-300"}
         >
           <h3 className="text-xl font-bold mb-2">참여하기</h3>
-          <p className="text-sm text-gray-300 font-light">초대 코드를 입력하고<br/>진행 중인 티어 게임방에 입장해 보세요 &rarr;</p>
+          <p className={`text-sm font-light ${isLoggedIn ? "text-gray-300" : "text-gray-300 opacity-50"}`}>초대 코드를 입력하고<br/>진행 중인 티어 게임방에 입장해 보세요 &rarr;</p>
         </a>
       </div>
     ),
     clothes: (
       <div className="flex gap-4">
-        <Link to="/recommend-clothes" className="block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg">
+        <a 
+          href="/recommend-clothes" 
+          onClick={handleRecommendClothesClick} 
+          className={isLoggedIn 
+            ? "block w-64 p-6 bg-black hover:bg-gray-800 hover:-translate-y-2 transition-all duration-300 rounded-xl text-white shadow-sm hover:shadow-lg cursor-pointer" 
+            : "block w-64 p-6 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 cursor-not-allowed transition-all duration-300"}
+        >
           <h3 className="text-xl font-bold mb-2">오늘의 의상 추천</h3>
-          <p className="text-sm text-gray-300 font-light">날씨와 기분에 맞는 완벽한<br/>코디를 추천받아보세요 &rarr;</p>
-        </Link>
+          <p className={`text-sm font-light ${isLoggedIn ? "text-gray-300" : "text-gray-300 opacity-50"}`}>날씨와 기분에 맞는 완벽한<br/>코디를 추천받아보세요 &rarr;</p>
+        </a>
       </div>
     ),
   };
@@ -112,6 +134,7 @@ export default function Header() {
             >
               <Link 
                 to="/rooms/create" 
+                onClick={handleCreateRoomClick}
                 className="font-semibold text-gray-900 transition-all duration-300 hover:-translate-y-1 hover:text-black"
               >
                 티어메이커
@@ -124,6 +147,7 @@ export default function Header() {
             >
               <Link 
                 to="/recommend-clothes" 
+                onClick={handleRecommendClothesClick}
                 className="font-semibold text-gray-500 transition-all duration-300 hover:-translate-y-1 hover:text-black"
               >
                 의상 추천
