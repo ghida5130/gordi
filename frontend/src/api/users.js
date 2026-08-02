@@ -7,3 +7,7 @@ export function getMyInfo() {
 export function getMyAvatar() {
     return authApi.get("/v1/users/me/avatar");
 }
+
+export function updateMyAvatar(avatarId) {
+    return authApi.put("/v1/users/me/avatar", { avatarId });
+}

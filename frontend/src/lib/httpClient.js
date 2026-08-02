@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { AuthRequiredError } from "@/api/errors";
 import { useUserStore } from "@/stores/useUserStore";
+import { removeBodyInformation } from "@/utils/bodyInformationStorage";
 import {
   getAccessToken,
   setAccessToken, // ⭐️ 새 토큰 저장을 위해 추가
@@ -78,6 +79,7 @@ authHttpClient.interceptors.response.use(
         // Refresh Token마저 만료되었거나 오류가 났을 경우 (완전 로그아웃 처리)
         console.error("Refresh Token 만료. 다시 로그인해주세요.");
         removeAccessToken();
+        removeBodyInformation();
         useUserStore.getState().clearUser();
 
         // 로그인 페이지로 강제 이동

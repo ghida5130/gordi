@@ -248,10 +248,15 @@ function TierMakerRoomPage() {
     roomSession && String(roomSession.roomId) === String(roomId);
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
   const candidateQuery = useQuery({
-    queryKey: ["candidates", roomId],
-    queryFn: () => getCandidates(roomId),
+    queryKey: ["candidates", roomId, roomSession?.participantId],
+    queryFn: () =>
+      getCandidates({
+        roomId,
+        roomToken: roomSession.roomToken,
+      }),
     enabled:
       Boolean(isCurrentRoom) &&
+      Boolean(roomSession?.roomToken) &&
       roomEvents.hasSnapshot &&
       roomEvents.status === "IN_PROGRESS",
     staleTime: 30 * 1000,

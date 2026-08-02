@@ -3,8 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import { signup } from "@/api/auth";
 import { useToast } from "@/hooks/useToast";
-// 💡 프로젝트에 맞는 토큰 저장 함수 경로로 맞추어 주석을 해제하고 사용하세요.
-// import { setAccessToken } from '@/utils/tokenStorage';
+import { useUserStore } from "@/stores/useUserStore";
+import { setAccessToken } from "@/utils/tokenStorage";
 
 // 약관 및 정책 텍스트 정의
 const TERMS_TEXT = `제1조 (목적)
@@ -38,6 +38,7 @@ const MARKETING_TEXT = `1. 마케팅 및 광고에의 활용
 export default function SignupPage() {
     const navigate = useNavigate();
     const toast = useToast();
+    const setUser = useUserStore((state) => state.setUser);
 
     // 폼 상태 관리
     const [email, setEmail] = useState("");
@@ -66,20 +67,19 @@ export default function SignupPage() {
     // ⭐️ 수정됨: React-Query 회원가입 요청 (최신 API 명세서 반영)
     const { mutate, isPending } = useMutation({
         mutationFn: signup,
-        onSuccess: (response) => {
+        onSuccess: (response, variables) => {
             const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
-            const refreshToken = response.data?.data?.refreshToken || response.data?.refreshToken;
 
             if (accessToken) {
-                // setAccessToken(accessToken);
-            }
-            if (refreshToken) {
-                // 리프레시 토큰 저장 함수가 있다면 사용
+                setAccessToken(accessToken);
+                setUser({
+                    email: variables.email,
+                    nickname: variables.nickname,
+                    profileImageUrl: null,
+                });
             }
 
-            toast.success("회원가입이 완료되었습니다.");
-            // 가입 즉시 토큰이 발급되므로 홈 화면으로 이동합니다.
-            navigate("/");
+            navigate("/avatar/setup", { replace: true });
         },
         onError: (error) => {
             const status = error.response?.status;

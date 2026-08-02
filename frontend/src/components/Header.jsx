@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
+import { logout } from "@/api/auth";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
+import { removeBodyInformation } from "@/utils/bodyInformationStorage";
+import { removeRoomSession } from "@/utils/roomSessionStorage";
 import { getAccessToken, removeAccessToken } from "@/utils/tokenStorage";
 
 export default function Header() {
@@ -11,11 +15,21 @@ export default function Header() {
     const [hoveredMenu, setHoveredMenu] = useState(null);
     const isLoggedIn = isLogin || !!getAccessToken();
 
+    const logoutMutation = useMutation({
+        mutationFn: logout,
+        onSettled: () => {
+            removeAccessToken();
+            removeBodyInformation();
+            removeRoomSession();
+            clearUser();
+            toast.success("로그아웃되었습니다.");
+            navigate("/login", { replace: true });
+        },
+    });
+
     const handleLogout = () => {
-        removeAccessToken();
-        clearUser();
         setHoveredMenu(null);
-        navigate("/login");
+        logoutMutation.mutate();
     };
 
     return (
@@ -60,8 +74,13 @@ export default function Header() {
                         </button>
                         {isLoggedIn ? (
                             <>
-                                <button type="button" onClick={handleLogout} className="text-sm font-semibold text-gray-500 transition-colors duration-300 hover:text-black">
-                                    로그아웃
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    disabled={logoutMutation.isPending}
+                                    className="text-sm font-semibold text-gray-500 transition-colors duration-300 hover:text-black disabled:opacity-50"
+                                >
+                                    {logoutMutation.isPending ? "로그아웃 중..." : "로그아웃"}
                                 </button>
                                 <Link
                                     to="/mypage"

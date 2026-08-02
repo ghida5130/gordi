@@ -11,6 +11,7 @@ import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
 import LoginPage from "@/pages/LoginPage";
 import AvatarSetupPage from "@/pages/AvatarSetupPage";
+import AvatarSetupCompletePage from "@/pages/AvatarSetupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
 import MyPage from "@/pages/MyPage";
@@ -61,6 +62,10 @@ export const router = createBrowserRouter([
             {
                 path: "avatar/setup",
                 element: <AvatarSetupPage />,
+            },
+            {
+                path: "avatar/setup/complete",
+                element: <AvatarSetupCompletePage />,
             },
             {
                 path: "mypage",

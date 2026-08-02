@@ -13,6 +13,7 @@ import MyPageTabs from "@/components/mypage/MyPageTabs";
 import { ProfileEdit, ProfileHome } from "@/components/mypage/ProfileTab";
 import RoomSessionNotice from "@/components/mypage/RoomSessionNotice";
 import { useUserStore } from "@/stores/useUserStore";
+import { removeBodyInformation } from "@/utils/bodyInformationStorage";
 import { getRoomSession, removeRoomSession } from "@/utils/roomSessionStorage";
 import { removeAccessToken } from "@/utils/tokenStorage";
 
@@ -40,6 +41,7 @@ function MyPage() {
         mutationFn: logout,
         onSettled: () => {
             removeAccessToken();
+            removeBodyInformation();
             removeRoomSession();
             clearUser();
             navigate("/login", { replace: true });
