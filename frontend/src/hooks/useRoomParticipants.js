@@ -11,7 +11,7 @@ function createWebSocketUrl(webSocketPath) {
   }
 
   const apiUrl = new URL(
-    import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api",
+    import.meta.env.VITE_API_BASE_URL ?? "/api",
     window.location.origin,
   );
   const webSocketUrl = new URL(webSocketPath, apiUrl.origin);

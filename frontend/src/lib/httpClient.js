@@ -8,7 +8,7 @@ import {
   removeAccessToken,
 } from "@/utils/tokenStorage";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 const clientConfig = {
   baseURL: apiBaseUrl,

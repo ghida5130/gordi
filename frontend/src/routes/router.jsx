@@ -11,6 +11,7 @@ import SignupPage from "@/pages/SignupPage";
 import LoginPage from "../pages/LoginPage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import RecommendationPage from "@/pages/RecommendationPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
       {
         path: "tierm",
         element: <TierMakerRoomPage />,
+      },
+      {
+        path: "recommendations",
+        element: <RecommendationPage />,
       },
       {
         path: "login",
