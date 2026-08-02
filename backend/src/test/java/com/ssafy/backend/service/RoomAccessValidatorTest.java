@@ -62,6 +62,36 @@ class RoomAccessValidatorTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
     }
 
+    @Test
+    void 회원이_해당_방의_활성_참가자이면_참가자를_반환한다() {
+        RoomParticipant participant = mock(RoomParticipant.class);
+        when(roomParticipantRepository.findByRoomIdAndUserEmailAndLeftAtIsNull(
+                31L,
+                "member@example.com"
+        )).thenReturn(Optional.of(participant));
+
+        RoomParticipant result = roomAccessValidator.requireParticipant(
+                31L,
+                "member@example.com"
+        );
+
+        assertThat(result).isSameAs(participant);
+    }
+
+    @Test
+    void 회원이_해당_방의_활성_참가자가_아니면_FORBIDDEN을_던진다() {
+        when(roomParticipantRepository.findByRoomIdAndUserEmailAndLeftAtIsNull(
+                31L,
+                "member@example.com"
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomAccessValidator.requireParticipant(
+                31L,
+                "member@example.com"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
     private RoomPrincipal principal(Long roomId) {
         return new RoomPrincipal(42L, roomId, "친구1", "PARTICIPANTS");
     }
