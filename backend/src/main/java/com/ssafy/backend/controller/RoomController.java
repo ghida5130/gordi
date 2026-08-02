@@ -5,10 +5,14 @@ import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
 import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
+import com.ssafy.backend.dto.room.RoomFinishRequestDTO;
+import com.ssafy.backend.dto.room.RoomFinishResponseDTO;
 import com.ssafy.backend.dto.room.RoomJoinRequestDTO;
 import com.ssafy.backend.dto.room.RoomJoinResponseDTO;
 import com.ssafy.backend.dto.room.RoomStatusResponseDTO;
+import com.ssafy.backend.service.RoomFinishService;
 import com.ssafy.backend.service.RoomService;
+import com.ssafy.backend.util.RoomPrincipalResolver;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoomController {
 
     private final RoomService roomService;
+    private final RoomFinishService roomFinishService;
+
+    @PostMapping("/{roomCode}/finish")
+    public ResponseEntity<ApiResponse<RoomFinishResponseDTO>> finish(
+            @PathVariable String roomCode,
+            @RequestBody @Valid RoomFinishRequestDTO request,
+            Authentication authentication
+    ) {
+        RoomPrincipal principal = RoomPrincipalResolver.require(authentication);
+        return ResponseEntity.ok(ApiResponse.success(
+                roomFinishService.finish(roomCode, request, principal)
+        ));
+    }
 
     @GetMapping("/{roomCode}")
     public ResponseEntity<ApiResponse<RoomStatusResponseDTO>> readStatus(

@@ -1,7 +1,10 @@
 package com.ssafy.backend.controller;
 
 import com.ssafy.backend.common.response.ApiResponse;
+import com.ssafy.backend.dto.room.RoomFinishRequestDTO;
+import com.ssafy.backend.dto.room.RoomFinishResponseDTO;
 import com.ssafy.backend.dto.room.RoomStatusResponseDTO;
+import com.ssafy.backend.service.RoomFinishService;
 import com.ssafy.backend.service.RoomService;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,8 @@ class RoomControllerTest {
 
     @Mock
     private RoomService roomService;
+    @Mock
+    private RoomFinishService roomFinishService;
 
     @InjectMocks
     private RoomController roomController;
@@ -87,5 +92,37 @@ class RoomControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(serviceResponse);
         verify(roomService).readStatus("A7K9Q2", principal);
+    }
+
+    @Test
+    void finishDelegatesRoomTokenPrincipal() {
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                List.of()
+        );
+        RoomFinishRequestDTO request = new RoomFinishRequestDTO(
+                17L,
+                List.of(101L, 102L)
+        );
+        RoomFinishResponseDTO serviceResponse = new RoomFinishResponseDTO(
+                51L,
+                31L,
+                "FINISHED",
+                List.of(),
+                "https://cdn.example.com/fitting.webp",
+                Instant.parse("2026-07-23T02:00:00Z")
+        );
+        when(roomFinishService.finish("A7K9Q2", request, principal))
+                .thenReturn(serviceResponse);
+
+        ResponseEntity<ApiResponse<RoomFinishResponseDTO>> response =
+                roomController.finish("A7K9Q2", request, authentication);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(serviceResponse);
+        verify(roomFinishService).finish("A7K9Q2", request, principal);
     }
 }

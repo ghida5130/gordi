@@ -8,6 +8,7 @@ import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -150,5 +152,24 @@ class RoomEventPublisherTest {
                 eq("/topic/v1/rooms/7/participants"),
                 eq(event)
         );
+    }
+
+    @Test
+    void roomFinishedEventIsBroadcast() {
+        RoomFinishedEvent domainEvent = new RoomFinishedEvent(31L, 18L, 42L);
+
+        roomEventPublisher.handleRoomFinished(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ROOM_FINISHED);
+        assertThat(event.version()).isEqualTo(18L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(Map.of());
     }
 }
