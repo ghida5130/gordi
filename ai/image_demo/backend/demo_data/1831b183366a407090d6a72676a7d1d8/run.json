@@ -1,0 +1,2764 @@
+{
+  "run_id": "1831b183366a407090d6a72676a7d1d8",
+  "scenario_name": "여성 · 슬림핏 아이보리 티 + 카고 부츠컷",
+  "status": "READY",
+  "mock_mode": false,
+  "created_at": "2026-07-24T02:02:16.558748+00:00",
+  "completed_at": "2026-07-24T02:03:12.816065+00:00",
+  "references": {
+    "avatar_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/avatar.png",
+    "garments": [
+      {
+        "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/garment-1.png",
+        "slot": "TOP",
+        "caption": "등판 상단에 작은 레드 하트 그래픽이 있는 아이보리 반소매 티셔츠",
+        "fit_note": "슬림핏, 허리선기장, 짧은소매"
+      },
+      {
+        "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/garment-2.png",
+        "slot": "BOTTOM",
+        "caption": "아이스 그레이 색상의 비대칭 카고 포켓 팬츠",
+        "fit_note": "부츠컷, 하이라이즈, 풀렝스"
+      }
+    ]
+  },
+  "candidate_count": 7,
+  "candidates": [
+    {
+      "candidate_id": "cand_jEdz6OQUHuw",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_tKzUueygsPo.jpg",
+      "provider_id": "nano_banana_2",
+      "display_name": "Nano Banana 2",
+      "model": "google/gemini-3.1-flash-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 20621,
+      "generation_time_ms": null,
+      "cost_usd": 0.0
+    },
+    {
+      "candidate_id": "cand_295HGmSNVGs",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_NQiSXYTlFMk.jpg",
+      "provider_id": "nano_banana_2_lite",
+      "display_name": "Nano Banana 2 Lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 8866,
+      "generation_time_ms": null,
+      "cost_usd": 0.0
+    },
+    {
+      "candidate_id": "cand_oKqQYwIx28c",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_8tDqlumt39Y.png",
+      "provider_id": "gpt_image_2",
+      "display_name": "GPT Image 2",
+      "model": "openai/gpt-image-2",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 55681,
+      "generation_time_ms": null,
+      "cost_usd": 0.0
+    },
+    {
+      "candidate_id": "cand_k5ZKMJxNmzY",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_i6IbeLpvels.jpg",
+      "provider_id": "grok_imagine_quality",
+      "display_name": "Grok Imagine Quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 7713,
+      "generation_time_ms": null,
+      "cost_usd": 0.08
+    },
+    {
+      "candidate_id": "cand_8nZXn_lVI2I",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_pX-E0FWy1-E.png",
+      "provider_id": "krea_2_medium",
+      "display_name": "Krea 2 Medium",
+      "model": "krea/krea-2-medium",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 14360,
+      "generation_time_ms": null,
+      "cost_usd": 0.03
+    },
+    {
+      "candidate_id": "cand_y_N_W-eIr6I",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_j4b4KNtFXTM.png",
+      "provider_id": "flux_2_max",
+      "display_name": "FLUX.2 Max",
+      "model": "black-forest-labs/flux.2-max",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 50478,
+      "generation_time_ms": null,
+      "cost_usd": 0.16
+    },
+    {
+      "candidate_id": "cand_xHyLg5l5KfY",
+      "image_url": "/demo-media/1831b183366a407090d6a72676a7d1d8/output_DnEwLI1EP5E.png",
+      "provider_id": "mai_image_2_5_pro",
+      "display_name": "MAI Image 2.5 Pro",
+      "model": "microsoft/mai-image-2.5",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 36567,
+      "generation_time_ms": null,
+      "cost_usd": 0.056505
+    }
+  ],
+  "pairs": [
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "left": "cand_jEdz6OQUHuw",
+      "right": "cand_y_N_W-eIr6I"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "left": "cand_k5ZKMJxNmzY",
+      "right": "cand_y_N_W-eIr6I"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "left": "cand_oKqQYwIx28c",
+      "right": "cand_k5ZKMJxNmzY"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "left": "cand_xHyLg5l5KfY",
+      "right": "cand_k5ZKMJxNmzY"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "left": "cand_295HGmSNVGs",
+      "right": "cand_k5ZKMJxNmzY"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "left": "cand_y_N_W-eIr6I",
+      "right": "cand_oKqQYwIx28c"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "left": "cand_295HGmSNVGs",
+      "right": "cand_xHyLg5l5KfY"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "left": "cand_xHyLg5l5KfY",
+      "right": "cand_oKqQYwIx28c"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "left": "cand_oKqQYwIx28c",
+      "right": "cand_8nZXn_lVI2I"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "left": "cand_295HGmSNVGs",
+      "right": "cand_y_N_W-eIr6I"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "left": "cand_xHyLg5l5KfY",
+      "right": "cand_jEdz6OQUHuw"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "left": "cand_k5ZKMJxNmzY",
+      "right": "cand_jEdz6OQUHuw"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "left": "cand_oKqQYwIx28c",
+      "right": "cand_295HGmSNVGs"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "left": "cand_8nZXn_lVI2I",
+      "right": "cand_k5ZKMJxNmzY"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "left": "cand_y_N_W-eIr6I",
+      "right": "cand_xHyLg5l5KfY"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "left": "cand_8nZXn_lVI2I",
+      "right": "cand_295HGmSNVGs"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "left": "cand_oKqQYwIx28c",
+      "right": "cand_jEdz6OQUHuw"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "left": "cand_y_N_W-eIr6I",
+      "right": "cand_8nZXn_lVI2I"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "left": "cand_295HGmSNVGs",
+      "right": "cand_jEdz6OQUHuw"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "left": "cand_jEdz6OQUHuw",
+      "right": "cand_8nZXn_lVI2I"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "left": "cand_8nZXn_lVI2I",
+      "right": "cand_xHyLg5l5KfY"
+    }
+  ],
+  "votes": [
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "지현",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 2
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:05:12.537296+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "지현",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:06:12.099658+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:06:42.709528+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 1,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:07:26.345106+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:08:23.670169+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:09:08.788744+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T02:09:41.052267+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 1,
+        "artifact_control": 2
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:00:14.026023+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:02:28.491925+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "지현",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:03:05.033774+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "지현",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 1,
+        "artifact_control": 2
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:03:39.237537+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:03:57.198179+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:04:26.774920+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:04:36.015404+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 1,
+        "artifact_control": 2
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:05:00.376314+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:05:18.074442+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:05:43.365236+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "지현",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:05:55.501857+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:06:07.272399+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:06:29.388079+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "지현",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-24T06:06:52.413245+00:00"
+    },
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:50:46.504156+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 1,
+        "realism": 2,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:51:28.809790+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:52:01.912962+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 2,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:52:15.899479+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:53:50.230049+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "이정민",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:54:37.625437+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 3,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:54:55.566119+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:55:23.859306+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:56:20.625437+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:56:37.496261+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:56:58.816624+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T07:57:23.919015+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:26:18.481319+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "이정민",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:26:35.078364+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "note": "A -> 다 좋은데 핏이 아쉽다",
+      "submitted_at": "2026-07-25T08:27:21.720581+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:27:47.626329+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "이정민",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 3,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:28:20.494706+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:28:59.046987+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "이정민",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 3,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:29:16.543336+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "이정민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:29:32.672812+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "이정민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-25T08:29:43.652672+00:00"
+    },
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "A에 로고 없음",
+      "submitted_at": "2026-07-26T06:47:55.586505+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "A 갑자기 크롭티가 됨, 바지에 구멍 뚫림",
+      "submitted_at": "2026-07-26T06:49:25.271083+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "A에 티셔츠 로고 이상한 곳에 있음. B 셔츠 크롭티 됨. 바지에 구멍 뚫림",
+      "submitted_at": "2026-07-26T06:50:41.681896+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "B 크롭티 됨, 바지에 구멍 뚫려있음",
+      "submitted_at": "2026-07-26T06:51:57.223117+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "수경",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "A는 로고 빼먹음. B는 크롭티가 됨. 바지에 구멍 뚫려있음",
+      "submitted_at": "2026-07-26T06:53:06.639005+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 2,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "B 티셔츠 로고 위치 다름. 하체형 체형 반영 잘 안됨.",
+      "submitted_at": "2026-07-26T06:55:19.898655+00:00"
+    },
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "FE대장",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:04:07.927399+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "수경",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "A는 로고가 없음",
+      "submitted_at": "2026-07-26T07:04:28.316542+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "수경",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 2,
+        "realism": 1,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 2,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:05:39.063378+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:05:49.726898+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:14:32.925518+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:15:06.951105+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:15:45.822972+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "FE대장",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:16:32.231336+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:17:08.649626+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:17:28.828035+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:18:21.094490+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:19:26.783903+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "A는 로고 위치가 다름. B는 그냥 다 잘못됨, 아바타 이상한 대머리에 여러개 만들어져있고 로고 다르게 생겼고 이상한 글자들 적혀있음",
+      "submitted_at": "2026-07-26T07:19:32.648042+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:19:48.387533+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:20:00.241973+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "A가 체형부분은 좀 더 살렸으나 상의 로고가 없음",
+      "submitted_at": "2026-07-26T07:20:07.510567+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:20:25.278685+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "FE대장",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:20:35.271739+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 2,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "B가 상의의 로고가 없기는 하지만, A는 체형 반영이 안되어있고 부자연스러움",
+      "submitted_at": "2026-07-26T07:20:52.203043+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:20:56.334270+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:21:51.611954+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "FE대장",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:22:31.987800+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:22:43.124855+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:23:32.660878+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "FE대장",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:23:48.096249+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "FE대장",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:24:00.356688+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 2,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "note": "A는 티셔츠 크롭티로 만들고, 바지에 구멍 뚫려있음. B는 셔츠 로고가 없긴 하지만 무난하게 다 반영 잘되어있음",
+      "submitted_at": "2026-07-26T07:26:46.835396+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 2,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "A가 체형 보존이 안됨. 로고 위치가 다름.",
+      "submitted_at": "2026-07-26T07:27:16.721126+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "수경",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:27:27.943916+00:00"
+    },
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "a는 옷이 전혀 다르고 하의에 있는 신발을 신음 b는 하의 주머니가 사라짐",
+      "submitted_at": "2026-07-26T07:29:05.691355+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T07:29:43.005232+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "a는 마네킹도 사라지고 핏이 바뀜 b는 주머니가 사라짐",
+      "submitted_at": "2026-07-26T07:33:29.470771+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 3
+      },
+      "note": "a는 옷이 뒷면 인 것을 알고 상의 위치를 바꿨을 가능성 있고 체형은 다르고 상하의 경계가 너무 정확해서 이상 b는 마네킹 자체가 없고 핏도 이상",
+      "submitted_at": "2026-07-26T07:40:55.178967+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "a 너무 ai 티가나고 하의도 다름 b 는 마네킹 자체가 없고 전체적으로 이상함",
+      "submitted_at": "2026-07-26T07:44:35.905861+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 2,
+        "realism": 1,
+        "artifact_control": 3
+      },
+      "note": "a 옷이 뒷면이라 앞면이 바뀐 것 같고 바지 핏이 조금 이상하긴 함 신발도 신겨져있고 b 는 마네킹 자체가 없음",
+      "submitted_at": "2026-07-26T08:03:25.453039+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:04:38.025857+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:05:48.266104+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:05:52.120890+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "수경",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:06:14.857750+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:06:16.231161+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:06:29.212656+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:06:37.202084+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "수경",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:06:46.494017+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:07:16.556996+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "수경",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 5,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:07:27.944863+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:07:36.527403+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "수경",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:07:38.532409+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:07:49.459778+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:08:06.225109+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "한승민",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:08:17.304348+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:08:32.008400+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:09:04.204729+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:14:54.690645+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:15:11.337814+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:15:38.343380+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "한승민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 5,
+        "realism": 5,
+        "artifact_control": 5
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:15:58.544097+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "한승민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 2,
+        "realism": 2,
+        "artifact_control": 5
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:16:39.456336+00:00"
+    },
+    {
+      "pair_id": "pair_d2889e4adcb4bab9",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:47:16.239552+00:00"
+    },
+    {
+      "pair_id": "pair_8582ad5903eb4536",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:47:32.812541+00:00"
+    },
+    {
+      "pair_id": "pair_d445736b1bdf1798",
+      "evaluator_id": "임효민",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 2
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 4,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:47:56.123438+00:00"
+    },
+    {
+      "pair_id": "pair_691e98deb74aefaf",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:48:21.371836+00:00"
+    },
+    {
+      "pair_id": "pair_6fa19724da1dd6aa",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:48:37.162872+00:00"
+    },
+    {
+      "pair_id": "pair_eba6b247aebe33d9",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:48:56.744893+00:00"
+    },
+    {
+      "pair_id": "pair_7869a180830e277a",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:49:19.947041+00:00"
+    },
+    {
+      "pair_id": "pair_044568bbb58f9f8c",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:49:44.700289+00:00"
+    },
+    {
+      "pair_id": "pair_977b5643c99866e9",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:49:58.392695+00:00"
+    },
+    {
+      "pair_id": "pair_ead08a11619eeb5d",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 2,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:50:15.523734+00:00"
+    },
+    {
+      "pair_id": "pair_8785ab5921f49366",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:50:32.999355+00:00"
+    },
+    {
+      "pair_id": "pair_023a9f67e0e894c5",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 3,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 3,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:50:43.595331+00:00"
+    },
+    {
+      "pair_id": "pair_c624ee9d1749d547",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 2,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:50:56.443925+00:00"
+    },
+    {
+      "pair_id": "pair_7cb2738eb5f8b413",
+      "evaluator_id": "임효민",
+      "winner": "NEITHER",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:51:02.756070+00:00"
+    },
+    {
+      "pair_id": "pair_fda494e43ecf782f",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 2,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:51:17.381842+00:00"
+    },
+    {
+      "pair_id": "pair_bc510905a6d45205",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:51:27.784362+00:00"
+    },
+    {
+      "pair_id": "pair_a007bea5492f93b7",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 3,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 5,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:51:38.893604+00:00"
+    },
+    {
+      "pair_id": "pair_8f1822a5cc64f20b",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:51:46.732236+00:00"
+    },
+    {
+      "pair_id": "pair_08df1feb32d22882",
+      "evaluator_id": "임효민",
+      "winner": "TIE",
+      "left_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 4
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:52:02.483217+00:00"
+    },
+    {
+      "pair_id": "pair_323b5c544fe6af08",
+      "evaluator_id": "임효민",
+      "winner": "LEFT",
+      "left_scores": {
+        "garment_fidelity": 3,
+        "body_fidelity": 4,
+        "realism": 4,
+        "artifact_control": 3
+      },
+      "right_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:52:14.330338+00:00"
+    },
+    {
+      "pair_id": "pair_a5c5da8b05a23b5b",
+      "evaluator_id": "임효민",
+      "winner": "RIGHT",
+      "left_scores": {
+        "garment_fidelity": 1,
+        "body_fidelity": 1,
+        "realism": 1,
+        "artifact_control": 1
+      },
+      "right_scores": {
+        "garment_fidelity": 4,
+        "body_fidelity": 4,
+        "realism": 2,
+        "artifact_control": 3
+      },
+      "note": "",
+      "submitted_at": "2026-07-26T08:52:23.530535+00:00"
+    }
+  ],
+  "provider_attempts": [
+    {
+      "provider_id": "nano_banana_2",
+      "model": "google/gemini-3.1-flash-image",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 20621,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-YAfX4fTiFpzaJvUNo8tC",
+      "cost_usd": 0.0,
+      "prompt_tokens": 1082,
+      "completion_tokens": 1505,
+      "total_tokens": 2587,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:02:37.456532+00:00"
+    },
+    {
+      "provider_id": "nano_banana_2_lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 8866,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-wpNTj1oq34DhRFyCWdB8",
+      "cost_usd": 0.0,
+      "prompt_tokens": 3668,
+      "completion_tokens": 1439,
+      "total_tokens": 5107,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:02:25.821703+00:00"
+    },
+    {
+      "provider_id": "gpt_image_2",
+      "model": "openai/gpt-image-2",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 55681,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-5XaVL0GlqtbPYjMCIvog",
+      "cost_usd": 0.0,
+      "prompt_tokens": 4761,
+      "completion_tokens": 1372,
+      "total_tokens": 6133,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:03:12.807170+00:00"
+    },
+    {
+      "provider_id": "grok_imagine_quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 7713,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-70ncaOIKF455EZ0UsZGv",
+      "cost_usd": 0.08,
+      "prompt_tokens": 0,
+      "completion_tokens": 4175,
+      "total_tokens": 4175,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:02:25.021341+00:00"
+    },
+    {
+      "provider_id": "krea_2_medium",
+      "model": "krea/krea-2-medium",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 14360,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-hNpEXdStM7ZjTpm05QLg",
+      "cost_usd": 0.03,
+      "prompt_tokens": 0,
+      "completion_tokens": 4175,
+      "total_tokens": 4175,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:02:31.830515+00:00"
+    },
+    {
+      "provider_id": "flux_2_max",
+      "model": "black-forest-labs/flux.2-max",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 50478,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-EwNT1t4TWVuBuOJ5qjNG",
+      "cost_usd": 0.16,
+      "prompt_tokens": 12288,
+      "completion_tokens": 4096,
+      "total_tokens": 16384,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:03:08.321858+00:00"
+    },
+    {
+      "provider_id": "mai_image_2_5_pro",
+      "model": "microsoft/mai-image-2.5",
+      "status": "SUCCEEDED",
+      "external_request_made": true,
+      "latency_ms": 36567,
+      "generation_time_ms": null,
+      "gateway_latency_ms": null,
+      "provider_name": null,
+      "generation_id": "gen-img-1784858539-si7DvPFCQttnUXr1OETE",
+      "cost_usd": 0.056505,
+      "prompt_tokens": 1251,
+      "completion_tokens": 1014,
+      "total_tokens": 2265,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "retry_after_seconds": null,
+      "checked_at": "2026-07-24T02:02:54.570661+00:00"
+    }
+  ]
+}

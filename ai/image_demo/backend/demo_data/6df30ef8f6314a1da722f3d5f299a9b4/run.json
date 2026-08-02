@@ -1,0 +1,320 @@
+{
+  "run_id": "6df30ef8f6314a1da722f3d5f299a9b4",
+  "scenario_name": "남성 · 세미 오버핏 피케 + 루즈 테이퍼드 데님",
+  "status": "READY",
+  "mock_mode": true,
+  "created_at": "2026-07-24T01:48:01.107009+00:00",
+  "completed_at": "2026-07-24T01:48:01.311872+00:00",
+  "references": {
+    "avatar_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/avatar.png",
+    "garments": [
+      {
+        "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/garment-1.png",
+        "slot": "TOP",
+        "caption": "아이보리 배색 카라와 버튼 여밈이 있는 블랙 피케 티셔츠",
+        "fit_note": "세미오버핏, 드롭숄더, 힙기장"
+      },
+      {
+        "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/garment-2.png",
+        "slot": "BOTTOM",
+        "caption": "라이트 인디고 색상의 밴딩 데님 팬츠",
+        "fit_note": "루즈핏, 테이퍼드, 앵클기장"
+      }
+    ]
+  },
+  "candidate_count": 7,
+  "candidates": [
+    {
+      "candidate_id": "cand_sGRO5WP1cTg",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_XCi3FU81rIc.jpg",
+      "provider_id": "nano_banana_2",
+      "display_name": "Nano Banana 2",
+      "model": "google/gemini-3.1-flash-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 500,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_d2q1D9fsvBg",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_XI4ElkZyBmU.jpg",
+      "provider_id": "nano_banana_2_lite",
+      "display_name": "Nano Banana 2 Lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 673,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_Y7MGg7JgQxI",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_-3XFU4b_sGo.jpg",
+      "provider_id": "gpt_image_2",
+      "display_name": "GPT Image 2",
+      "model": "openai/gpt-image-2",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 846,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_vC8-aqzvmmw",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_qkajxIi_Vrg.jpg",
+      "provider_id": "grok_imagine_quality",
+      "display_name": "Grok Imagine Quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "input_strategy": "adaptive-reference",
+      "is_fallback": false,
+      "latency_ms": 1019,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_7X_2RUdF0PE",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_xabuTEb3iiA.jpg",
+      "provider_id": "krea_2_medium",
+      "display_name": "Krea 2 Medium",
+      "model": "krea/krea-2-medium",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 1192,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_Ug7AfBga3wo",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_4OPePq2lxO8.jpg",
+      "provider_id": "flux_2_max",
+      "display_name": "FLUX.2 Max",
+      "model": "black-forest-labs/flux.2-max",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 1365,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_oqX9v4eoLGA",
+      "image_url": "/demo-media/6df30ef8f6314a1da722f3d5f299a9b4/output_44ltNU3dzz4.jpg",
+      "provider_id": "mai_image_2_5_pro",
+      "display_name": "MAI Image 2.5 Pro",
+      "model": "microsoft/mai-image-2.5",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 1538,
+      "generation_time_ms": null,
+      "cost_usd": null
+    }
+  ],
+  "pairs": [
+    {
+      "pair_id": "pair_ba4fdddd78fdbf05",
+      "left": "cand_7X_2RUdF0PE",
+      "right": "cand_Ug7AfBga3wo"
+    },
+    {
+      "pair_id": "pair_4157fd301d8eec1a",
+      "left": "cand_sGRO5WP1cTg",
+      "right": "cand_d2q1D9fsvBg"
+    },
+    {
+      "pair_id": "pair_544c75bcaad76497",
+      "left": "cand_7X_2RUdF0PE",
+      "right": "cand_sGRO5WP1cTg"
+    },
+    {
+      "pair_id": "pair_75efd6b9be0cd63e",
+      "left": "cand_sGRO5WP1cTg",
+      "right": "cand_oqX9v4eoLGA"
+    },
+    {
+      "pair_id": "pair_4a6aa8a7d9e578c8",
+      "left": "cand_Y7MGg7JgQxI",
+      "right": "cand_vC8-aqzvmmw"
+    },
+    {
+      "pair_id": "pair_ac313ed28208ac00",
+      "left": "cand_Y7MGg7JgQxI",
+      "right": "cand_oqX9v4eoLGA"
+    },
+    {
+      "pair_id": "pair_7c9506aa746bbf90",
+      "left": "cand_Ug7AfBga3wo",
+      "right": "cand_Y7MGg7JgQxI"
+    },
+    {
+      "pair_id": "pair_2bcc392e49ab35e6",
+      "left": "cand_Y7MGg7JgQxI",
+      "right": "cand_sGRO5WP1cTg"
+    },
+    {
+      "pair_id": "pair_4bec7510bf368e70",
+      "left": "cand_sGRO5WP1cTg",
+      "right": "cand_Ug7AfBga3wo"
+    },
+    {
+      "pair_id": "pair_8ab531dd4c3983a3",
+      "left": "cand_vC8-aqzvmmw",
+      "right": "cand_Ug7AfBga3wo"
+    },
+    {
+      "pair_id": "pair_365baf5f44d252ad",
+      "left": "cand_7X_2RUdF0PE",
+      "right": "cand_vC8-aqzvmmw"
+    },
+    {
+      "pair_id": "pair_b442182bfcff159f",
+      "left": "cand_d2q1D9fsvBg",
+      "right": "cand_7X_2RUdF0PE"
+    },
+    {
+      "pair_id": "pair_65fb5be341eddbe0",
+      "left": "cand_vC8-aqzvmmw",
+      "right": "cand_oqX9v4eoLGA"
+    },
+    {
+      "pair_id": "pair_a208b7c272330c74",
+      "left": "cand_Ug7AfBga3wo",
+      "right": "cand_oqX9v4eoLGA"
+    },
+    {
+      "pair_id": "pair_bacc8b2200aef52b",
+      "left": "cand_d2q1D9fsvBg",
+      "right": "cand_Ug7AfBga3wo"
+    },
+    {
+      "pair_id": "pair_643a88c7842c745b",
+      "left": "cand_Y7MGg7JgQxI",
+      "right": "cand_d2q1D9fsvBg"
+    },
+    {
+      "pair_id": "pair_02f04745f253ae8c",
+      "left": "cand_d2q1D9fsvBg",
+      "right": "cand_oqX9v4eoLGA"
+    },
+    {
+      "pair_id": "pair_ef7ca29294fb68f4",
+      "left": "cand_d2q1D9fsvBg",
+      "right": "cand_vC8-aqzvmmw"
+    },
+    {
+      "pair_id": "pair_8dac4d7e459cb72d",
+      "left": "cand_vC8-aqzvmmw",
+      "right": "cand_sGRO5WP1cTg"
+    },
+    {
+      "pair_id": "pair_5f1bfdab70e93e6c",
+      "left": "cand_7X_2RUdF0PE",
+      "right": "cand_Y7MGg7JgQxI"
+    },
+    {
+      "pair_id": "pair_1c07e4e9fe616f4d",
+      "left": "cand_7X_2RUdF0PE",
+      "right": "cand_oqX9v4eoLGA"
+    }
+  ],
+  "votes": [],
+  "provider_attempts": [
+    {
+      "provider_id": "nano_banana_2",
+      "model": "google/gemini-3.1-flash-image",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307839+00:00"
+    },
+    {
+      "provider_id": "nano_banana_2_lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307850+00:00"
+    },
+    {
+      "provider_id": "gpt_image_2",
+      "model": "openai/gpt-image-2",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307852+00:00"
+    },
+    {
+      "provider_id": "grok_imagine_quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307854+00:00"
+    },
+    {
+      "provider_id": "krea_2_medium",
+      "model": "krea/krea-2-medium",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307855+00:00"
+    },
+    {
+      "provider_id": "flux_2_max",
+      "model": "black-forest-labs/flux.2-max",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307856+00:00"
+    },
+    {
+      "provider_id": "mai_image_2_5_pro",
+      "model": "microsoft/mai-image-2.5",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:01.307858+00:00"
+    }
+  ]
+}

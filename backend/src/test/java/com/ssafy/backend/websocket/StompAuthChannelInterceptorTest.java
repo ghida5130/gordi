@@ -99,7 +99,7 @@ class StompAuthChannelInterceptorTest {
     }
 
     @Test
-    void CONNECT가_아닌_frame은_검증없이_통과한다() {
+    void CONNECT_SUBSCRIBE가_아닌_frame은_검증없이_통과한다() {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SEND);
         accessor.setSessionId("session-1");
         Message<byte[]> message =
@@ -108,5 +108,82 @@ class StompAuthChannelInterceptorTest {
         Message<?> result = interceptor.preSend(message, null);
 
         assertThat(result).isSameAs(message);
+    }
+
+    private Message<byte[]> subscribeMessage(String destination, RoomPrincipal principal) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setSessionId("session-1");
+        accessor.setSubscriptionId("sub-1");
+        if (destination != null) {
+            accessor.setDestination(destination);
+        }
+        if (principal != null) {
+            accessor.setUser(principal);
+        }
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+    }
+
+    private RoomPrincipal principalOfRoom(long roomId) {
+        return new RoomPrincipal(42L, roomId, "친구1", "PARTICIPANTS");
+    }
+
+    @Test
+    void 자기_방_토픽_SUBSCRIBE는_통과한다() {
+        Message<byte[]> message =
+                subscribeMessage("/topic/v1/rooms/31/participants", principalOfRoom(31L));
+
+        Message<?> result = interceptor.preSend(message, null);
+
+        assertThat(result).isSameAs(message);
+    }
+
+    @Test
+    void 개인_큐_SUBSCRIBE는_통과한다() {
+        Message<byte[]> message =
+                subscribeMessage("/user/queue/sync", principalOfRoom(31L));
+
+        Message<?> result = interceptor.preSend(message, null);
+
+        assertThat(result).isSameAs(message);
+    }
+
+    @Test
+    void 다른_방_토픽_SUBSCRIBE는_FORBIDDEN으로_거절한다() {
+        Message<byte[]> message =
+                subscribeMessage("/topic/v1/rooms/99/participants", principalOfRoom(31L));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, null))
+                .isInstanceOf(MessageDeliveryException.class)
+                .hasMessageContaining(ErrorCode.FORBIDDEN.getCode());
+    }
+
+    @Test
+    void 허용_패턴_밖_destination_SUBSCRIBE는_FORBIDDEN으로_거절한다() {
+        Message<byte[]> message =
+                subscribeMessage("/topic/admin", principalOfRoom(31L));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, null))
+                .isInstanceOf(MessageDeliveryException.class)
+                .hasMessageContaining(ErrorCode.FORBIDDEN.getCode());
+    }
+
+    @Test
+    void Principal_없는_방_토픽_SUBSCRIBE는_UNAUTHORIZED로_거절한다() {
+        Message<byte[]> message =
+                subscribeMessage("/topic/v1/rooms/31/participants", null);
+
+        assertThatThrownBy(() -> interceptor.preSend(message, null))
+                .isInstanceOf(MessageDeliveryException.class)
+                .hasMessageContaining(ErrorCode.UNAUTHORIZED.getCode());
+    }
+
+    @Test
+    void destination_없는_SUBSCRIBE는_BAD_REQUEST로_거절한다() {
+        Message<byte[]> message = subscribeMessage(null, principalOfRoom(31L));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, null))
+                .isInstanceOf(MessageDeliveryException.class)
+                .hasMessageContaining(ErrorCode.BAD_REQUEST.getCode());
     }
 }

@@ -8,6 +8,7 @@ public record RankCandidate(
         String name,
         String brand,
         Integer price,
+        String gender,
         String category,
         String subcategory,
         String description
@@ -19,6 +20,7 @@ public record RankCandidate(
                 product.getName(),
                 product.getBrand(),
                 product.getPrice(),
+                product.getGender(),
                 product.getCategory(),
                 product.getSubcategory(),
                 product.getDescription()

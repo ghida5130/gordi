@@ -26,7 +26,22 @@ class RecommendationOptionsResponseTest {
         assertThat(top.label()).isEqualTo("상의");
         assertThat(top.subcategories())
                 .extracting(RecommendationOptionsResponse.SubcategoryOption::code)
-                .contains("SHORT_SLEEVE", "LONG_SLEEVE");
+                .contains(
+                        "SHORT_SLEEVE",
+                        "LONG_SLEEVE",
+                        "SLEEVELESS",
+                        "SPORTS_TOP",
+                        "OTHER_TOP",
+                        "DRESS"
+                );
+
+        RecommendationOptionsResponse.CategoryOption bottom = response.categories().stream()
+                .filter(category -> category.code().equals("BOTTOM"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(bottom.subcategories())
+                .extracting(RecommendationOptionsResponse.SubcategoryOption::code)
+                .contains("COTTON_PANTS", "JOGGER_PANTS", "SPORTS_BOTTOM", "OTHER_BOTTOM");
     }
 
     @Test

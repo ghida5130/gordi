@@ -1,0 +1,169 @@
+{
+  "generated_at": "2026-08-01T16:12:21+0900",
+  "mode": "offline",
+  "dataset": "eval\\queries-seed-v1.jsonl",
+  "result_limit": 10,
+  "candidate_limit": 50,
+  "index": {
+    "model": "google/gemini-embedding-2",
+    "dimensions": 768,
+    "snapshot_sha256": "7fc0e03bc8f5d2dcc2a5e25c9e17cb17cd709e4e3c9ccb66055cec05d0c08a94",
+    "product_count": 198
+  },
+  "scoring": {
+    "retrieval_weight": 0.65,
+    "compatibility_weight": 0.35
+  },
+  "rerank": {
+    "model": "amazon/nova-lite-v1",
+    "top_k": 20,
+    "concurrency": 8,
+    "judged": 200,
+    "failed": 0
+  },
+  "query_count": 10,
+  "aggregate": {
+    "recall@5": 0.17403846153846153,
+    "ndcg@5": 0.5440777139471945,
+    "recall@10": 0.23604395604395606,
+    "ndcg@10": 0.4992058725064756,
+    "pairwise_accuracy": 0.9,
+    "pairwise_evaluated": 20,
+    "pairwise_skipped": 3,
+    "brand_diversity": 0.72,
+    "latency_mean_seconds": 2.3825347499980127,
+    "latency_p95_seconds": 6.181678199995076
+  },
+  "per_query": [
+    {
+      "query_id": "seed-female-cotton_pants-4170359",
+      "returned": 10,
+      "latency_seconds": 2.030537,
+      "recall@5": 0.07692307692307693,
+      "recall@10": 0.07692307692307693,
+      "ndcg@5": 0.14606834984270645,
+      "ndcg@10": 0.09478836436955078,
+      "pairwise_accuracy": null,
+      "pairwise_evaluated": 0,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.5
+    },
+    {
+      "query_id": "seed-female-denim_pants-2303284",
+      "returned": 10,
+      "latency_seconds": 2.226607,
+      "recall@5": 0.35714285714285715,
+      "recall@10": 0.42857142857142855,
+      "ndcg@5": 1.0000000000000002,
+      "ndcg@10": 0.727329844310522,
+      "pairwise_accuracy": 1.0,
+      "pairwise_evaluated": 3,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-female-dress-6693986",
+      "returned": 10,
+      "latency_seconds": 1.838036,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "ndcg@5": 0.0,
+      "ndcg@10": 0.0,
+      "pairwise_accuracy": null,
+      "pairwise_evaluated": 0,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-female-short_sleeve-5835416",
+      "returned": 10,
+      "latency_seconds": 1.898499,
+      "recall@5": 0.125,
+      "recall@10": 0.25,
+      "ndcg@5": 1.0000000000000002,
+      "ndcg@10": 0.9322350847253098,
+      "pairwise_accuracy": 0.8,
+      "pairwise_evaluated": 5,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-female-skirt-4687212",
+      "returned": 10,
+      "latency_seconds": 6.181678,
+      "recall@5": 0.3076923076923077,
+      "recall@10": 0.46153846153846156,
+      "ndcg@5": 0.9402694138204842,
+      "ndcg@10": 0.8482484160802123,
+      "pairwise_accuracy": 1.0,
+      "pairwise_evaluated": 3,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-male-cotton_pants-4747236",
+      "returned": 10,
+      "latency_seconds": 2.019835,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "ndcg@5": 0.0,
+      "ndcg@10": 0.0,
+      "pairwise_accuracy": null,
+      "pairwise_evaluated": 0,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.6
+    },
+    {
+      "query_id": "seed-male-denim_pants-3599538",
+      "returned": 10,
+      "latency_seconds": 1.74258,
+      "recall@5": 0.25,
+      "recall@10": 0.3,
+      "ndcg@5": 0.40892216721717317,
+      "ndcg@10": 0.44841241379650604,
+      "pairwise_accuracy": 0.0,
+      "pairwise_evaluated": 1,
+      "pairwise_skipped": 2,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-male-shirt-4989733",
+      "returned": 10,
+      "latency_seconds": 2.074495,
+      "recall@5": 0.25,
+      "recall@10": 0.25,
+      "ndcg@5": 0.24630238874073,
+      "ndcg@10": 0.24630238874073,
+      "pairwise_accuracy": null,
+      "pairwise_evaluated": 0,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.6
+    },
+    {
+      "query_id": "seed-male-short_sleeve-6955756",
+      "returned": 10,
+      "latency_seconds": 1.71202,
+      "recall@5": 0.14285714285714285,
+      "recall@10": 0.2857142857142857,
+      "ndcg@5": 1.0000000000000002,
+      "ndcg@10": 1.0000000000000004,
+      "pairwise_accuracy": 1.0,
+      "pairwise_evaluated": 4,
+      "pairwise_skipped": 0,
+      "brand_diversity": 0.8
+    },
+    {
+      "query_id": "seed-male-slacks-5125572",
+      "returned": 10,
+      "latency_seconds": 2.10106,
+      "recall@5": 0.23076923076923078,
+      "recall@10": 0.3076923076923077,
+      "ndcg@5": 0.6992148198508502,
+      "ndcg@10": 0.6947422130419242,
+      "pairwise_accuracy": 1.0,
+      "pairwise_evaluated": 4,
+      "pairwise_skipped": 1,
+      "brand_diversity": 0.7
+    }
+  ]
+}

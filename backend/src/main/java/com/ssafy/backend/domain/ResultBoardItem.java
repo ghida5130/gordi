@@ -34,8 +34,8 @@ public class ResultBoardItem {
     @JoinColumn(name = "result_id", nullable = false)
     private Result result;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "result_tier_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "result_tier_id", nullable = false)
     private ResultTier resultTier;
 
     @ManyToOne(fetch = FetchType.LAZY)

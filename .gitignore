@@ -68,6 +68,17 @@ site/
 .eggs/
 pip-wheel-metadata/
 
+# Garment collection data and generated operational artifacts
+ai/garment_dataset/
+ai/garment_dataset-v2/
+ai/**/raw/
+ai/**/normalized/
+ai/**/images/
+ai/**/reports/
+ai/**/probe/
+ai/**/pilot/
+ai/catalog_index/
+
 # IntelliJ IDEA / JetBrains
 .idea/
 *.iws
