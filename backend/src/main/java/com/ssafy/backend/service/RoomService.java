@@ -19,6 +19,7 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -196,6 +197,66 @@ public class RoomService {
                 .orElseGet(() -> new MyActiveRoomResponseDTO(null));
     }
 
+    @Transactional(readOnly = true)
+    public RoomStatusResponseDTO readStatus(
+            String rawRoomCode,
+            RoomPrincipal principal
+    ) {
+        Room room = findReadableRoom(rawRoomCode);
+        requireActiveParticipant(room.getId(), principal);
+        return createRoomStatusResponse(room);
+    }
+
+    @Transactional(readOnly = true)
+    public RoomStatusResponseDTO readStatusByAccessToken(
+            String rawRoomCode,
+            String email
+    ) {
+        Room room = findReadableRoom(rawRoomCode);
+        requireActiveParticipant(room.getId(), email);
+        return createRoomStatusResponse(room);
+    }
+
+    private Room findReadableRoom(String rawRoomCode) {
+        String roomCode = normalizeRoomCode(rawRoomCode);
+        Room room = roomRepository.findByRoomCode(roomCode)
+                .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND));
+        validateJoinable(room);
+        return room;
+    }
+
+    private RoomStatusResponseDTO createRoomStatusResponse(Room room) {
+        List<RoomStatusResponseDTO.Participant> participants = roomParticipantRepository
+                .findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(room.getId())
+                .stream()
+                .map(participant -> new RoomStatusResponseDTO.Participant(
+                        participant.getId(),
+                        participant.getNickname(),
+                        participant.getRole()
+                ))
+                .toList();
+
+        List<RoomStatusResponseDTO.Tier> tiers = tierRepository
+                .findAllByRoomIdOrderByPositionAsc(room.getId())
+                .stream()
+                .map(tier -> new RoomStatusResponseDTO.Tier(
+                        tier.getId(),
+                        tier.getName(),
+                        tier.getPosition()
+                ))
+                .toList();
+
+        return new RoomStatusResponseDTO(
+                room.getId(),
+                room.getRoomCode(),
+                room.getStatus(),
+                room.getVersion(),
+                room.getExpiresAt().atZone(AppZone.KST).toInstant(),
+                participants,
+                tiers
+        );
+    }
+
     private RoomJoinResponseDTO rejoin(
             Room room,
             RoomParticipant participant,
@@ -273,6 +334,27 @@ public class RoomService {
         }
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+    }
+
+    private void requireActiveParticipant(Long roomId, RoomPrincipal principal) {
+        if (principal == null) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+        if (!Objects.equals(roomId, principal.roomId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+        roomParticipantRepository
+                .findByIdAndRoomIdAndLeftAtIsNull(principal.participantId(), roomId)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+    }
+
+    private void requireActiveParticipant(Long roomId, String email) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+        roomParticipantRepository
+                .findByRoomIdAndUserEmailAndLeftAtIsNull(roomId, email)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
     }
 
     private void snapshotRecommendationItems(

@@ -41,8 +41,8 @@ public class Result {
     @JoinColumn(name = "owner_user_id", nullable = false)
     private User ownerUser;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "try_on_job_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "try_on_job_id")
     private TryOnJob tryOnJob;
 
     @Column(name = "board_version", nullable = false)

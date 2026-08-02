@@ -1,15 +1,15 @@
 package com.ssafy.backend.repository;
 
 import com.ssafy.backend.domain.Room;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -50,6 +50,17 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             @Param("roomId") Long roomId,
             @Param("baseVersion") Long baseVersion,
             @Param("status") String status
+    );
+
+    @Modifying
+    @Query("update Room room set room.version = room.version + 1, "
+            + "room.status = 'FINISHED', room.finishedAt = :finishedAt "
+            + "where room.id = :roomId and room.version = :expectedVersion "
+            + "and room.status = 'IN_PROGRESS'")
+    int finishIfVersionMatches(
+            @Param("roomId") Long roomId,
+            @Param("expectedVersion") Long expectedVersion,
+            @Param("finishedAt") LocalDateTime finishedAt
     );
 
 }

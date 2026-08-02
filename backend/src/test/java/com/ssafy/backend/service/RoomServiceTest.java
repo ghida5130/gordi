@@ -9,11 +9,13 @@ import com.ssafy.backend.domain.RecommendationItem;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
+import com.ssafy.backend.domain.Tier;
 import com.ssafy.backend.domain.User;
 import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
 import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
 import com.ssafy.backend.dto.room.RoomJoinRequestDTO;
 import com.ssafy.backend.dto.room.RoomJoinResponseDTO;
+import com.ssafy.backend.dto.room.RoomStatusResponseDTO;
 import com.ssafy.backend.repository.RecommendationItemRepository;
 import com.ssafy.backend.repository.RecommendationRepository;
 import com.ssafy.backend.repository.RoomItemRepository;
@@ -22,6 +24,7 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -362,6 +365,94 @@ class RoomServiceTest {
         ))
                 .isInstanceOfSatisfying(ApiException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.ROOM_CLOSED));
+    }
+
+    @Test
+    void readStatusWithRoomTokenReturnsRoomParticipantsAndTiers() {
+        Room room = waitingRoom(31L, 4);
+        room.setStatus("IN_PROGRESS");
+        room.setVersion(12L);
+        RoomParticipant requester = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("host")
+                .role("HOST")
+                .build();
+        RoomParticipant guest = RoomParticipant.builder()
+                .id(43L)
+                .room(room)
+                .nickname("guest")
+                .role("PARTICIPANTS")
+                .build();
+        List<Tier> tiers = List.of(
+                Tier.builder().id(1L).room(room).name("S").position(0).build(),
+                Tier.builder().id(2L).room(room).name("A").position(1).build()
+        );
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(requester));
+        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(requester, guest));
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(tiers);
+
+        RoomStatusResponseDTO response = roomService.readStatus(" a7k9q2 ", principal);
+
+        assertThat(response.roomId()).isEqualTo(31L);
+        assertThat(response.roomCode()).isEqualTo("A7K9Q2");
+        assertThat(response.status()).isEqualTo("IN_PROGRESS");
+        assertThat(response.version()).isEqualTo(12L);
+        assertThat(response.expiresAt())
+                .isEqualTo(room.getExpiresAt().atZone(AppZone.KST).toInstant());
+        assertThat(response.participants())
+                .extracting(RoomStatusResponseDTO.Participant::participantId)
+                .containsExactly(42L, 43L);
+        assertThat(response.tiers())
+                .extracting(RoomStatusResponseDTO.Tier::name)
+                .containsExactly("S", "A");
+    }
+
+    @Test
+    void readStatusWithAccessTokenRequiresActiveMember() {
+        Room room = waitingRoom(31L, 4);
+        RoomParticipant participant = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("member")
+                .role("PARTICIPANTS")
+                .build();
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.findByRoomIdAndUserEmailAndLeftAtIsNull(
+                31L,
+                "member@example.com"
+        )).thenReturn(Optional.of(participant));
+        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(participant));
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(List.of());
+
+        RoomStatusResponseDTO response = roomService.readStatusByAccessToken(
+                "A7K9Q2",
+                "member@example.com"
+        );
+
+        assertThat(response.participants()).hasSize(1);
+        verify(roomParticipantRepository)
+                .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
+    }
+
+    @Test
+    void readStatusRejectsRoomTokenForAnotherRoom() {
+        Room room = waitingRoom(31L, 4);
+        RoomPrincipal principal = new RoomPrincipal(42L, 99L, "guest", "PARTICIPANTS");
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> roomService.readStatus("A7K9Q2", principal))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+
+        verify(roomParticipantRepository, never())
+                .findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L);
     }
 
     private User user(Long id, String email, String nickname) {
