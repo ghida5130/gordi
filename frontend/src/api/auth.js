@@ -6,7 +6,7 @@ const apiBaseUrl = (
 
 // 인증 전 사용자 정보를 전달하는 로그인 요청
 export function login(credentials) {
-  return publicApi.post("v1/auth/login", credentials);
+  return publicApi.post("/v1/auth/login", credentials);
 }
 
 export function startKakaoLogin() {
@@ -25,7 +25,7 @@ export function reissueToken() {
     {},
     {
       withCredentials: true,
-    },
+    }
   );
 }
 
