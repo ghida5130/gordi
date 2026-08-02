@@ -7,13 +7,16 @@ import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
 import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
 import com.ssafy.backend.dto.room.RoomJoinRequestDTO;
 import com.ssafy.backend.dto.room.RoomJoinResponseDTO;
+import com.ssafy.backend.dto.room.RoomStatusResponseDTO;
 import com.ssafy.backend.service.RoomService;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +30,36 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoomController {
 
     private final RoomService roomService;
+
+    @GetMapping("/{roomCode}")
+    public ResponseEntity<ApiResponse<RoomStatusResponseDTO>> readStatus(
+            @PathVariable String roomCode,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                resolveRoomStatus(roomCode, authentication)
+        ));
+    }
+
+    private RoomStatusResponseDTO resolveRoomStatus(
+            String roomCode,
+            Authentication authentication
+    ) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof RoomPrincipal roomPrincipal) {
+            return roomService.readStatus(roomCode, roomPrincipal);
+        }
+        if (principal instanceof String email && !email.isBlank()) {
+            return roomService.readStatusByAccessToken(roomCode, email);
+        }
+        throw new ApiException(ErrorCode.INVALID_TOKEN);
+    }
 
     /** 방 생성 (회원 전용). 호스트는 생성과 동시에 자동 join되어 roomToken을 받는다. */
     @PostMapping

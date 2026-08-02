@@ -1,0 +1,91 @@
+package com.ssafy.backend.controller;
+
+import com.ssafy.backend.common.response.ApiResponse;
+import com.ssafy.backend.dto.room.RoomStatusResponseDTO;
+import com.ssafy.backend.service.RoomService;
+import com.ssafy.backend.websocket.RoomPrincipal;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class RoomControllerTest {
+
+    @Mock
+    private RoomService roomService;
+
+    @InjectMocks
+    private RoomController roomController;
+
+    @Test
+    void readStatusReturnsWrappedResponse() {
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                "member@example.com",
+                null,
+                List.of()
+        );
+        RoomStatusResponseDTO serviceResponse = new RoomStatusResponseDTO(
+                31L,
+                "A7K9Q2",
+                "IN_PROGRESS",
+                12L,
+                Instant.parse("2026-07-23T03:00:00Z"),
+                List.of(new RoomStatusResponseDTO.Participant(
+                        42L,
+                        "홍길동",
+                        "HOST"
+                )),
+                List.of(new RoomStatusResponseDTO.Tier(1L, "S", 0))
+        );
+        when(roomService.readStatusByAccessToken("A7K9Q2", "member@example.com"))
+                .thenReturn(serviceResponse);
+
+        ResponseEntity<ApiResponse<RoomStatusResponseDTO>> response =
+                roomController.readStatus("A7K9Q2", authentication);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(serviceResponse);
+        verify(roomService).readStatusByAccessToken("A7K9Q2", "member@example.com");
+    }
+
+    @Test
+    void readStatusDelegatesRoomPrincipalWithoutAuthenticationDependencyInService() {
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                List.of()
+        );
+        RoomStatusResponseDTO serviceResponse = new RoomStatusResponseDTO(
+                31L,
+                "A7K9Q2",
+                "WAITING",
+                0L,
+                Instant.parse("2026-07-23T03:00:00Z"),
+                List.of(),
+                List.of()
+        );
+        when(roomService.readStatus("A7K9Q2", principal)).thenReturn(serviceResponse);
+
+        ResponseEntity<ApiResponse<RoomStatusResponseDTO>> response =
+                roomController.readStatus("A7K9Q2", authentication);
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(serviceResponse);
+        verify(roomService).readStatus("A7K9Q2", principal);
+    }
+}
