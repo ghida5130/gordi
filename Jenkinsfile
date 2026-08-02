@@ -41,7 +41,7 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    -v "$PWD/backend":/app -w /app \
+                    -v jenkins_home:/ws -w /ws/workspace/gordi-backend/backend \
                     -v gradle-cache:/root/.gradle \
                     eclipse-temurin:21-jdk-alpine \
                     sh -c "./gradlew test --no-daemon"
