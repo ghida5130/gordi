@@ -202,6 +202,14 @@ class RoomFinishServiceTest {
                 .thenReturn(fixture.roomItems().stream()
                         .filter(item -> item.getTier() == null)
                         .toList());
+        when(tryOnJobRepository
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(31L))
+                .thenReturn(Optional.empty());
+        when(resultRepository.save(any(Result.class))).thenAnswer(invocation -> {
+            Result result = invocation.getArgument(0);
+            result.setId(51L);
+            return result;
+        });
 
         RoomFinishResponseDTO response = roomFinishService.finish(
                 "A7K9Q2",
@@ -210,24 +218,27 @@ class RoomFinishServiceTest {
         );
 
         assertThat(response.status()).isEqualTo("FINISHED");
-        assertThat(response.resultId()).isNull();
+        assertThat(response.resultId()).isEqualTo(51L);
         assertThat(response.topItems()).isEmpty();
         assertThat(response.snapshotImageUrl()).isNull();
 
-        verify(tryOnJobRepository, never())
+        verify(tryOnJobRepository)
                 .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(
-                        anyLong()
+                        31L
                 );
 
-        verify(resultRepository, never()).save(any(Result.class));
-        verify(resultTierRepository, never()).saveAll(any());
-        verify(resultBoardItemRepository, never()).saveAll(any());
+        ArgumentCaptor<Result> resultCaptor = ArgumentCaptor.forClass(Result.class);
+        verify(resultRepository).save(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().getTryOnJob()).isNull();
+        assertThat(resultCaptor.getValue().getBoardVersion()).isEqualTo(17L);
+        verify(resultTierRepository).saveAll(any());
+        verify(resultBoardItemRepository).saveAll(any());
 
         verify(eventPublisher).publishEvent(any(RoomFinishedEvent.class));
     }
 
     @Test
-    void classifiedBoardWithoutTryOnFinishesWithoutResult() {
+    void classifiedBoardWithoutTryOnStillStoresResult() {
         Fixture fixture = fixture("HOST");
 
         when(roomRepository.findByRoomCode("A7K9Q2"))
@@ -243,6 +254,11 @@ class RoomFinishServiceTest {
         when(tryOnJobRepository
                 .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(31L))
                 .thenReturn(Optional.empty());
+        when(resultRepository.save(any(Result.class))).thenAnswer(invocation -> {
+            Result result = invocation.getArgument(0);
+            result.setId(52L);
+            return result;
+        });
 
         RoomFinishResponseDTO response = roomFinishService.finish(
                 "A7K9Q2",
@@ -251,13 +267,17 @@ class RoomFinishServiceTest {
         );
 
         assertThat(response.status()).isEqualTo("FINISHED");
-        assertThat(response.resultId()).isNull();
-        assertThat(response.topItems()).isEmpty();
+        assertThat(response.resultId()).isEqualTo(52L);
+        assertThat(response.topItems())
+                .extracting(RoomFinishResponseDTO.TopItem::productId)
+                .containsExactly(101L, 102L);
         assertThat(response.snapshotImageUrl()).isNull();
 
-        verify(resultRepository, never()).save(any(Result.class));
-        verify(resultTierRepository, never()).saveAll(any());
-        verify(resultBoardItemRepository, never()).saveAll(any());
+        ArgumentCaptor<Result> resultCaptor = ArgumentCaptor.forClass(Result.class);
+        verify(resultRepository).save(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().getTryOnJob()).isNull();
+        verify(resultTierRepository).saveAll(any());
+        verify(resultBoardItemRepository).saveAll(any());
         verify(eventPublisher).publishEvent(any(RoomFinishedEvent.class));
     }
 

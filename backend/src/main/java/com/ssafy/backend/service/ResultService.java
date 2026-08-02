@@ -50,7 +50,7 @@ public class ResultService {
                         r.getId(),
                         r.getRoom().getRoomCode(),
                         toMyResultTopItems(boardItemsByResultId.getOrDefault(r.getId(), List.of())),
-                        r.getTryOnJob().getResultImageUrl(),
+                        getSnapshotImageUrl(r),
                         r.getCreatedAt().atZone(AppZone.KST).toInstant()))
                 .toList();
 
@@ -96,16 +96,25 @@ public class ResultService {
                 ))
                 .toList();
 
+        String snapshotImageUrl = getSnapshotImageUrl(result);
+
         return new RoomResultResponseDTO(
                 result.getId(),
                 result.getRoom().getRoomCode(),
                 result.getBoardVersion(),
                 topItems,
-                result.getTryOnJob().getResultImageUrl(),
+                snapshotImageUrl,
                 List.of(),
-                DEFAULT_DISCLAIMER,
+                snapshotImageUrl == null ? null : DEFAULT_DISCLAIMER,
                 result.getCreatedAt().atZone(AppZone.KST).toInstant()
         );
+    }
+
+    private String getSnapshotImageUrl(Result result) {
+        if (result.getTryOnJob() == null) {
+            return null;
+        }
+        return result.getTryOnJob().getResultImageUrl();
     }
 
     private List<MyResultListResponseDTO.TopItem> toMyResultTopItems(

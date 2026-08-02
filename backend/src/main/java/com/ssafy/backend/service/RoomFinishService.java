@@ -88,7 +88,7 @@ public class RoomFinishService {
 
         List<Product> topProducts = resolveTopProducts(tiers, roomItems);
 
-        Optional<SavedResult> savedResult = createResultIfAvailable(
+        SavedResult savedResult = createResult(
                 room,
                 request.expectedVersion(),
                 tiers,
@@ -97,7 +97,7 @@ public class RoomFinishService {
         );
 
 
-        // Result 생성 여부와 상관없이 방 종료 이벤트 발행
+        // 결과 스냅샷 저장이 완료된 뒤 방 종료 이벤트 발행
         eventPublisher.publishEvent(new RoomFinishedEvent(
                 room.getId(),
                 request.expectedVersion() + 1,
@@ -115,54 +115,29 @@ public class RoomFinishService {
     private RoomFinishResponseDTO toResponse(
             Long roomId,
             LocalDateTime finishedAt,
-            Optional<SavedResult> savedResult
+            SavedResult savedResult
     ) {
-        if (savedResult.isEmpty()) {
-            return new RoomFinishResponseDTO(
-                    null,
-                    roomId,
-                    FINISHED,
-                    List.of(),
-                    null,
-                    finishedAt.atZone(AppZone.KST).toInstant()
-            );
-        }
-
-        SavedResult result = savedResult.get();
-
         return new RoomFinishResponseDTO(
-                result.resultId(),
+                savedResult.resultId(),
                 roomId,
                 FINISHED,
-                result.topProducts().stream()
+                savedResult.topProducts().stream()
                         .map(this::toTopItem)
                         .toList(),
-                result.snapshotImageUrl(),
+                savedResult.snapshotImageUrl(),
                 finishedAt.atZone(AppZone.KST).toInstant()
         );
     }
 
-    private Optional<SavedResult> createResultIfAvailable(
+    private SavedResult createResult(
             Room room,
             Long boardVersion,
             List<Tier> tiers,
             List<RoomItem> roomItems,
             List<Product> topProducts
     ) {
-        // 분류된 상품이 없으면 Result를 만들지 않음
-        if (topProducts.isEmpty()) {
-            return Optional.empty();
-        }
-
-        Optional<TryOnJob> tryOnJobOptional =
-                findLatestCompletedTryOnJob(room.getId());
-
-        // 완료된 가상 피팅 결과가 없어도 방 종료는 유지
-        if (tryOnJobOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        TryOnJob tryOnJob = tryOnJobOptional.get();
+        TryOnJob tryOnJob = findLatestCompletedTryOnJob(room.getId())
+                .orElse(null);
 
         Result result = resultRepository.save(Result.builder()
                 .room(room)
@@ -180,11 +155,11 @@ public class RoomFinishService {
                 resultTierBySourceId
         );
 
-        return Optional.of(new SavedResult(
+        return new SavedResult(
                 result.getId(),
                 topProducts,
-                tryOnJob.getResultImageUrl()
-        ));
+                tryOnJob == null ? null : tryOnJob.getResultImageUrl()
+        );
     }
 
     private Map<Long, ResultTier> snapshotTiers(Result result, List<Tier> tiers) {
@@ -250,7 +225,7 @@ public class RoomFinishService {
                 .toList();
     }
 
-    // Optional로 변경 -> 결과가 없어도 예외 발생 X
+    // 완료된 착장 결과가 없으면 이미지 없는 Result를 생성한다.
     private Optional<TryOnJob> findLatestCompletedTryOnJob(Long roomId) {
         return tryOnJobRepository
                 .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(

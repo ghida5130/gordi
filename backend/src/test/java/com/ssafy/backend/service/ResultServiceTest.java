@@ -166,6 +166,48 @@ class ResultServiceTest {
     }
 
     @Test
+    void readRoomResultWithoutTryOnReturnsEmptySnapshotFields() {
+        Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
+        Result result = Result.builder()
+                .id(51L)
+                .room(room)
+                .boardVersion(17L)
+                .createdAt(LocalDateTime.now(AppZone.KST))
+                .build();
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "guest", "PARTICIPANTS");
+        when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(result));
+        when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
+                .thenReturn(List.of());
+
+        RoomResultResponseDTO response = resultService.readRoomResult("A7K9Q2", principal);
+
+        assertThat(response.resultId()).isEqualTo(51L);
+        assertThat(response.topItems()).isEmpty();
+        assertThat(response.snapshotImageUrl()).isNull();
+        assertThat(response.fitSummary()).isEmpty();
+        assertThat(response.disclaimer()).isNull();
+    }
+
+    @Test
+    void readMyResultsIncludesResultWithoutTryOn() {
+        Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
+        Result result = Result.builder()
+                .id(51L)
+                .room(room)
+                .createdAt(LocalDateTime.now(AppZone.KST))
+                .build();
+        when(resultRepository.findAllByOwnerEmail("host@example.com"))
+                .thenReturn(List.of(result));
+        when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
+                .thenReturn(List.of());
+
+        MyResultListResponseDTO response = resultService.readMyResults("host@example.com");
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().get(0).snapshotImageUrl()).isNull();
+    }
+
+    @Test
     void readRoomResultThrowsResultNotFoundWhenSnapshotDoesNotExist() {
         when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.empty());
 

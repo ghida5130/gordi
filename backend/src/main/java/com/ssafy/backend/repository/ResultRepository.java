@@ -13,7 +13,7 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
     @Query("""
         select r from Result r
         join fetch r.room
-        join fetch r.tryOnJob
+        left join fetch r.tryOnJob
         where r.ownerUser.email = :email
         order by r.createdAt desc
         """)
@@ -22,7 +22,7 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
     @Query("""
         select r from Result r
         join fetch r.room
-        join fetch r.tryOnJob
+        left join fetch r.tryOnJob
         where r.room.roomCode = :roomCode
         """)
     Optional<Result> findByRoomCode(@Param("roomCode") String roomCode);
