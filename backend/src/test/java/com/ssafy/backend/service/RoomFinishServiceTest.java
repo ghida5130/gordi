@@ -98,7 +98,7 @@ class RoomFinishServiceTest {
 
         RoomFinishResponseDTO response = roomFinishService.finish(
                 " a7k9q2 ",
-                new RoomFinishRequestDTO(17L, List.of(101L, 102L)),
+                new RoomFinishRequestDTO(17L),
                 fixture.principal()
         );
 
@@ -148,7 +148,7 @@ class RoomFinishServiceTest {
 
         assertThatThrownBy(() -> roomFinishService.finish(
                 "A7K9Q2",
-                new RoomFinishRequestDTO(17L, List.of(101L)),
+                new RoomFinishRequestDTO(17L),
                 fixture.principal()
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
@@ -160,13 +160,15 @@ class RoomFinishServiceTest {
     @Test
     void staleExpectedVersionRollsBackBeforeSavingResult() {
         Fixture fixture = fixture("HOST");
-        stubSnapshotData(fixture);
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(fixture.room()));
+        when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(fixture.participant()));
         when(roomRepository.finishIfVersionMatches(anyLong(), anyLong(), any(LocalDateTime.class)))
                 .thenReturn(0);
 
         assertThatThrownBy(() -> roomFinishService.finish(
                 "A7K9Q2",
-                new RoomFinishRequestDTO(17L, List.of(101L, 102L)),
+                new RoomFinishRequestDTO(17L),
                 fixture.principal()
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VERSION_CONFLICT));
@@ -176,26 +178,87 @@ class RoomFinishServiceTest {
     }
 
     @Test
-    void topProductsMustMatchHighestTierPositionOrder() {
+    void 빈_보드_테스트() {
         Fixture fixture = fixture("HOST");
-        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(fixture.room()));
+
+        when(roomRepository.findByRoomCode("A7K9Q2"))
+                .thenReturn(Optional.of(fixture.room()));
+
+        when(roomParticipantRepository
+                .findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(fixture.participant()));
+
+        when(roomRepository.finishIfVersionMatches(
+                anyLong(),
+                anyLong(),
+                any(LocalDateTime.class)
+        )).thenReturn(1);
+
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L))
+                .thenReturn(fixture.tiers());
+
+        // 모든 상품이 미분류인 상태
+        when(roomItemRepository.findAllByRoomIdWithProduct(31L))
+                .thenReturn(fixture.roomItems().stream()
+                        .filter(item -> item.getTier() == null)
+                        .toList());
+
+        RoomFinishResponseDTO response = roomFinishService.finish(
+                "A7K9Q2",
+                new RoomFinishRequestDTO(17L),
+                fixture.principal()
+        );
+
+        assertThat(response.status()).isEqualTo("FINISHED");
+        assertThat(response.resultId()).isNull();
+        assertThat(response.topItems()).isEmpty();
+        assertThat(response.snapshotImageUrl()).isNull();
+
+        verify(tryOnJobRepository, never())
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(
+                        anyLong()
+                );
+
+        verify(resultRepository, never()).save(any(Result.class));
+        verify(resultTierRepository, never()).saveAll(any());
+        verify(resultBoardItemRepository, never()).saveAll(any());
+
+        verify(eventPublisher).publishEvent(any(RoomFinishedEvent.class));
+    }
+
+    @Test
+    void classifiedBoardWithoutTryOnFinishesWithoutResult() {
+        Fixture fixture = fixture("HOST");
+
+        when(roomRepository.findByRoomCode("A7K9Q2"))
+                .thenReturn(Optional.of(fixture.room()));
         when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
                 .thenReturn(Optional.of(fixture.participant()));
-        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(fixture.tiers());
-        when(roomItemRepository.findAllByRoomIdWithProduct(31L)).thenReturn(fixture.roomItems());
+        when(roomRepository.finishIfVersionMatches(anyLong(), anyLong(), any(LocalDateTime.class)))
+                .thenReturn(1);
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L))
+                .thenReturn(fixture.tiers());
+        when(roomItemRepository.findAllByRoomIdWithProduct(31L))
+                .thenReturn(fixture.roomItems());
+        when(tryOnJobRepository
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(31L))
+                .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> roomFinishService.finish(
+        RoomFinishResponseDTO response = roomFinishService.finish(
                 "A7K9Q2",
-                new RoomFinishRequestDTO(17L, List.of(102L, 101L)),
+                new RoomFinishRequestDTO(17L),
                 fixture.principal()
-        )).isInstanceOfSatisfying(ApiException.class, exception -> {
-            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
-            assertThat(exception.getDetails())
-                    .containsEntry("expectedTopProductIds", List.of(101L, 102L));
-        });
+        );
 
-        verify(roomRepository, never())
-                .finishIfVersionMatches(anyLong(), anyLong(), any(LocalDateTime.class));
+        assertThat(response.status()).isEqualTo("FINISHED");
+        assertThat(response.resultId()).isNull();
+        assertThat(response.topItems()).isEmpty();
+        assertThat(response.snapshotImageUrl()).isNull();
+
+        verify(resultRepository, never()).save(any(Result.class));
+        verify(resultTierRepository, never()).saveAll(any());
+        verify(resultBoardItemRepository, never()).saveAll(any());
+        verify(eventPublisher).publishEvent(any(RoomFinishedEvent.class));
     }
 
     private void stubSnapshotData(Fixture fixture) {

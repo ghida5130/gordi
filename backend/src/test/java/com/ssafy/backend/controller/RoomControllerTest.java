@@ -102,10 +102,7 @@ class RoomControllerTest {
                 null,
                 List.of()
         );
-        RoomFinishRequestDTO request = new RoomFinishRequestDTO(
-                17L,
-                List.of(101L, 102L)
-        );
+        RoomFinishRequestDTO request = new RoomFinishRequestDTO(17L);
         RoomFinishResponseDTO serviceResponse = new RoomFinishResponseDTO(
                 51L,
                 31L,

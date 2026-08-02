@@ -31,11 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -70,16 +70,9 @@ public class RoomFinishService {
         requireHost(room, principal);
         validateFinishable(room);
 
-        List<Tier> tiers = tierRepository.findAllByRoomIdOrderByPositionAsc(room.getId());
-        List<RoomItem> roomItems = roomItemRepository.findAllByRoomIdWithProduct(room.getId());
-        List<Product> topProducts = resolveTopProducts(
-                tiers,
-                roomItems,
-                request.topProductIds()
-        );
-        TryOnJob tryOnJob = findLatestCompletedTryOnJob(room.getId());
-
         LocalDateTime finishedAt = LocalDateTime.now(AppZone.KST);
+
+        // version 일치 확인, 방 종료를 원자적으로 처리
         if (roomRepository.finishIfVersionMatches(
                 room.getId(),
                 request.expectedVersion(),
@@ -88,30 +81,110 @@ public class RoomFinishService {
             throw new ApiException(ErrorCode.VERSION_CONFLICT);
         }
 
-        Result result = resultRepository.save(Result.builder()
-                .room(room)
-                .ownerUser(room.getHostUser())
-                .tryOnJob(tryOnJob)
-                .boardVersion(request.expectedVersion())
-                .build());
+        // 종료 확정된 시점의 DB 보드 조회
+        List<Tier> tiers = tierRepository.findAllByRoomIdOrderByPositionAsc(room.getId());
 
-        Map<Long, ResultTier> resultTierBySourceId = snapshotTiers(result, tiers);
-        snapshotBoardItems(result, roomItems, resultTierBySourceId);
+        List<RoomItem> roomItems = roomItemRepository.findAllByRoomIdWithProduct(room.getId());
 
+        List<Product> topProducts = resolveTopProducts(tiers, roomItems);
+
+        Optional<SavedResult> savedResult = createResultIfAvailable(
+                room,
+                request.expectedVersion(),
+                tiers,
+                roomItems,
+                topProducts
+        );
+
+
+        // Result 생성 여부와 상관없이 방 종료 이벤트 발행
         eventPublisher.publishEvent(new RoomFinishedEvent(
                 room.getId(),
                 request.expectedVersion() + 1,
                 principal.participantId()
         ));
 
-        return new RoomFinishResponseDTO(
-                result.getId(),
+        return toResponse(
                 room.getId(),
+                finishedAt,
+                savedResult
+        );
+    }
+
+    // 응답 생성 메서드
+    private RoomFinishResponseDTO toResponse(
+            Long roomId,
+            LocalDateTime finishedAt,
+            Optional<SavedResult> savedResult
+    ) {
+        if (savedResult.isEmpty()) {
+            return new RoomFinishResponseDTO(
+                    null,
+                    roomId,
+                    FINISHED,
+                    List.of(),
+                    null,
+                    finishedAt.atZone(AppZone.KST).toInstant()
+            );
+        }
+
+        SavedResult result = savedResult.get();
+
+        return new RoomFinishResponseDTO(
+                result.resultId(),
+                roomId,
                 FINISHED,
-                topProducts.stream().map(this::toTopItem).toList(),
-                tryOnJob.getResultImageUrl(),
+                result.topProducts().stream()
+                        .map(this::toTopItem)
+                        .toList(),
+                result.snapshotImageUrl(),
                 finishedAt.atZone(AppZone.KST).toInstant()
         );
+    }
+
+    private Optional<SavedResult> createResultIfAvailable(
+            Room room,
+            Long boardVersion,
+            List<Tier> tiers,
+            List<RoomItem> roomItems,
+            List<Product> topProducts
+    ) {
+        // 분류된 상품이 없으면 Result를 만들지 않음
+        if (topProducts.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<TryOnJob> tryOnJobOptional =
+                findLatestCompletedTryOnJob(room.getId());
+
+        // 완료된 가상 피팅 결과가 없어도 방 종료는 유지
+        if (tryOnJobOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        TryOnJob tryOnJob = tryOnJobOptional.get();
+
+        Result result = resultRepository.save(Result.builder()
+                .room(room)
+                .ownerUser(room.getHostUser())
+                .tryOnJob(tryOnJob)
+                .boardVersion(boardVersion)
+                .build());
+
+        Map<Long, ResultTier> resultTierBySourceId =
+                snapshotTiers(result, tiers);
+
+        snapshotBoardItems(
+                result,
+                roomItems,
+                resultTierBySourceId
+        );
+
+        return Optional.of(new SavedResult(
+                result.getId(),
+                topProducts,
+                tryOnJob.getResultImageUrl()
+        ));
     }
 
     private Map<Long, ResultTier> snapshotTiers(Result result, List<Tier> tiers) {
@@ -150,15 +223,18 @@ public class RoomFinishService {
         resultBoardItemRepository.saveAll(boardItems);
     }
 
+    // requestedProductIds 파라미터와 비교로직 제거
     private List<Product> resolveTopProducts(
             List<Tier> tiers,
-            List<RoomItem> roomItems,
-            List<Long> requestedProductIds
+            List<RoomItem> roomItems
     ) {
         List<RoomItem> highestTierItems = tiers.stream()
                 .map(tier -> roomItems.stream()
                         .filter(item -> item.getTier() != null)
-                        .filter(item -> Objects.equals(item.getTier().getId(), tier.getId()))
+                        .filter(item -> Objects.equals(
+                                item.getTier().getId(),
+                                tier.getId()
+                        ))
                         .sorted((left, right) -> Integer.compare(
                                 left.getPosition(),
                                 right.getPosition()
@@ -166,47 +242,24 @@ public class RoomFinishService {
                         .toList())
                 .filter(items -> !items.isEmpty())
                 .findFirst()
-                .orElseThrow(() -> new ApiException(
-                        ErrorCode.CONFLICT,
-                        "분류된 상품이 없어 방을 종료할 수 없습니다."
-                ));
-
-        int topItemCount = Math.min(3, highestTierItems.size());
-        List<Long> expectedProductIds = highestTierItems.stream()
-                .limit(topItemCount)
-                .map(item -> item.getProduct().getId())
-                .toList();
-        if (!expectedProductIds.equals(requestedProductIds)) {
-            throw new ApiException(
-                    ErrorCode.BAD_REQUEST,
-                    "topProductIds는 가장 높은 티어의 position 순서와 일치해야 합니다.",
-                    Map.of(
-                            "field", "topProductIds",
-                            "expectedTopProductIds", expectedProductIds
-                    )
-            );
-        }
+                .orElse(List.of());
 
         return highestTierItems.stream()
-                .limit(topItemCount)
+                .limit(3)
                 .map(RoomItem::getProduct)
                 .toList();
     }
 
-    private TryOnJob findLatestCompletedTryOnJob(Long roomId) {
-        TryOnJob tryOnJob = tryOnJobRepository
-                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(roomId)
-                .orElseThrow(() -> new ApiException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        Map.of("resource", "tryOnJob")
-                ));
-        if (tryOnJob.getResultImageUrl().isBlank()) {
-            throw new ApiException(
-                    ErrorCode.RESOURCE_NOT_FOUND,
-                    Map.of("resource", "tryOnJob")
-            );
-        }
-        return tryOnJob;
+    // Optional로 변경 -> 결과가 없어도 예외 발생 X
+    private Optional<TryOnJob> findLatestCompletedTryOnJob(Long roomId) {
+        return tryOnJobRepository
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(
+                        roomId
+                )
+                .filter(job ->
+                        job.getResultImageUrl() != null
+                                && !job.getResultImageUrl().isBlank()
+                );
     }
 
     private void requireHost(Room room, RoomPrincipal principal) {
@@ -245,12 +298,7 @@ public class RoomFinishService {
     private void validateRequest(RoomFinishRequestDTO request) {
         if (request == null
                 || request.expectedVersion() == null
-                || request.expectedVersion() < 0
-                || request.topProductIds() == null
-                || request.topProductIds().isEmpty()
-                || request.topProductIds().size() > 3
-                || request.topProductIds().stream().anyMatch(id -> id == null || id <= 0)
-                || new HashSet<>(request.topProductIds()).size() != request.topProductIds().size()) {
+                || request.expectedVersion() < 0) {
             throw new ApiException(ErrorCode.BAD_REQUEST);
         }
     }
@@ -270,5 +318,12 @@ public class RoomFinishService {
             throw new ApiException(ErrorCode.ROOM_NOT_FOUND);
         }
         return rawRoomCode.strip().toUpperCase(Locale.ROOT);
+    }
+
+    private record SavedResult(
+            Long resultId,
+            List<Product> topProducts,
+            String snapshotImageUrl
+    ) {
     }
 }
