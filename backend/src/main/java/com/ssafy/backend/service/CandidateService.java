@@ -11,6 +11,7 @@ import com.ssafy.backend.dto.candidate.CandidateResponseDTO;
 import com.ssafy.backend.repository.ProductRepository;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +26,12 @@ public class CandidateService {
     private final RoomItemRepository roomItemRepository;
     private final RoomRepository roomRepository;
     private final ProductRepository productRepository;
+    private final RoomAccessValidator roomAccessValidator;
 
     /** 후보 의상 추가: product를 room에 넣는다 */
-    public CandidateResponseDTO add(CandidateAddRequestDTO request) {
+    public CandidateResponseDTO add(CandidateAddRequestDTO request, RoomPrincipal principal) {
+        roomAccessValidator.requireParticipant(request.roomId(), principal);
+
         Room room = roomRepository.findById(request.roomId())
                 .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND));
         Product product = productRepository.findById(request.productId())
@@ -49,7 +53,9 @@ public class CandidateService {
     }
 
     /** 후보 의상 삭제 → 컨트롤러에서 204 반환 */
-    public void delete(Long roomId, Long productId) {
+    public void delete(Long roomId, Long productId, RoomPrincipal principal) {
+        roomAccessValidator.requireParticipant(roomId, principal);
+
         RoomItem roomItem = roomItemRepository.findByRoomIdAndProductId(roomId, productId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
         roomItemRepository.delete(roomItem);
@@ -57,7 +63,9 @@ public class CandidateService {
 
     /** 후보 의상 목록 조회 */
     @Transactional(readOnly = true)
-    public CandidateListResponseDTO list(Long roomId) {
+    public CandidateListResponseDTO list(Long roomId, RoomPrincipal principal) {
+        roomAccessValidator.requireParticipant(roomId, principal);
+
         if (!roomRepository.existsById(roomId)) {
             throw new ApiException(ErrorCode.ROOM_NOT_FOUND);
         }

@@ -18,6 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
             SELECT p FROM Product p
             WHERE p.availability = 'AVAILABLE'
+              AND (p.gender = :gender OR p.gender = 'UNISEX')
               AND p.category = :category
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
               AND p.price BETWEEN :budgetMin AND :budgetMax
@@ -26,6 +27,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findMatching(
             @Param("category") String category,
             @Param("subcategory") String subcategory,
+            @Param("gender") String gender,
             @Param("budgetMin") Integer budgetMin,
             @Param("budgetMax") Integer budgetMax,
             Pageable pageable
@@ -35,6 +37,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
             SELECT p FROM Product p
             WHERE p.availability = 'AVAILABLE'
+              AND (p.gender = :gender OR p.gender = 'UNISEX')
               AND p.category = :category
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
               AND p.price BETWEEN :budgetMin AND :budgetMax
@@ -44,6 +47,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findMatchingExcluding(
             @Param("category") String category,
             @Param("subcategory") String subcategory,
+            @Param("gender") String gender,
             @Param("budgetMin") Integer budgetMin,
             @Param("budgetMax") Integer budgetMax,
             @Param("excludedIds") Collection<Long> excludedIds,
@@ -54,24 +58,28 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
             SELECT MIN(p.price) FROM Product p
             WHERE p.availability = 'AVAILABLE'
+              AND (p.gender = :gender OR p.gender = 'UNISEX')
               AND p.category = :category
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
             """)
     Integer findMinPrice(
             @Param("category") String category,
-            @Param("subcategory") String subcategory
+            @Param("subcategory") String subcategory,
+            @Param("gender") String gender
     );
 
     // 예산 범위 밖일 때 추천할 최대 가격 (subcategory 는 선택값)
     @Query("""
             SELECT MAX(p.price) FROM Product p
             WHERE p.availability = 'AVAILABLE'
+              AND (p.gender = :gender OR p.gender = 'UNISEX')
               AND p.category = :category
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
             """)
     Integer findMaxPrice(
             @Param("category") String category,
-            @Param("subcategory") String subcategory
+            @Param("subcategory") String subcategory,
+            @Param("gender") String gender
     );
 
     @Query("""

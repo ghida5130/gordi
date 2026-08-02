@@ -5,6 +5,7 @@ import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.config.RecommendationPolicy;
 import com.ssafy.backend.config.enums.CategoryCode;
 import com.ssafy.backend.config.enums.EmptyReason;
+import com.ssafy.backend.config.enums.GenderCode;
 import com.ssafy.backend.config.enums.MoodCode;
 import com.ssafy.backend.config.enums.RecommendationStatus;
 import com.ssafy.backend.domain.Product;
@@ -97,6 +98,7 @@ public class RecommendationService {
     @Transactional
     public RecommendationResponse createSnapshot(RecommendationRequest request, String idempotencyKey) {
         User user = currentUser();
+        String gender = resolveGender(user);
 
         CategoryCode category = resolveCategory(request.category());
         String subcategory = resolveSubcategory(category, request.subcategory());
@@ -104,6 +106,7 @@ public class RecommendationService {
         validateBudget(request.budgetMin(), request.budgetMax());
 
         String requestHash = idempotencyService.hashRequest(
+                gender,
                 category.name(),
                 subcategory,
                 request.budgetMin(),
@@ -123,6 +126,7 @@ public class RecommendationService {
 
         Recommendation recommendation = recommendationRepository.save(Recommendation.builder()
                 .user(user)
+                .gender(gender)
                 .category(category.name())
                 .subcategory(subcategory)
                 .budgetMin(request.budgetMin())
@@ -135,6 +139,7 @@ public class RecommendationService {
         List<Product> candidates = productRepository.findMatching(
                 category.name(),
                 subcategory,
+                gender,
                 request.budgetMin(),
                 request.budgetMax(),
                 PageRequest.of(0, policy.getCandidatePoolSize())
@@ -142,19 +147,38 @@ public class RecommendationService {
 
         List<RecommendationItemResponse> items;
         if (candidates.isEmpty()) {
-            markEmpty(recommendation, category.name(), subcategory, resolveEmptyReason(category.name(), subcategory));
+            markEmpty(
+                    recommendation,
+                    category.name(),
+                    subcategory,
+                    gender,
+                    resolveEmptyReason(category.name(), subcategory, gender)
+            );
             items = List.of();
         } else {
             List<RankedProduct> ranked = rankClient.rank(new RankRequest(
                     recommendation.getId(),
-                    new RankCondition(category.name(), subcategory, request.budgetMin(), request.budgetMax(), moods),
+                    new RankCondition(
+                            gender,
+                            category.name(),
+                            subcategory,
+                            request.budgetMin(),
+                            request.budgetMax(),
+                            moods
+                    ),
                     policy.getResultCount(),
                     candidates.stream().map(RankCandidate::from).toList()
             ));
 
             items = persistRankedItems(recommendation, 1L, ranked, candidates);
             if (items.isEmpty()) {
-                markEmpty(recommendation, category.name(), subcategory, EmptyReason.NO_CANDIDATE_LEFT);
+                markEmpty(
+                        recommendation,
+                        category.name(),
+                        subcategory,
+                        gender,
+                        EmptyReason.NO_CANDIDATE_LEFT
+                );
             }
         }
 
@@ -263,6 +287,7 @@ public class RecommendationService {
         List<Product> candidates = productRepository.findMatchingExcluding(
                 recommendation.getCategory(),
                 recommendation.getSubcategory(),
+                recommendation.getGender(),
                 recommendation.getBudgetMin(),
                 recommendation.getBudgetMax(),
                 exposedProductIds,
@@ -385,6 +410,7 @@ public class RecommendationService {
         List<RankedProduct> ranked = rankClient.rank(new RankRequest(
                 recommendation.getId(),
                 new RankCondition(
+                        recommendation.getGender(),
                         recommendation.getCategory(),
                         recommendation.getSubcategory(),
                         recommendation.getBudgetMin(),
@@ -460,21 +486,22 @@ public class RecommendationService {
             Recommendation recommendation,
             String category,
             String subcategory,
+            String gender,
             EmptyReason emptyReason
     ) {
         recommendation.setStatus(RecommendationStatus.EMPTY.name());
         recommendation.setEmptyReason(emptyReason.name());
 
         if (emptyReason == EmptyReason.NO_PRODUCT_IN_BUDGET) {
-            recommendation.setSuggestedBudgetMin(productRepository.findMinPrice(category, subcategory));
-            recommendation.setSuggestedBudgetMax(productRepository.findMaxPrice(category, subcategory));
+            recommendation.setSuggestedBudgetMin(productRepository.findMinPrice(category, subcategory, gender));
+            recommendation.setSuggestedBudgetMax(productRepository.findMaxPrice(category, subcategory, gender));
         }
 
         recommendationRepository.save(recommendation);
     }
 
-    private EmptyReason resolveEmptyReason(String category, String subcategory) {
-        Integer minPrice = productRepository.findMinPrice(category, subcategory);
+    private EmptyReason resolveEmptyReason(String category, String subcategory, String gender) {
+        Integer minPrice = productRepository.findMinPrice(category, subcategory, gender);
         return minPrice == null ? EmptyReason.NO_PRODUCT_IN_CATEGORY : EmptyReason.NO_PRODUCT_IN_BUDGET;
     }
 
@@ -565,6 +592,24 @@ public class RecommendationService {
                     "maxAllowed", policy.getBudgetMaxAllowed()
             ));
         }
+    }
+
+    private String resolveGender(User user) {
+        if (user.getAvatar() == null || !StringUtils.hasText(user.getAvatar().getGender())) {
+            throw new ApiException(
+                    ErrorCode.BAD_REQUEST,
+                    "추천 전에 아바타를 선택해야 합니다."
+            );
+        }
+
+        GenderCode gender = GenderCode.find(user.getAvatar().getGender())
+                .filter(code -> code != GenderCode.UNISEX)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.BAD_REQUEST,
+                        "아바타 성별이 올바르지 않습니다.",
+                        Map.of("gender", user.getAvatar().getGender())
+                ));
+        return gender.name();
     }
 
     private User currentUser() {

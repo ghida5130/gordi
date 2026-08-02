@@ -38,6 +38,9 @@ public class Recommendation {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "gender", nullable = false, length = 16)
+    private String gender;
+
     @Column(name = "category", nullable = false, length = 100)
     private String category;
 

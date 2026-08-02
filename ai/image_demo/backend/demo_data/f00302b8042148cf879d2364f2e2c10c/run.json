@@ -1,0 +1,320 @@
+{
+  "run_id": "f00302b8042148cf879d2364f2e2c10c",
+  "scenario_name": "남성 · 오버핏 그래픽 + 레귤러 스트레이트",
+  "status": "READY",
+  "mock_mode": true,
+  "created_at": "2026-07-24T01:48:02.933090+00:00",
+  "completed_at": "2026-07-24T01:48:03.120511+00:00",
+  "references": {
+    "avatar_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/avatar.png",
+    "garments": [
+      {
+        "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/garment-1.png",
+        "slot": "TOP",
+        "caption": "블랙 바탕에 오렌지·화이트 타원 그래픽이 있는 반소매 티셔츠",
+        "fit_note": "오버핏, 드롭숄더, 롱기장"
+      },
+      {
+        "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/garment-2.png",
+        "slot": "BOTTOM",
+        "caption": "워시드 블랙 색상의 5포켓 셀비지 데님 팬츠",
+        "fit_note": "레귤러핏, 스트레이트, 풀렝스"
+      }
+    ]
+  },
+  "candidate_count": 7,
+  "candidates": [
+    {
+      "candidate_id": "cand_PGKHseusQ84",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_yZoo76M-Mng.jpg",
+      "provider_id": "nano_banana_2",
+      "display_name": "Nano Banana 2",
+      "model": "google/gemini-3.1-flash-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 500,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_aKwDfJBhgXA",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_GpNjM07lkY8.jpg",
+      "provider_id": "nano_banana_2_lite",
+      "display_name": "Nano Banana 2 Lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 673,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_UXJWJ2mBKWg",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_jXqz6EUunR0.jpg",
+      "provider_id": "gpt_image_2",
+      "display_name": "GPT Image 2",
+      "model": "openai/gpt-image-2",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 846,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_XKCCTeWBErg",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_t5TOXm2S1xA.jpg",
+      "provider_id": "grok_imagine_quality",
+      "display_name": "Grok Imagine Quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "input_strategy": "adaptive-reference",
+      "is_fallback": false,
+      "latency_ms": 1019,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_9YhdC0xOsWY",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_uoMJsCKF9qc.jpg",
+      "provider_id": "krea_2_medium",
+      "display_name": "Krea 2 Medium",
+      "model": "krea/krea-2-medium",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 1192,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_DLM0vtDGjPA",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_rEDEHwOFF4o.jpg",
+      "provider_id": "flux_2_max",
+      "display_name": "FLUX.2 Max",
+      "model": "black-forest-labs/flux.2-max",
+      "input_strategy": "multi-reference",
+      "is_fallback": false,
+      "latency_ms": 1365,
+      "generation_time_ms": null,
+      "cost_usd": null
+    },
+    {
+      "candidate_id": "cand_zQlNuOk3YYw",
+      "image_url": "/demo-media/f00302b8042148cf879d2364f2e2c10c/output_B8V6lVaJkEQ.jpg",
+      "provider_id": "mai_image_2_5_pro",
+      "display_name": "MAI Image 2.5 Pro",
+      "model": "microsoft/mai-image-2.5",
+      "input_strategy": "reference-sheet",
+      "is_fallback": false,
+      "latency_ms": 1538,
+      "generation_time_ms": null,
+      "cost_usd": null
+    }
+  ],
+  "pairs": [
+    {
+      "pair_id": "pair_88dcf455b8a2c338",
+      "left": "cand_aKwDfJBhgXA",
+      "right": "cand_zQlNuOk3YYw"
+    },
+    {
+      "pair_id": "pair_cbc9d7311c021d01",
+      "left": "cand_PGKHseusQ84",
+      "right": "cand_9YhdC0xOsWY"
+    },
+    {
+      "pair_id": "pair_02761748529b91ff",
+      "left": "cand_9YhdC0xOsWY",
+      "right": "cand_XKCCTeWBErg"
+    },
+    {
+      "pair_id": "pair_154be507569f3792",
+      "left": "cand_UXJWJ2mBKWg",
+      "right": "cand_PGKHseusQ84"
+    },
+    {
+      "pair_id": "pair_5d3e0b509c2b8ed5",
+      "left": "cand_9YhdC0xOsWY",
+      "right": "cand_UXJWJ2mBKWg"
+    },
+    {
+      "pair_id": "pair_f97e847a3e6c1e9d",
+      "left": "cand_UXJWJ2mBKWg",
+      "right": "cand_aKwDfJBhgXA"
+    },
+    {
+      "pair_id": "pair_a3c6b6424221f659",
+      "left": "cand_XKCCTeWBErg",
+      "right": "cand_PGKHseusQ84"
+    },
+    {
+      "pair_id": "pair_b3bacf36a4e34500",
+      "left": "cand_zQlNuOk3YYw",
+      "right": "cand_UXJWJ2mBKWg"
+    },
+    {
+      "pair_id": "pair_787680f3b71a9887",
+      "left": "cand_XKCCTeWBErg",
+      "right": "cand_zQlNuOk3YYw"
+    },
+    {
+      "pair_id": "pair_731ba4773fb67c93",
+      "left": "cand_aKwDfJBhgXA",
+      "right": "cand_DLM0vtDGjPA"
+    },
+    {
+      "pair_id": "pair_5dad1cc6a3844564",
+      "left": "cand_9YhdC0xOsWY",
+      "right": "cand_aKwDfJBhgXA"
+    },
+    {
+      "pair_id": "pair_2b3811a67b3e1044",
+      "left": "cand_zQlNuOk3YYw",
+      "right": "cand_PGKHseusQ84"
+    },
+    {
+      "pair_id": "pair_d03f6aa57459e2d7",
+      "left": "cand_PGKHseusQ84",
+      "right": "cand_aKwDfJBhgXA"
+    },
+    {
+      "pair_id": "pair_371782661918563a",
+      "left": "cand_DLM0vtDGjPA",
+      "right": "cand_UXJWJ2mBKWg"
+    },
+    {
+      "pair_id": "pair_8f7021ccc68a64c4",
+      "left": "cand_DLM0vtDGjPA",
+      "right": "cand_XKCCTeWBErg"
+    },
+    {
+      "pair_id": "pair_794662cd03ed84dc",
+      "left": "cand_DLM0vtDGjPA",
+      "right": "cand_9YhdC0xOsWY"
+    },
+    {
+      "pair_id": "pair_4e714ff899aafa7a",
+      "left": "cand_9YhdC0xOsWY",
+      "right": "cand_zQlNuOk3YYw"
+    },
+    {
+      "pair_id": "pair_a83aa5f739fa91eb",
+      "left": "cand_DLM0vtDGjPA",
+      "right": "cand_zQlNuOk3YYw"
+    },
+    {
+      "pair_id": "pair_4b9ba917286d5400",
+      "left": "cand_XKCCTeWBErg",
+      "right": "cand_UXJWJ2mBKWg"
+    },
+    {
+      "pair_id": "pair_fc8b763b6b384a46",
+      "left": "cand_PGKHseusQ84",
+      "right": "cand_DLM0vtDGjPA"
+    },
+    {
+      "pair_id": "pair_14d18ad545f13d74",
+      "left": "cand_XKCCTeWBErg",
+      "right": "cand_aKwDfJBhgXA"
+    }
+  ],
+  "votes": [],
+  "provider_attempts": [
+    {
+      "provider_id": "nano_banana_2",
+      "model": "google/gemini-3.1-flash-image",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115876+00:00"
+    },
+    {
+      "provider_id": "nano_banana_2_lite",
+      "model": "google/gemini-3.1-flash-lite-image",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115887+00:00"
+    },
+    {
+      "provider_id": "gpt_image_2",
+      "model": "openai/gpt-image-2",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115889+00:00"
+    },
+    {
+      "provider_id": "grok_imagine_quality",
+      "model": "x-ai/grok-imagine-image-quality",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115890+00:00"
+    },
+    {
+      "provider_id": "krea_2_medium",
+      "model": "krea/krea-2-medium",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115891+00:00"
+    },
+    {
+      "provider_id": "flux_2_max",
+      "model": "black-forest-labs/flux.2-max",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115893+00:00"
+    },
+    {
+      "provider_id": "mai_image_2_5_pro",
+      "model": "microsoft/mai-image-2.5",
+      "status": "MOCKED",
+      "external_request_made": false,
+      "latency_ms": null,
+      "generation_time_ms": null,
+      "cost_usd": null,
+      "error_category": null,
+      "error_code": null,
+      "error": null,
+      "retryable": false,
+      "checked_at": "2026-07-24T01:48:03.115894+00:00"
+    }
+  ]
+}

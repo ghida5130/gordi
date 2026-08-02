@@ -1,0 +1,16 @@
+tunnel: cf3fbe40-e437-48b9-bfa4-71cbaad18483
+credentials-file: 'C:\Users\gyals\.cloudflared\cf3fbe40-e437-48b9-bfa4-71cbaad18483.json'
+
+ingress:
+  - hostname: image-demo.risou.xyz
+    path: ^/api/.*$
+    service: http://localhost:8100
+  - hostname: image-demo.risou.xyz
+    path: ^/demo-media/.*$
+    service: http://localhost:8100
+  - hostname: image-demo.risou.xyz
+    path: ^/test-data/.*$
+    service: http://localhost:8100
+  - hostname: image-demo.risou.xyz
+    service: http://localhost:5174
+  - service: http_status:404
