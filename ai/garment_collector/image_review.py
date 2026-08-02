@@ -145,6 +145,7 @@ def review_dataset_images(
     limit: int | None = None,
     concurrency: int = 8,
     dry_run: bool = False,
+    reasoning_effort: str | None = "low",
 ) -> ReviewReport:
     dataset_root = dataset_root.resolve()
     if not reviewer.strip():
@@ -202,6 +203,11 @@ def review_dataset_images(
                     {"type": "text", "text": _USER_INSTRUCTION},
                 ],
                 max_tokens=256,
+                # Bounded effort keeps hidden reasoning from eating the
+                # output cap on ambiguous photos (rerank benchmark
+                # lesson, 2026-08-01). None for models that reject the
+                # reasoning field (e.g. Gemma).
+                reasoning_effort=reasoning_effort,
             )
             fields = parse_review_answer(answer)
         except ValueError as exc:

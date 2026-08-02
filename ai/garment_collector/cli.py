@@ -278,6 +278,14 @@ def _build_parser() -> argparse.ArgumentParser:
     review_images.add_argument("--limit", type=int, default=None)
     review_images.add_argument("--concurrency", type=int, default=8)
     review_images.add_argument(
+        "--reasoning-effort",
+        default="low",
+        help=(
+            "reasoning effort for review calls (minimal/low/medium/"
+            "high); pass 'none' for models that reject the field"
+        ),
+    )
+    review_images.add_argument(
         "--dry-run",
         action="store_true",
         help="Count target records without VLM calls or writes",
@@ -583,6 +591,7 @@ def cmd_review_images(args: argparse.Namespace) -> int:
                     api_key=api_key,
                 )
             )
+        effort = args.reasoning_effort.strip().lower()
         report = review_dataset_images(
             args.dataset_root,
             client,
@@ -590,6 +599,9 @@ def cmd_review_images(args: argparse.Namespace) -> int:
             limit=args.limit,
             concurrency=args.concurrency,
             dry_run=args.dry_run,
+            reasoning_effort=(
+                None if effort in {"", "none"} else effort
+            ),
         )
     except ImageReviewError as exc:
         print(f"error: {exc}", file=sys.stderr)
