@@ -36,6 +36,19 @@ pipeline {
             }
         }
 
+        stage('Backend 테스트') {
+            when { expression { env.BUILD_BACK == 'true' } }
+            steps {
+                sh '''
+                    docker run --rm \
+                    -v "$PWD/backend":/app -w /app \
+                    -v gradle-cache:/root/.gradle \
+                    eclipse-temurin:21-jdk-alpine \
+                    sh -c "./gradlew test --no-daemon"
+                '''
+            }
+        }
+
         stage('환경변수 준비') {
             steps {
                 withCredentials([
