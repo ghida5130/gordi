@@ -11,3 +11,7 @@ export function getMyAvatar() {
 export function updateMyAvatar(avatarId) {
     return authApi.put("/v1/users/me/avatar", { avatarId });
 }
+
+export function getMyResults() {
+    return authApi.get("/v1/users/me/results");
+}

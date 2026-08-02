@@ -14,6 +14,7 @@ import TierBoard from "@/components/tierMaker/TierBoard";
 import TierMakerIcon from "@/components/tierMaker/TierMakerIcon";
 import { useRoomEvents } from "@/hooks/useRoomEvents";
 import { useToast } from "@/hooks/useToast";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { getApiErrorMessage } from "@/utils/apiError";
 import {
   getRoomSession,
@@ -242,11 +243,15 @@ function TierMakerRoomPage() {
   const [roomSession] = useState(getRoomSession);
   const [fittingCandidates, setFittingCandidates] = useState([]);
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const voiceChat = useVoiceChat({
+    roomCode: roomSession?.roomCode,
+    roomToken: roomSession?.roomToken,
+    enabled:
+      Boolean(isCurrentRoom) && roomEvents.status === "IN_PROGRESS",
+  });
   const candidateQuery = useQuery({
     queryKey: ["candidates", roomId, roomSession?.participantId],
     queryFn: () =>
@@ -795,12 +800,18 @@ function TierMakerRoomPage() {
               isConnected={
                 roomEvents.connectionState === "CONNECTED"
               }
-              isMicMuted={isMicMuted}
-              isSpeakerMuted={isSpeakerMuted}
-              onToggleMic={() => setIsMicMuted((current) => !current)}
-              onToggleSpeaker={() =>
-                setIsSpeakerMuted((current) => !current)
+              isMicMuted={voiceChat.isMicMuted}
+              isSpeakerMuted={voiceChat.isSpeakerMuted}
+              isMicControlPending={voiceChat.isMicControlPending}
+              voiceConnectionState={voiceChat.connectionState}
+              voiceError={
+                voiceChat.connectionError || voiceChat.microphoneError
               }
+              needsAudioStart={voiceChat.needsAudioStart}
+              onToggleMic={voiceChat.toggleMicrophone}
+              onToggleSpeaker={voiceChat.toggleSpeaker}
+              onStartAudio={voiceChat.startAudio}
+              onRetryVoice={voiceChat.retryConnection}
             />
           </>
         )}

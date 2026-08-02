@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { getAvatarTemplates } from "@/api/avatar";
@@ -7,12 +7,13 @@ import { updateMyAvatar } from "@/api/users";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { setBodyInformation } from "@/utils/bodyInformationStorage";
+import { getBodyInformation, setBodyInformation } from "@/utils/bodyInformationStorage";
 
 const BODY_TYPE_LABELS = {
     SLIM: "상체형",
     STANDARD: "밸런스",
     MUSCULAR: "하체형",
+    SOLID: "탄탄형",
 };
 
 function mapHeightToId(height) {
@@ -59,14 +60,21 @@ function AvatarOption({ avatar, selected, onSelect }) {
     );
 }
 
-export default function AvatarSetupPage() {
+export default function AvatarSetupPage({ mode = "signup" }) {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const toast = useToast();
     const updateUser = useUserStore((state) => state.updateUser);
     const [step, setStep] = useState("information");
-    const [gender, setGender] = useState("");
-    const [height, setHeight] = useState("");
-    const [weight, setWeight] = useState("");
+    const [gender, setGender] = useState(() => mode === "edit" ? (getBodyInformation()?.gender ?? "") : "");
+    const [height, setHeight] = useState(() => {
+        const savedHeight = mode === "edit" ? getBodyInformation()?.height : 0;
+        return savedHeight ? String(savedHeight) : "";
+    });
+    const [weight, setWeight] = useState(() => {
+        const savedWeight = mode === "edit" ? getBodyInformation()?.weight : 0;
+        return savedWeight ? String(savedWeight) : "";
+    });
     const [avatars, setAvatars] = useState([]);
     const [selectedAvatar, setSelectedAvatar] = useState(null);
 
@@ -100,6 +108,15 @@ export default function AvatarSetupPage() {
                 weight: weight ? Number(weight) : 0,
             });
             updateUser({ profileImageUrl: savedAvatar?.imageUrl ?? null });
+
+            if (mode === "edit") {
+                queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
+                queryClient.invalidateQueries({ queryKey: ["myInfo"] });
+                toast.success("아바타가 수정되었습니다.");
+                navigate("/mypage", { replace: true, state: { activeTab: "avatar" } });
+                return;
+            }
+
             navigate("/avatar/setup/complete", {
                 replace: true,
                 state: {
@@ -165,7 +182,7 @@ export default function AvatarSetupPage() {
                 <div className="flex items-start justify-between border-b border-gray-100 pb-6">
                     <div>
                         <p className="text-sm font-bold text-gray-400">{step === "information" ? "1 / 2" : "2 / 2"}</p>
-                        <h1 className="mt-2 text-2xl font-bold text-gray-950">체형 설정</h1>
+                        <h1 className="mt-2 text-2xl font-bold text-gray-950">{mode === "edit" ? "아바타 수정" : "체형 설정"}</h1>
                     </div>
                     <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-500">선택 정보는 건너뛸 수 있어요</span>
                 </div>
@@ -245,7 +262,7 @@ export default function AvatarSetupPage() {
                         <div className="mt-7 flex gap-3">
                             <button type="button" onClick={() => setStep("information")} className="w-1/3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50">이전</button>
                             <button type="button" onClick={handleNext} disabled={!selectedAvatar || avatarMutation.isPending} className="flex-1 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300">
-                                {avatarMutation.isPending ? "저장 중..." : "다음"}
+                                {avatarMutation.isPending ? "저장 중..." : mode === "edit" ? "아바타 저장하기" : "다음"}
                             </button>
                         </div>
                     </div>

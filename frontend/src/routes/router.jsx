@@ -72,8 +72,8 @@ export const router = createBrowserRouter([
                 element: <MyPage />,
             },
             {
-                path: "login",
-                element: <LoginPage />,
+                path: "mypage/avatar/edit",
+                element: <AvatarSetupPage mode="edit" />,
             },
             {
                 path: "oauth/callback",
