@@ -25,3 +25,23 @@ export function joinRoom({ roomCode, nickname }) {
     config,
   );
 }
+
+export function getRoomStatus({ roomCode, roomToken }) {
+  return publicApi.get(`v1/rooms/${encodeURIComponent(roomCode)}`, {
+    headers: {
+      Authorization: `Bearer ${roomToken}`,
+    },
+  });
+}
+
+export function finishRoom({ roomCode, roomToken, expectedVersion }) {
+  return publicApi.post(
+    `v1/rooms/${encodeURIComponent(roomCode)}/finish`,
+    { expectedVersion },
+    {
+      headers: {
+        Authorization: `Bearer ${roomToken}`,
+      },
+    },
+  );
+}
