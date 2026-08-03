@@ -171,6 +171,19 @@ class CatalogVectorIndex:
                 return list(item.embedding)
         return None
 
+    def embedding_by_product_id(
+        self,
+        product_id: int,
+    ) -> tuple[float, ...] | None:
+        by_id = getattr(self, "_embeddings_by_product_id", None)
+        if by_id is None:
+            by_id = {
+                int(item.product["product_id"]): item.embedding
+                for item in self._items
+            }
+            self._embeddings_by_product_id = by_id
+        return by_id.get(int(product_id))
+
     def search(
         self,
         query_embedding: list[float],

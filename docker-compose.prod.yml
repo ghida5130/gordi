@@ -58,31 +58,28 @@ services:
     environment:
       ENVIRONMENT: prod
       API_PREFIX: /ai/v1
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_EMBEDDING_MODEL: ${OPENROUTER_EMBEDDING_MODEL:-google/gemini-embedding-2}
-      OPENROUTER_EMBEDDING_DIMENSIONS: ${OPENROUTER_EMBEDDING_DIMENSIONS:-768}
-      OPENROUTER_EMBEDDING_ENDPOINT: ${OPENROUTER_EMBEDDING_ENDPOINT:-https://openrouter.ai/api/v1/embeddings}
-      OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER:-}
-      OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-Gordi AI}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
-      CATALOG_EMBEDDING_INDEX_PATH: ${CATALOG_EMBEDDING_INDEX_PATH:-/app/catalog_index/catalog-embeddings.json}
+      # 컨테이너 고정 경로 (ai/.env 값보다 우선)
+      CATALOG_EMBEDDING_INDEX_PATH: /app/catalog_index/catalog-embeddings.json
+      TRYON_RESULT_DIR: /app/tryon_results
+      # compose 네트워크 토폴로지 고정값
+      SPRING_INTERNAL_BASE_URL: http://gordi-backend:8080
       RECOMMENDATION_IMAGE_ALLOWED_HOSTS: ${RECOMMENDATION_IMAGE_ALLOWED_HOSTS:-[]}
+      # 파트 간 공유 값은 루트 .env 에서 관리
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      # 운영 기본: 데모 비활성
       ENABLE_RECOMMENDATION_DEMO: ${ENABLE_RECOMMENDATION_DEMO:-false}
-      RECOMMENDATION_VLM_MODEL: ${RECOMMENDATION_VLM_MODEL:-openai/gpt-5.6-luna}
-      RECOMMENDATION_VLM_ENDPOINT: ${RECOMMENDATION_VLM_ENDPOINT:-https://openrouter.ai/api/v1/chat/completions}
-      RECOMMENDATION_VLM_API_KEY: ${RECOMMENDATION_VLM_API_KEY:-}
-      RECOMMENDATION_VLM_TIMEOUT_SECONDS: ${RECOMMENDATION_VLM_TIMEOUT_SECONDS:-20}
-      RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED: ${RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED:-false}
-      RECOMMENDATION_VLM_RERANK_ENABLED: ${RECOMMENDATION_VLM_RERANK_ENABLED:-false}
-      RECOMMENDATION_VLM_RERANK_TOP_K: ${RECOMMENDATION_VLM_RERANK_TOP_K:-20}
-      RECOMMENDATION_VLM_RERANK_CONCURRENCY: ${RECOMMENDATION_VLM_RERANK_CONCURRENCY:-8}
-      RECOMMENDATION_VLM_REASONING_EFFORT: ${RECOMMENDATION_VLM_REASONING_EFFORT:-low}
-      RECOMMENDATION_LLM_REASONS_ENABLED: ${RECOMMENDATION_LLM_REASONS_ENABLED:-false}
+    # AI 파트 환경변수 (모델·키·플래그)는 ai/.env 에서 관리한다
+    env_file:
+      - path: ./ai/.env
+        required: false
     volumes:
       - type: bind
         source: ${CATALOG_EMBEDDING_INDEX_HOST_DIR:-./ai/catalog_index}
         target: /app/catalog_index
         read_only: true
+      - type: bind
+        source: ${TRYON_RESULT_HOST_DIR:-./ai/tryon_results}
+        target: /app/tryon_results
     networks:
       - app-network
 

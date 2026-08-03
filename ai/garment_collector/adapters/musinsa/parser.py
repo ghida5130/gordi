@@ -299,6 +299,10 @@ def parse_goods_detail_payload(
         temporary_reasons.append(
             "dress stored as TOP/DRESS by current backend contract"
         )
+    if slot == Slot.OUTER:
+        temporary_reasons.append(
+            "outer stored as TOP by current backend contract"
+        )
     if is_set_product:
         temporary_reasons.append(
             "set stored by first component pending manual split"
@@ -361,6 +365,31 @@ def parse_goods_detail_payload(
         excluded=excluded,
         exclude_reason=exclude_reason,
     )
+
+
+def sizes_available_without_options(
+    detail_payload: dict[str, Any],
+    actual_size_payload: dict[str, Any] | None,
+) -> bool:
+    """True when sizes can be built without fetching the options endpoint.
+
+    Matches the priority used by :func:`parse_goods_detail_payload` so the
+    adapter can skip the options request when it would be a no-op.
+    """
+    if parse_actual_size_payload(actual_size_payload):
+        return True
+    data = (
+        detail_payload.get("data")
+        if isinstance(detail_payload.get("data"), dict)
+        else detail_payload
+    )
+    if not isinstance(data, dict):
+        return False
+    if parse_sizes_from_goods_contents(data.get("goodsContents") or ""):
+        return True
+    if _parse_size_table_field(data.get("sizeTable")):
+        return True
+    return False
 
 
 def parse_actual_size_payload(
@@ -882,7 +911,9 @@ def map_backend_codes(
     note = (classification_note or "").lower()
 
     if slot == Slot.OUTER:
-        backend_category = BackendCategory.OUTER
+        # Team rule (2026-08-01): backend catalog stores TOP/BOTTOM only,
+        # so outerwear lands in TOP with its outer subcategory preserved.
+        backend_category = BackendCategory.TOP
         if any(token in blob for token in ("카디건", "가디건", "cardigan")):
             return backend_category, BackendSubcategory.CARDIGAN
         if any(token in blob for token in ("패딩", "다운", "padding")):

@@ -1,6 +1,11 @@
 # Gordi AI API
 
-FastAPI 기반 AI 서버입니다. `app/core/config.py`가 모노레포 루트의 `.env`를 직접 읽습니다.
+FastAPI 기반 AI 서버입니다. AI 환경변수는 파트별 env 분리 방침에 따라
+**`ai/.env`** 에서 관리합니다 (템플릿: [`ai/.env.example`](.env.example)).
+`app/core/config.py`는 `ai/.env`를 우선 읽고, 파트 간 공유 값
+(`INTERNAL_API_KEY`, `INTERNAL_TOKEN`)만 루트 `.env`에서 옵니다.
+Docker Compose의 ai 서비스도 `env_file: ./ai/.env`를 읽으며, 컨테이너
+고정 경로와 네트워크 토폴로지 값은 compose가 environment 로 덮어씁니다.
 
 ## 실행
 
@@ -198,8 +203,8 @@ embedding snapshot SHA-256을 반환합니다.
 `http://localhost:8000/demo/recommendations`에서 이미지 업로드부터 후보 검색,
 조건·궁합 재정렬, 추천 이유까지 한 화면에서 확인할 수 있습니다. 운영 기본값은
 `false`이며 비활성 상태에서는 페이지와 업로드 API 모두 404를 반환합니다.
-Docker Compose로 실행할 때도 루트 `.env`의 플래그가 AI 컨테이너에
-명시적으로 전달됩니다.
+Docker Compose로 실행할 때는 `ai/.env`의 플래그가 AI 컨테이너에
+전달됩니다 (`ENABLE_RECOMMENDATION_DEMO`는 셸/루트 env 로도 켤 수 있음).
 
 DB의 이미지 URL이 브라우저에서 접근할 수 없는 Docker 내부 주소라면, 검수
 데이터셋 경로를 아래처럼 지정해 FastAPI가 primary 이미지만 로컬 데모에
