@@ -116,7 +116,7 @@ function HomePage() {
                 임시 로그인 후 방 생성 화면 보기
               </button>
               <Link
-                to="/avatar/setup"
+                to="/mypage/avatar/edit"
                 className="block text-center w-full rounded-xl border border-dashed border-slate-400 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               >
                 체형 설정 위젯 바로가기

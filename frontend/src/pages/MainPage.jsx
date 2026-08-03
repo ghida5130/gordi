@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/useUserStore';
+import { getAccessToken } from '@/utils/tokenStorage';
 
 const MainPage = () => {
   const navigate = useNavigate();
   const { isLogin } = useUserStore();
+  const isLoggedIn = isLogin || !!getAccessToken();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -25,13 +27,7 @@ const MainPage = () => {
             친구들과 함께 티어를 매겨 최고의 코디를 완성하세요.
           </p>
           <button 
-            onClick={() => {
-              if (!isLogin) {
-                navigate('/login');
-              } else {
-                setIsModalOpen(true);
-              }
-            }}
+            onClick={() => setIsModalOpen(true)}
             className="bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-black transition-colors flex items-center gap-2"
           >
             지금 시작하기 <span>→</span>
@@ -124,7 +120,7 @@ const MainPage = () => {
             <button 
               onClick={() => {
                 setIsModalOpen(false);
-                navigate('/rooms/create');
+                navigate(isLoggedIn ? '/rooms/create' : '/login');
               }}
               className="w-full bg-[#1a1a1a] text-white py-4 rounded-xl font-medium mb-3 hover:bg-black transition-colors"
             >
