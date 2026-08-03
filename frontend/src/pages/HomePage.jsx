@@ -107,13 +107,21 @@ function HomePage() {
           </form>
 
           {import.meta.env.DEV && (
-            <button
-              type="button"
-              onClick={handleTemporaryLogin}
-              className="mt-3 w-full rounded-xl border border-dashed border-brand-500 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
-            >
-              임시 로그인 후 방 생성 화면 보기
-            </button>
+            <div className="mt-3 space-y-2">
+              <button
+                type="button"
+                onClick={handleTemporaryLogin}
+                className="w-full rounded-xl border border-dashed border-brand-500 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
+              >
+                임시 로그인 후 방 생성 화면 보기
+              </button>
+              <Link
+                to="/mypage/avatar/edit"
+                className="block text-center w-full rounded-xl border border-dashed border-slate-400 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                체형 설정 위젯 바로가기
+              </Link>
+            </div>
           )}
 
           <p className="mt-6 text-center text-sm text-slate-500">

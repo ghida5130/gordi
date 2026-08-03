@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE = 'docker-compose -f docker-compose.prod.yml'
+        COMPOSE = 'docker compose -f docker-compose.prod.yml'
     }
 
     stages {
@@ -36,6 +36,19 @@ pipeline {
             }
         }
 
+        stage('Backend 테스트') {
+            when { expression { env.BUILD_BACK == 'true' } }
+            steps {
+                sh '''
+                    docker run --rm \
+                    -v jenkins_home:/ws -w /ws/workspace/gordi-backend/backend \
+                    -v gradle-cache:/root/.gradle \
+                    eclipse-temurin:21-jdk-alpine \
+                    sh -c "./gradlew test --no-daemon"
+                '''
+            }
+        }
+
         stage('환경변수 준비') {
             steps {
                 withCredentials([
@@ -56,8 +69,6 @@ pipeline {
             when { expression { env.BUILD_BACK == 'true' } }
             steps {
                 sh '''
-                    export DOCKER_BUILDKIT=0
-                    export COMPOSE_DOCKER_CLI_BUILD=0
                     $COMPOSE up -d --build backend
                 '''
             }

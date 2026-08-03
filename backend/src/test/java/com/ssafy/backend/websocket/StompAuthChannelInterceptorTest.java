@@ -2,6 +2,7 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,8 @@ import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class StompAuthChannelInterceptorTest {
 
@@ -23,12 +26,16 @@ class StompAuthChannelInterceptorTest {
             "room-token-test-secret-key-with-at-least-32-bytes";
 
     private RoomTokenProvider roomTokenProvider;
+    private RoomParticipantRepository roomParticipantRepository;
     private StompAuthChannelInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
         roomTokenProvider = new RoomTokenProvider(SECRET, 3_600_000L);
-        interceptor = new StompAuthChannelInterceptor(roomTokenProvider);
+        roomParticipantRepository = mock(RoomParticipantRepository.class);
+        when(roomParticipantRepository.existsByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(true);
+        interceptor = new StompAuthChannelInterceptor(roomTokenProvider, roomParticipantRepository);
     }
 
     private Message<byte[]> connectMessage(String authorizationHeader) {
@@ -96,6 +103,20 @@ class StompAuthChannelInterceptorTest {
         assertThatThrownBy(() -> interceptor.preSend(connectMessage("Bearer not-a-jwt"), null))
                 .isInstanceOf(MessageDeliveryException.class)
                 .hasMessageContaining(ErrorCode.INVALID_TOKEN.getCode());
+    }
+
+    @Test
+    void 이미_퇴장한_참가자의_roomToken은_FORBIDDEN으로_거절한다() {
+        when(roomParticipantRepository.existsByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(false);
+        String token = roomTokenProvider.createRoomToken(
+                42L, 31L, "친구1", "PARTICIPANTS",
+                LocalDateTime.now(AppZone.KST).plusHours(2)
+        );
+
+        assertThatThrownBy(() -> interceptor.preSend(connectMessage("Bearer " + token), null))
+                .isInstanceOf(MessageDeliveryException.class)
+                .hasMessageContaining(ErrorCode.FORBIDDEN.getCode());
     }
 
     @Test

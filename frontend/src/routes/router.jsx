@@ -3,14 +3,19 @@ import RootLayout from "@/layouts/RootLayout";
 import ApiExamplePage from "@/pages/ApiExamplePage";
 import CreateRoomPage from "@/pages/CreateRoomPage";
 import HomePage from "@/pages/HomePage";
+import MainPage from "@/pages/MainPage"; // ⭐️ 새로 만든 MainPage 불러오기
 import NotFoundPage from "@/pages/NotFoundPage";
 import RoomLobbyPage from "@/pages/RoomLobbyPage";
 import RoomPage from "@/pages/RoomPage";
 import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
-import LoginPage from "../pages/LoginPage";
+import LoginPage from "@/pages/LoginPage";
+import AvatarSetupPage from "@/pages/AvatarSetupPage";
+import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import RecommendationPage from "@/pages/RecommendationPage";
+import MyPage from "@/pages/MyPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
@@ -21,7 +26,15 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />,
+        element: <MainPage />, // ⭐️ 기본 화면을 MainPage로 변경!
+      },
+      {
+        path: "home",
+        element: <HomePage />, // 기존 HomePage는 /home 주소로 빼두었습니다.
+      },
+      {
+        path: "login",
+        element: <LoginPage />,
       },
       {
         path: "signup",
@@ -44,20 +57,28 @@ export const router = createBrowserRouter([
         element: <ApiExamplePage />,
       },
       {
-        path: "tierm",
+        path: "rooms/:roomId/tier-maker",
         element: <TierMakerRoomPage />,
       },
       {
-        path: "login",
-        element: <LoginPage />,
+        path: "signup/complete",
+        element: <SignupCompletePage />,
+      },
+      {
+        path: "mypage",
+        element: <MyPage />,
+      },
+      {
+        path: "mypage/avatar/edit",
+        element: <AvatarSetupPage />,
       },
       {
         path: "oauth/callback",
         element: <OAuthCallbackPage />,
       },
       {
-        path: "signup",
-        element: <SignupPage />,
+        path: "recommendation",
+        element: <RecommendationPage />,
       },
       {
         path: "*",

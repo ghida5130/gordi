@@ -13,13 +13,16 @@ public class LogoutSuccessHandler implements LogoutHandler {
 
     private final JwtService jwtService;
     private final JWTUtil jwtUtil;
+    private final CookieUtil cookieUtil;
 
     public LogoutSuccessHandler(
             JwtService jwtService,
-            JWTUtil jwtUtil
+            JWTUtil jwtUtil,
+            CookieUtil cookieUtil
     ) {
         this.jwtService = jwtService;
         this.jwtUtil = jwtUtil;
+        this.cookieUtil = cookieUtil;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class LogoutSuccessHandler implements LogoutHandler {
         }
 
         // 3. 브라우저 쿠키 삭제
-        response.addHeader("Set-Cookie", CookieUtil.deleteRefreshCookie());
+        response.addHeader("Set-Cookie", cookieUtil.deleteRefreshCookie());
 
         // 4. 204 No Content
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);

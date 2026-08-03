@@ -11,6 +11,7 @@ services:
       - ./.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - AI_INTERNAL_BASE_URL=http://gordi-ai:8000
       - MYSQL_HOST=gordi-mysql 
       - REDIS_HOST=gordi-redis
       - RABBITMQ_HOST=gordi-rabbitmq
@@ -67,7 +68,19 @@ services:
     image: livekit/livekit-server:latest
     container_name: gordi-livekit
     restart: unless-stopped
-    command: --dev --bind 0.0.0.0
+    environment:
+      # Backend의 application.properties와 동일한 API key/secret을 사용한다.
+      # 루트 .env에 값이 없을 때도 두 서비스의 로컬 기본값이 일치한다.
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: ${LIVEKIT_USE_EXTERNAL_IP:-false}
+        keys:
+          "${LIVEKIT_API_KEY:-devkey}": "${LIVEKIT_API_SECRET:-livekit-local-dev-secret-at-least-32-bytes}"
+    command: --bind 0.0.0.0
     ports:
       - "7881:7881"
       - "50000-50100:50000-50100/udp"

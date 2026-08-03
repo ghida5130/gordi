@@ -2,13 +2,14 @@ import axios from "axios";
 
 import { AuthRequiredError } from "@/api/errors";
 import { useUserStore } from "@/stores/useUserStore";
+import { removeBodyInformation } from "@/utils/bodyInformationStorage";
 import {
   getAccessToken,
   setAccessToken, // ⭐️ 새 토큰 저장을 위해 추가
   removeAccessToken,
 } from "@/utils/tokenStorage";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 const clientConfig = {
   baseURL: apiBaseUrl,
@@ -56,7 +57,7 @@ authHttpClient.interceptors.response.use(
           {},
           {
             withCredentials: true,
-          },
+          }
         );
 
         // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
@@ -78,6 +79,7 @@ authHttpClient.interceptors.response.use(
         // Refresh Token마저 만료되었거나 오류가 났을 경우 (완전 로그아웃 처리)
         console.error("Refresh Token 만료. 다시 로그인해주세요.");
         removeAccessToken();
+        removeBodyInformation();
         useUserStore.getState().clearUser();
 
         // 로그인 페이지로 강제 이동
@@ -89,5 +91,5 @@ authHttpClient.interceptors.response.use(
 
     // 401 에러가 아니거나, 재시도 로직에 해당하지 않는 에러는 그대로 반환
     return Promise.reject(error);
-  },
+  }
 );

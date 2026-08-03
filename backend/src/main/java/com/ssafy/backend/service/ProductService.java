@@ -8,6 +8,7 @@ import com.ssafy.backend.dto.product.ProductSearchResponseDTO;
 import com.ssafy.backend.repository.ProductBottomSizeRepository;
 import com.ssafy.backend.repository.ProductRepository;
 import com.ssafy.backend.repository.ProductTopSizeRepository;
+import com.ssafy.backend.websocket.RoomPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,8 +25,11 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductTopSizeRepository productTopSizeRepository;
     private final ProductBottomSizeRepository productBottomSizeRepository;
+    private final RoomAccessValidator roomAccessValidator;
 
-    public ProductDetailResponseDTO getDetail(Long productId) {
+    public ProductDetailResponseDTO getDetail(Long productId, RoomPrincipal principal) {
+        roomAccessValidator.requireParticipant(principal.roomId(), principal);
+
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
 
@@ -55,7 +59,9 @@ public class ProductService {
 
     public ProductSearchResponseDTO search(String category, Integer minPrice,
                                            Integer maxPrice, String keyword,
-                                           int page, int size) {
+                                           int page, int size, RoomPrincipal principal) {
+        roomAccessValidator.requireParticipant(principal.roomId(), principal);
+
         if (keyword != null && keyword.isBlank()) keyword = null;  // 빈 문자열 방어
 
         Page<Product> result = productRepository.search(

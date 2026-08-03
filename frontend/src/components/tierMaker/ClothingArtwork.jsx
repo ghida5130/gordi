@@ -60,13 +60,21 @@ function ClothingArtwork({ item, className = '' }) {
     <div
       className={`flex items-center justify-center overflow-hidden ${item.surface} ${className}`}
     >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 104 104"
-        className={`h-[88%] w-[88%] drop-shadow-sm ${item.color}`}
-      >
-        {clothingShapes[item.artwork]}
-      </svg>
+      {item.imageUrl ? (
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 104 104"
+          className={`h-[88%] w-[88%] drop-shadow-sm ${item.color}`}
+        >
+          {clothingShapes[item.artwork]}
+        </svg>
+      )}
     </div>
   )
 }

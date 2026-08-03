@@ -2,6 +2,7 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -18,6 +19,7 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -27,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 /**
  * STOMP CONNECT 인증 통합 테스트.
@@ -56,6 +59,9 @@ class WebSocketConnectIntegrationTest {
     @Autowired
     private RoomTokenProvider roomTokenProvider;
 
+    @MockitoBean
+    private RoomParticipantRepository roomParticipantRepository;
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -63,6 +69,8 @@ class WebSocketConnectIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        when(roomParticipantRepository.existsByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(true);
         stompClient = new WebSocketStompClient(new StandardWebSocketClient());
         stompClient.setMessageConverter(new StringMessageConverter());
     }

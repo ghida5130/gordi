@@ -2,12 +2,16 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
+import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
@@ -20,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,6 +67,34 @@ class RoomEventPublisherTest {
         assertThat(event.data()).isEqualTo(
                 new ParticipantEventDataDTO(42L, "친구1", "PARTICIPANTS")
         );
+    }
+
+    @Test
+    void 참여자_퇴장_이벤트를_reason과_함께_방_토픽으로_브로드캐스트한다() {
+        ParticipantLeftEvent domainEvent = new ParticipantLeftEvent(
+                31L,
+                13L,
+                42L,
+                "request-uuid",
+                ParticipantLeaveReason.USER_REQUEST
+        );
+
+        roomEventPublisher.handleParticipantLeft(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.PARTICIPANT_LEFT);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.version()).isEqualTo(13L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new ParticipantLeftEventDataDTO(
+                42L, ParticipantLeaveReason.USER_REQUEST));
     }
 
     @Test
@@ -150,5 +183,24 @@ class RoomEventPublisherTest {
                 eq("/topic/v1/rooms/7/participants"),
                 eq(event)
         );
+    }
+
+    @Test
+    void roomFinishedEventIsBroadcast() {
+        RoomFinishedEvent domainEvent = new RoomFinishedEvent(31L, 18L, 42L);
+
+        roomEventPublisher.handleRoomFinished(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ROOM_FINISHED);
+        assertThat(event.version()).isEqualTo(18L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(Map.of());
     }
 }

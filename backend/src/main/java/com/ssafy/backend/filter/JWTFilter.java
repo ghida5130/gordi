@@ -1,30 +1,39 @@
 package com.ssafy.backend.filter;
 
 import com.ssafy.backend.common.error.ApiErrorResponseWriter;
+import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.util.JWTUtil;
+import com.ssafy.backend.util.RoomTokenProvider;
+import com.ssafy.backend.websocket.RoomPrincipal;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTUtil jwtUtil;
+    private final RoomTokenProvider roomTokenProvider;
     private final ApiErrorResponseWriter errorResponseWriter;
 
-    public JWTFilter(JWTUtil jwtUtil, ApiErrorResponseWriter errorResponseWriter) {
+    public JWTFilter(
+            JWTUtil jwtUtil,
+            RoomTokenProvider roomTokenProvider,
+            ApiErrorResponseWriter errorResponseWriter
+    ) {
         this.jwtUtil = jwtUtil;
+        this.roomTokenProvider = roomTokenProvider;
         this.errorResponseWriter = errorResponseWriter;
     }
 
@@ -43,25 +52,74 @@ public class JWTFilter extends OncePerRequestFilter {
             return;
         }
 
-        String accessToken = authorization.split(" ")[1];
+        String token = authorization.substring("Bearer ".length()).trim();
 
-        // Access Token 유효성 검증 _ 만료 여부 확인
-        if (jwtUtil.isValid(accessToken, true)) {
-            String email = jwtUtil.getEmail(accessToken);
-            String role = jwtUtil.getRole(accessToken);
+        try {
+            String tokenType = jwtUtil.getType(token);
 
-            List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
-
-            // SecurityContext에 인증 객체 저장
-            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
+            switch (tokenType) {
+                case "access" -> setAccessAuthentication(token);
+                case "room" -> setRoomAuthentication(token);
+                default -> throw new ApiException(
+                        ErrorCode.INVALID_TOKEN
+                );
+            }
             filterChain.doFilter(request, response);
-        } else { // 토큰이 유효하지 않은 경우 TOKEN_EXPIRED
-            ErrorCode errorCode = jwtUtil.isExpired(accessToken)
-                    ? ErrorCode.TOKEN_EXPIRED
-                    : ErrorCode.INVALID_TOKEN;
-            errorResponseWriter.write(request, response, errorCode);
+
+        } catch (ExpiredJwtException exception) {
+            errorResponseWriter.write(
+                    request,
+                    response,
+                    ErrorCode.TOKEN_EXPIRED
+            );
+        } catch (ApiException exception) {
+            errorResponseWriter.write(
+                    request,
+                    response,
+                    exception.getErrorCode()
+            );
+        } catch (JwtException | IllegalArgumentException exception) {
+            errorResponseWriter.write(
+                    request,
+                    response,
+                    ErrorCode.INVALID_TOKEN
+            );
         }
+    }
+
+    private void setAccessAuthentication(String token) {
+        if (!jwtUtil.isValid(token, true)) {
+            throw new ApiException(ErrorCode.INVALID_TOKEN);
+        }
+
+        String email = jwtUtil.getEmail(token);
+        String role = jwtUtil.getRole(token);
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                email,
+                null,
+                List.of(new SimpleGrantedAuthority(role))
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private void setRoomAuthentication(String token) {
+        RoomTokenProvider.RoomClaims claims = roomTokenProvider.parse(token);
+
+        RoomPrincipal principal = new RoomPrincipal(
+                claims.participantId(),
+                claims.roomId(),
+                claims.nickname(),
+                claims.role()
+        );
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                List.of() // 전역 권한 없음
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

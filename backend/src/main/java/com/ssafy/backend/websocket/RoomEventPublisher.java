@@ -2,11 +2,14 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
@@ -15,6 +18,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import java.util.Map;
 
 /**
  * 방 이벤트를 /topic/v1/rooms/{roomId}/participants 로 브로드캐스트.
@@ -47,6 +52,20 @@ public class RoomEventPublisher {
         ));
     }
 
+    // - 인자: 명시적 또는 연결 유실로 확정된 참가자 퇴장 이벤트
+    // - 동작: 커밋 후 PARTICIPANT_LEFT를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleParticipantLeft(ParticipantLeftEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.PARTICIPANT_LEFT,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.participantId(),
+                new ParticipantLeftEventDataDTO(event.participantId(), event.reason())
+        ));
+    }
+
     // - 인자: 아이템 이동 도메인 이벤트
     // - 동작: 커밋 후 전체 placements를 담은 ITEM_MOVED 이벤트를 방 토픽으로 브로드캐스트
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -72,6 +91,18 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.senderParticipantId(),
                 new RoomStartedEventDataDTO("IN_PROGRESS")
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRoomFinished(RoomFinishedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ROOM_FINISHED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                Map.of()
         ));
     }
 
