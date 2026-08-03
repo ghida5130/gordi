@@ -19,7 +19,6 @@ public class AvatarController {
 
     private final AvatarService avatarService;
 
-    /** 아바타 후보 목록 조회 */
     @PostMapping(value = "/templates", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<AvatarTemplateListResponseDTO> readTemplates(
             @RequestBody @Valid AvatarTemplateRequestDTO request

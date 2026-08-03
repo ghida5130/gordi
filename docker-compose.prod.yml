@@ -7,7 +7,6 @@ services:
       dockerfile: Dockerfile
     container_name: gordi-backend
     restart: unless-stopped
-    # Credentials에서 주입한 .env 파일의 환경변수를 자동으로 불러옵니다.
     env_file:
       - .env
     environment:
