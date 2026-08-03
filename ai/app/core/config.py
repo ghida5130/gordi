@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     ai_reload: bool = True
 
     internal_api_key: str = ""
+    # Spring <-> FastAPI 내부 토큰 (try-on 접수 검증 + 콜백 헤더 공용)
+    internal_token: str = ""
 
     openrouter_api_key: str = ""
     openrouter_embedding_model: str = "google/gemini-embedding-2"
@@ -56,6 +58,17 @@ class Settings(BaseSettings):
     recommendation_llm_reasons_enabled: bool = False
     # /rank 를 벡터 파이프라인으로 처리 (인덱스/키 불가 시 baseline fallback)
     recommendation_rank_vector_enabled: bool = True
+
+    # 착장 이미지 생성 (Nano Banana 2 = gemini-3-pro-image, 팀 블라인드 평가 1위)
+    tryon_image_model: str = "google/gemini-3-pro-image"
+    tryon_generation_timeout_seconds: float = Field(
+        default=180.0,
+        gt=0.0,
+        le=600.0,
+    )
+    tryon_result_dir: Path = AI_ROOT / "tryon_results"
+    tryon_result_base_url: str = "http://localhost:8000/try-on-results"
+    spring_internal_base_url: str = "http://localhost:8080"
     recommendation_vlm_rerank_top_k: int = Field(
         default=20,
         ge=1,

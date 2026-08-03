@@ -78,6 +78,7 @@ ai/**/reports/
 ai/**/probe/
 ai/**/pilot/
 ai/catalog_index/
+ai/tryon_results/
 
 # IntelliJ IDEA / JetBrains
 .idea/

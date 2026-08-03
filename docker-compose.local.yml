@@ -57,11 +57,20 @@ services:
       RECOMMENDATION_VLM_REASONING_EFFORT: ${RECOMMENDATION_VLM_REASONING_EFFORT:-low}
       RECOMMENDATION_LLM_REASONS_ENABLED: ${RECOMMENDATION_LLM_REASONS_ENABLED:-false}
       RECOMMENDATION_RANK_VECTOR_ENABLED: ${RECOMMENDATION_RANK_VECTOR_ENABLED:-true}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-}
+      TRYON_IMAGE_MODEL: ${TRYON_IMAGE_MODEL:-google/gemini-3-pro-image}
+      TRYON_GENERATION_TIMEOUT_SECONDS: ${TRYON_GENERATION_TIMEOUT_SECONDS:-180}
+      TRYON_RESULT_DIR: /app/tryon_results
+      TRYON_RESULT_BASE_URL: ${TRYON_RESULT_BASE_URL:-http://localhost:8000/try-on-results}
+      SPRING_INTERNAL_BASE_URL: ${SPRING_INTERNAL_BASE_URL:-http://gordi-backend:8080}
     volumes:
       - type: bind
         source: ${CATALOG_EMBEDDING_INDEX_HOST_DIR:-./ai/catalog_index}
         target: /app/catalog_index
         read_only: true
+      - type: bind
+        source: ${TRYON_RESULT_HOST_DIR:-./ai/tryon_results}
+        target: /app/tryon_results
     networks:
       - app-network
   
