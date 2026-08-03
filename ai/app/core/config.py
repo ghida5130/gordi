@@ -9,8 +9,11 @@ AI_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    # AI 환경변수는 ai/.env 에서 관리한다 (팀 결정: 파트별 env 분리).
+    # 루트 .env 는 공유 값(INTERNAL_API_KEY 등)의 전환기 fallback 이며,
+    # 같은 키가 양쪽에 있으면 ai/.env 가 이긴다.
     model_config = SettingsConfigDict(
-        env_file=MONOREPO_ROOT / ".env",
+        env_file=(MONOREPO_ROOT / ".env", AI_ROOT / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

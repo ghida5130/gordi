@@ -3,6 +3,13 @@
 작성일: 2026-07-31  
 대상: 백엔드 및 CI/CD 담당자
 
+> **2026-08-03 업데이트 — 파트별 env 분리.** AI 환경변수는 이제 루트
+> `.env`가 아니라 **`ai/.env`** 에서 관리한다 (템플릿 `ai/.env.example`,
+> compose ai 서비스가 `env_file: ./ai/.env`를 읽음). 배포 시 Jenkins는
+> 루트 `.env`(공유 값: `INTERNAL_API_KEY`, `INTERNAL_TOKEN` 등)와 별도로
+> **`ai/.env`도 Credential 에서 복사**해야 한다. 아래 본문의 "루트 .env에
+> AI 변수 추가" 서술은 이 방침으로 대체된 상태다.
+
 ## 1. 목적
 
 FastAPI 의상 추천 서비스는 OpenRouter의 Gemini Embedding 2를 사용해 사용자
