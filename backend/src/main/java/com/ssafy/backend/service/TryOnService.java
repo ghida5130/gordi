@@ -112,14 +112,19 @@ public class TryOnService {
             Authentication authentication
     ) {
         TryOnContextType contextType = parseContextType(request.context().type());
-        User member = roomAuthResolver.requireMember(authentication);
 
         Room room = null;
         RoomParticipant participant = null;
+        User member;
         if (contextType.isRoom()) {
             room = requireOpenRoom(request.context().roomCode());
             participant = roomAuthResolver.requireParticipant(authentication, room);
             requireBoardVersion(room, request.context().boardVersion());
+            // 방에서는 비회원 게스트도 착장을 만들 수 있다.
+            member = roomAuthResolver.findMember(authentication).orElse(null);
+        } else {
+            // SOLO 는 방이 없어 소유자를 회원으로만 특정할 수 있다.
+            member = roomAuthResolver.requireMember(authentication);
         }
 
         Avatar avatar = avatarRepository.findById(request.avatarId())
@@ -132,8 +137,8 @@ public class TryOnService {
         WearOptionValues wearOptions = parseWearOptions(request.wearOptions());
         String requestHash = hashJobRequest(avatar.getId(), items, wearOptions, request.prompt());
 
-        Optional<TryOnJobCreateResponseDTO> replay = idempotencyService.findReplay(
-                member.getId(),
+        Optional<TryOnJobCreateResponseDTO> replay = findReplay(
+                member,
                 idempotencyKey,
                 CREATE_ENDPOINT,
                 requestHash,
@@ -143,7 +148,7 @@ public class TryOnService {
             return replay.get();
         }
 
-        requireQuota(member);
+        requireQuota(member, participant);
 
         TryOnJob job = TryOnJob.builder()
                 .contextType(contextType.name())
@@ -193,7 +198,10 @@ public class TryOnService {
     ) {
         TryOnJob source = requireJob(jobId);
         RoomParticipant participant = requireJobAccess(source, authentication);
-        User member = roomAuthResolver.requireMember(authentication);
+        // ROOM Job 은 게스트도 재시도할 수 있으므로 회원 여부는 선택이다.
+        User member = participant == null
+                ? roomAuthResolver.requireMember(authentication)
+                : roomAuthResolver.findMember(authentication).orElse(null);
 
         if (!source.isRetryable()) {
             throw new ApiException(
@@ -211,8 +219,8 @@ public class TryOnService {
         }
 
         String retryHash = idempotencyService.hashRequest(RETRY_ENDPOINT, jobId);
-        Optional<TryOnJobRetryResponseDTO> replay = idempotencyService.findReplay(
-                member.getId(),
+        Optional<TryOnJobRetryResponseDTO> replay = findReplay(
+                member,
                 idempotencyKey,
                 RETRY_ENDPOINT,
                 retryHash,
@@ -222,7 +230,7 @@ public class TryOnService {
             return replay.get();
         }
 
-        requireQuota(member);
+        requireQuota(member, participant);
 
         TryOnJob retryJob = tryOnJobRepository.save(TryOnJob.builder()
                 .contextType(source.getContextType())
@@ -336,9 +344,18 @@ public class TryOnService {
         return null;
     }
 
-    private void requireQuota(User member) {
+    /**
+     * 요청자 1인당 1일 생성 한도.
+     * 회원은 계정 기준으로, 비회원 게스트는 방 참가자 기준으로 집계한다.
+     */
+    private void requireQuota(User member, RoomParticipant participant) {
         LocalDateTime from = LocalDate.now(AppZone.KST).atStartOfDay();
-        long used = tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(member.getId(), from);
+
+        long used = member != null
+                ? tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(member.getId(), from)
+                : tryOnJobRepository.countByOwnerParticipantIdAndCreatedAtGreaterThanEqual(
+                        participant.getId(), from);
+
         if (used >= tryOnPolicy.getDailyLimit()) {
             throw new ApiException(
                     ErrorCode.GENERATION_QUOTA_EXCEEDED,
@@ -603,6 +620,25 @@ public class TryOnService {
         return items;
     }
 
+    /**
+     * 멱등 재생 조회.
+     * {@code IdempotencyRecord.user_id} 가 NOT NULL 이라 비회원 게스트는 기록을 남길 수 없다.
+     * 그래서 게스트 요청은 멱등 보장 없이 그대로 수행한다.
+     */
+    private <T> Optional<T> findReplay(
+            User member,
+            String idempotencyKey,
+            String endpoint,
+            String requestHash,
+            Class<T> responseType
+    ) {
+        if (member == null) {
+            return Optional.empty();
+        }
+        return idempotencyService.findReplay(
+                member.getId(), idempotencyKey, endpoint, requestHash, responseType);
+    }
+
     private void rememberIdempotent(
             User member,
             String idempotencyKey,
@@ -610,6 +646,9 @@ public class TryOnService {
             String requestHash,
             Object response
     ) {
+        if (member == null) {
+            return;
+        }
         idempotencyService.remember(
                 member.getId(),
                 idempotencyKey,

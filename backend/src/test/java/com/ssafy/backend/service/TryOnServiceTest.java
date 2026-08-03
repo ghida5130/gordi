@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -403,9 +404,75 @@ class TryOnServiceTest {
         }
 
         @Test
+        void 게스트도_방에서는_착장을_등록할_수_있다() {
+            Room room = room(ROOM_VERSION);
+            RoomParticipant guest = participant(RoomRole.PARTICIPANTS);
+
+            when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
+            when(roomAuthResolver.requireParticipant(authentication, room)).thenReturn(guest);
+            // 비회원이라 회원으로 해석되지 않는다.
+            when(roomAuthResolver.findMember(authentication)).thenReturn(Optional.empty());
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(roomItemRepository.findById(91L)).thenReturn(Optional.of(roomItem(91L, room)));
+            stubTopSize(500L);
+            when(tryOnJobRepository.countByOwnerParticipantIdAndCreatedAtGreaterThanEqual(
+                    eq(guest.getId()), any())).thenReturn(0L);
+            stubJobSave();
+
+            TryOnJobCreateResponseDTO response =
+                    tryOnService.create(roomRequest(ROOM_VERSION, 91L, "TOP"), null, authentication);
+
+            assertThat(response.status()).isEqualTo(TryOnJobStatus.QUEUED.name());
+
+            ArgumentCaptor<TryOnJob> saved = ArgumentCaptor.forClass(TryOnJob.class);
+            verify(tryOnJobRepository).save(saved.capture());
+            assertThat(saved.getValue().getOwnerUser()).isNull();
+            assertThat(saved.getValue().getOwnerParticipant()).isSameAs(guest);
+            // 회원이 아니므로 한도는 참가자 기준으로 센다.
+            verify(tryOnJobRepository).countByOwnerParticipantIdAndCreatedAtGreaterThanEqual(
+                    eq(guest.getId()), any());
+            verify(tryOnJobRepository, never())
+                    .countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any());
+        }
+
+        @Test
+        void 게스트가_한도를_넘으면_GENERATION_QUOTA_EXCEEDED() {
+            Room room = room(ROOM_VERSION);
+            RoomParticipant guest = participant(RoomRole.PARTICIPANTS);
+
+            when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
+            when(roomAuthResolver.requireParticipant(authentication, room)).thenReturn(guest);
+            when(roomAuthResolver.findMember(authentication)).thenReturn(Optional.empty());
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+            when(roomItemRepository.findById(91L)).thenReturn(Optional.of(roomItem(91L, room)));
+            stubTopSize(500L);
+            when(tryOnJobRepository.countByOwnerParticipantIdAndCreatedAtGreaterThanEqual(
+                    eq(guest.getId()), any())).thenReturn(20L);
+
+            TryOnJobCreateRequestDTO request = roomRequest(ROOM_VERSION, 91L, "TOP");
+
+            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(exception -> ((ApiException) exception).getErrorCode())
+                    .isEqualTo(ErrorCode.GENERATION_QUOTA_EXCEEDED);
+        }
+
+        @Test
+        void SOLO_는_게스트가_등록할_수_없다() {
+            when(roomAuthResolver.requireMember(authentication))
+                    .thenThrow(new ApiException(ErrorCode.UNAUTHORIZED));
+
+            TryOnJobCreateRequestDTO request = soloRequest(500L, "TOP");
+
+            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(exception -> ((ApiException) exception).getErrorCode())
+                    .isEqualTo(ErrorCode.UNAUTHORIZED);
+        }
+
+        @Test
         void ROOM_등록은_보드_버전이_다르면_VERSION_CONFLICT() {
             Room room = room(ROOM_VERSION);
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
             when(roomAuthResolver.requireParticipant(authentication, room))
                     .thenReturn(participant(RoomRole.PARTICIPANTS));
@@ -426,7 +493,6 @@ class TryOnServiceTest {
             Room otherRoom = room(ROOM_VERSION);
             otherRoom.setId(ROOM_ID + 1);
 
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
             when(roomAuthResolver.requireParticipant(authentication, room))
                     .thenReturn(participant(RoomRole.PARTICIPANTS));
