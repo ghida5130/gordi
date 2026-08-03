@@ -14,75 +14,80 @@ import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import AvatarSetupCompletePage from "@/pages/AvatarSetupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import RecommendationPage from "@/pages/RecommendationPage";
 import MyPage from "@/pages/MyPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <RootLayout />,
-        errorElement: <RouteErrorPage />,
-        children: [
-            {
-                index: true,
-                element: <MainPage />, // ⭐️ 기본 화면을 MainPage로 변경!
-            },
-            {
-                path: "home",
-                element: <HomePage />, // 기존 HomePage는 /home 주소로 빼두었습니다.
-            },
-            {
-                path: "login",
-                element: <LoginPage />,
-            },
-            {
-                path: "signup",
-                element: <SignupPage />,
-            },
-            {
-                path: "rooms",
-                element: <RoomLobbyPage />,
-            },
-            {
-                path: "rooms/create",
-                element: <CreateRoomPage />,
-            },
-            {
-                path: "rooms/:roomId",
-                element: <RoomPage />,
-            },
-            {
-                path: "examples/api",
-                element: <ApiExamplePage />,
-            },
-            {
-                path: "rooms/:roomId/tier-maker",
-                element: <TierMakerRoomPage />,
-            },
-            {
-                path: "avatar/setup",
-                element: <AvatarSetupPage />,
-            },
-            {
-                path: "avatar/setup/complete",
-                element: <AvatarSetupCompletePage />,
-            },
-            {
-                path: "mypage",
-                element: <MyPage />,
-            },
-            {
-                path: "mypage/avatar/edit",
-                element: <AvatarSetupPage mode="edit" />,
-            },
-            {
-                path: "oauth/callback",
-                element: <OAuthCallbackPage />,
-            },
-            {
-                path: "*",
-                element: <NotFoundPage />,
-            },
-        ],
-    },
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
+    children: [
+      {
+        index: true,
+        element: <MainPage />, // ⭐️ 기본 화면을 MainPage로 변경!
+      },
+      {
+        path: "home",
+        element: <HomePage />, // 기존 HomePage는 /home 주소로 빼두었습니다.
+      },
+      {
+        path: "login",
+        element: <LoginPage />,
+      },
+      {
+        path: "signup",
+        element: <SignupPage />,
+      },
+      {
+        path: "rooms",
+        element: <RoomLobbyPage />,
+      },
+      {
+        path: "rooms/create",
+        element: <CreateRoomPage />,
+      },
+      {
+        path: "rooms/:roomId",
+        element: <RoomPage />,
+      },
+      {
+        path: "examples/api",
+        element: <ApiExamplePage />,
+      },
+      {
+        path: "rooms/:roomId/tier-maker",
+        element: <TierMakerRoomPage />,
+      },
+      {
+        path: "avatar/setup",
+        element: <AvatarSetupPage />,
+      },
+      {
+        path: "avatar/setup/complete",
+        element: <AvatarSetupCompletePage />,
+      },
+      {
+        path: "mypage",
+        element: <MyPage />,
+      },
+      {
+        path: "mypage/avatar/edit",
+        element: <AvatarSetupPage mode="edit" />,
+      },
+      {
+        path: "oauth/callback",
+        element: <OAuthCallbackPage />,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
+      {
+        path: "recommendations",
+        element: <RecommendationPage />,
+      },
+    ],
+  },
 ]);
