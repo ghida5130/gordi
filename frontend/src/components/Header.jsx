@@ -88,7 +88,7 @@ export default function Header() {
                                     <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">AI가 추천한 의상을 티어별로 배치하고, 초대한 참여자와 실시간으로 의견을 모아 최종 의상을 결정할 수 있습니다.</p>
                                 </div>
                                 <div className="flex min-w-72 flex-col gap-2">
-                                    <Link to="/recommend-clothes" onClick={closeMenu} className="rounded-lg bg-black px-5 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-gray-800">의상 추천받고 티어메이커 시작하기</Link>
+                                    <Link to="/recommendation" onClick={closeMenu} className="rounded-lg bg-black px-5 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-gray-800">의상 추천받고 티어메이커 시작하기</Link>
                                     <Link to="/rooms" state={{ openJoinForm: true }} onClick={closeMenu} className="rounded-lg border border-gray-200 px-5 py-3 text-center text-sm font-bold text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50">초대 코드로 참여하기</Link>
                                 </div>
                             </>
@@ -99,7 +99,7 @@ export default function Header() {
                                     <h2 className="mt-2 text-xl font-bold text-gray-950">내 체형에 어울리는 의상을 추천받으세요</h2>
                                     <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">설정한 아바타와 체형 정보를 바탕으로 어울리는 상품을 분석해 의상 후보를 제안합니다.</p>
                                 </div>
-                                <Link to="/recommend-clothes" onClick={closeMenu} className="min-w-72 rounded-lg bg-black px-5 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-gray-800">의상 추천 받기</Link>
+                                <Link to="/recommendation" onClick={closeMenu} className="min-w-72 rounded-lg bg-black px-5 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-gray-800">의상 추천 받기</Link>
                             </>
                         )}
                     </div>

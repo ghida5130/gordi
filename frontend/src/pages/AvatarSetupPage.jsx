@@ -16,6 +16,8 @@ const BODY_TYPE_LABELS = {
     SOLID: "탄탄형",
 };
 
+const getAvatarId = (avatar) => avatar?.avatarId ?? avatar?.id;
+
 function mapHeightToId(height) {
     if (!height) return 0;
 
@@ -43,9 +45,10 @@ function AvatarOption({ avatar, selected, onSelect }) {
         <button
             type="button"
             onClick={() => onSelect(avatar)}
-            className={`overflow-hidden rounded-lg border bg-white text-left transition-colors ${selected ? "border-black ring-1 ring-black" : "border-gray-200 hover:border-gray-400"}`}
+            aria-pressed={selected}
+            className={`relative overflow-hidden rounded-lg border bg-white text-left transition-all ${selected ? "border-black shadow-md ring-2 ring-black" : "border-gray-200 hover:border-gray-400"}`}
         >
-            <div className="flex aspect-[4/5] items-center justify-center bg-gray-50">
+            <div className="relative flex aspect-[4/5] items-center justify-center bg-gray-50">
                 {avatar.imageUrl ? (
                     <img src={avatar.imageUrl} alt={`${BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType} 체형`} className="h-full w-full object-contain" />
                 ) : (
@@ -54,25 +57,28 @@ function AvatarOption({ avatar, selected, onSelect }) {
                         <path d="M7 21v-4a5 5 0 0 1 10 0v4M9 12l-2 5M15 12l2 5" />
                     </svg>
                 )}
+                {selected && (
+                    <span className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black text-sm font-bold text-white shadow-sm" aria-hidden="true">✓</span>
+                )}
             </div>
-            <div className="px-3 py-3 text-center text-sm font-bold text-gray-800">{BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType}</div>
+            <div className={`px-3 py-3 text-center text-sm font-bold transition-colors ${selected ? "bg-black text-white" : "text-gray-800"}`}>{BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType}</div>
         </button>
     );
 }
 
-export default function AvatarSetupPage({ mode = "signup" }) {
+export default function AvatarSetupPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToast();
     const updateUser = useUserStore((state) => state.updateUser);
     const [step, setStep] = useState("information");
-    const [gender, setGender] = useState(() => mode === "edit" ? (getBodyInformation()?.gender ?? "") : "");
+    const [gender, setGender] = useState(() => getBodyInformation()?.gender ?? "");
     const [height, setHeight] = useState(() => {
-        const savedHeight = mode === "edit" ? getBodyInformation()?.height : 0;
+        const savedHeight = getBodyInformation()?.height;
         return savedHeight ? String(savedHeight) : "";
     });
     const [weight, setWeight] = useState(() => {
-        const savedWeight = mode === "edit" ? getBodyInformation()?.weight : 0;
+        const savedWeight = getBodyInformation()?.weight;
         return savedWeight ? String(savedWeight) : "";
     });
     const [avatars, setAvatars] = useState([]);
@@ -99,8 +105,8 @@ export default function AvatarSetupPage({ mode = "signup" }) {
 
     const avatarMutation = useMutation({
         mutationFn: updateMyAvatar,
-        onSuccess: (_response, avatarId) => {
-            const savedAvatar = avatars.find((avatar) => String(avatar.id) === String(avatarId));
+        onSuccess: (_response, { avatarId }) => {
+            const savedAvatar = avatars.find((avatar) => String(getAvatarId(avatar)) === String(avatarId));
 
             setBodyInformation({
                 gender,
@@ -109,24 +115,10 @@ export default function AvatarSetupPage({ mode = "signup" }) {
             });
             updateUser({ profileImageUrl: savedAvatar?.imageUrl ?? null });
 
-            if (mode === "edit") {
-                queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
-                queryClient.invalidateQueries({ queryKey: ["myInfo"] });
-                toast.success("아바타가 수정되었습니다.");
-                navigate("/mypage", { replace: true, state: { activeTab: "avatar" } });
-                return;
-            }
-
-            navigate("/avatar/setup/complete", {
-                replace: true,
-                state: {
-                    gender,
-                    height: height ? Number(height) : 0,
-                    weight: weight ? Number(weight) : 0,
-                    bodyTypeLabel: BODY_TYPE_LABELS[savedAvatar?.bodyType] ?? savedAvatar?.bodyType,
-                    imageUrl: savedAvatar?.imageUrl ?? "",
-                },
-            });
+            queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
+            queryClient.invalidateQueries({ queryKey: ["myInfo"] });
+            toast.success("아바타가 설정되었습니다.");
+            navigate("/mypage", { replace: true, state: { activeTab: "avatar" } });
         },
         onError: (error) => {
             if (error.response?.status === 404) {
@@ -173,7 +165,14 @@ export default function AvatarSetupPage({ mode = "signup" }) {
     const handleNext = () => {
         if (!selectedAvatar) return;
 
-        avatarMutation.mutate(selectedAvatar.id);
+        const avatarId = getAvatarId(selectedAvatar);
+
+        if (avatarId == null) {
+            toast.error("선택한 아바타 정보를 확인하지 못했습니다. 다시 선택해 주세요.");
+            return;
+        }
+
+        avatarMutation.mutate({ avatarId });
     };
 
     return (
@@ -182,7 +181,7 @@ export default function AvatarSetupPage({ mode = "signup" }) {
                 <div className="flex items-start justify-between border-b border-gray-100 pb-6">
                     <div>
                         <p className="text-sm font-bold text-gray-400">{step === "information" ? "1 / 2" : "2 / 2"}</p>
-                        <h1 className="mt-2 text-2xl font-bold text-gray-950">{mode === "edit" ? "아바타 수정" : "체형 설정"}</h1>
+                        <h1 className="mt-2 text-2xl font-bold text-gray-950">체형 설정</h1>
                     </div>
                     <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-500">선택 정보는 건너뛸 수 있어요</span>
                 </div>
@@ -256,13 +255,13 @@ export default function AvatarSetupPage({ mode = "signup" }) {
                         </div>
                         <div className="mt-5 grid grid-cols-3 gap-3">
                             {avatars.map((avatar) => (
-                                <AvatarOption key={avatar.id} avatar={avatar} selected={selectedAvatar?.id === avatar.id} onSelect={setSelectedAvatar} />
+                                <AvatarOption key={getAvatarId(avatar) ?? avatar.bodyType} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
                             ))}
                         </div>
                         <div className="mt-7 flex gap-3">
                             <button type="button" onClick={() => setStep("information")} className="w-1/3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50">이전</button>
                             <button type="button" onClick={handleNext} disabled={!selectedAvatar || avatarMutation.isPending} className="flex-1 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300">
-                                {avatarMutation.isPending ? "저장 중..." : mode === "edit" ? "아바타 저장하기" : "다음"}
+                                {avatarMutation.isPending ? "저장 중..." : "아바타 저장하기"}
                             </button>
                         </div>
                     </div>

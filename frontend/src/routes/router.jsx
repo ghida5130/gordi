@@ -11,7 +11,7 @@ import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
 import LoginPage from "@/pages/LoginPage";
 import AvatarSetupPage from "@/pages/AvatarSetupPage";
-import AvatarSetupCompletePage from "@/pages/AvatarSetupCompletePage";
+import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
 import RecommendationPage from "@/pages/RecommendationPage";
@@ -61,12 +61,8 @@ export const router = createBrowserRouter([
         element: <TierMakerRoomPage />,
       },
       {
-        path: "avatar/setup",
-        element: <AvatarSetupPage />,
-      },
-      {
-        path: "avatar/setup/complete",
-        element: <AvatarSetupCompletePage />,
+        path: "signup/complete",
+        element: <SignupCompletePage />,
       },
       {
         path: "mypage",
@@ -74,19 +70,19 @@ export const router = createBrowserRouter([
       },
       {
         path: "mypage/avatar/edit",
-        element: <AvatarSetupPage mode="edit" />,
+        element: <AvatarSetupPage />,
       },
       {
         path: "oauth/callback",
         element: <OAuthCallbackPage />,
       },
       {
-        path: "*",
-        element: <NotFoundPage />,
+        path: "recommendation",
+        element: <RecommendationPage />,
       },
       {
-        path: "recommendations",
-        element: <RecommendationPage />,
+        path: "*",
+        element: <NotFoundPage />,
       },
     ],
   },

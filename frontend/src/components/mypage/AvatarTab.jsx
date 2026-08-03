@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { getMyAvatar } from "@/api/users";
+import AvatarSetupPrompt from "@/components/common/AvatarSetupPrompt";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { getBodyInformation } from "@/utils/bodyInformationStorage";
 
@@ -14,15 +15,19 @@ const BODY_TYPE_LABELS = {
 
 export default function AvatarTab() {
     const navigate = useNavigate();
-    const avatarQuery = useQuery({ queryKey: ["myAvatar"], queryFn: getMyAvatar, retry: false });
+    const avatarQuery = useQuery({ queryKey: ["myAvatar"], queryFn: getMyAvatar, retry: false, refetchOnMount: "always" });
     const avatar = avatarQuery.data?.data ?? avatarQuery.data;
     const bodyInformation = getBodyInformation();
 
-    if (avatarQuery.isPending) {
+    if (avatarQuery.isPending || avatarQuery.isFetching) {
         return <div className="mx-auto h-96 max-w-3xl animate-pulse rounded-lg bg-slate-100" />;
     }
 
     if (avatarQuery.isError) {
+        if (avatarQuery.error.response?.status === 404) {
+            return <AvatarSetupPrompt />;
+        }
+
         return <p className="mx-auto max-w-3xl rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{getApiErrorMessage(avatarQuery.error, "아바타 정보를 불러오지 못했습니다.")}</p>;
     }
 

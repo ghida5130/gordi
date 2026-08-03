@@ -79,7 +79,7 @@ export default function SignupPage() {
                 });
             }
 
-            navigate("/avatar/setup", { replace: true });
+            navigate("/signup/complete", { replace: true });
         },
         onError: (error) => {
             const status = error.response?.status;

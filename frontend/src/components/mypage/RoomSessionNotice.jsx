@@ -1,18 +1,132 @@
+import { useEffect, useState } from "react";
 import MyPageIcon from "@/components/mypage/MyPageIcon";
 
+const EXIT_DURATION = 260;
+
 export default function RoomSessionNotice({ roomSession, onEnter, onClose }) {
-    return (
-        <aside className="fixed inset-x-4 bottom-5 z-20 mx-auto flex max-w-md items-center gap-4 rounded-3xl bg-slate-950 p-4 text-white shadow-2xl">
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-white/10">
-                <MyPageIcon name="users" className="size-6" />
+  const [isExiting, setIsExiting] = useState(false);
+
+  useEffect(() => {
+    if (!isExiting) return undefined;
+
+    const timer = window.setTimeout(onClose, EXIT_DURATION);
+    return () => window.clearTimeout(timer);
+  }, [isExiting, onClose]);
+
+  return (
+    <>
+      <style>
+        {`
+                    @keyframes roomSessionNoticeRise {
+                        from {
+                            opacity: 0;
+                            transform: translateY(320px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    @keyframes roomSessionNoticeExpand {
+                        from {
+                            width: 60px;
+                        }
+                        to {
+                            width: 100%;
+                        }
+                    }
+
+                    @keyframes roomSessionNoticeContentReveal {
+                        from {
+                            opacity: 0;
+                        }
+                        to {
+                            opacity: 1;
+                        }
+                    }
+
+                    @keyframes roomSessionNoticeExit {
+                        from {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                        to {
+                            opacity: 0;
+                            transform: translateY(18px);
+                        }
+                    }
+
+                    .room-session-notice {
+                        background: rgba(201, 201, 201, 0.651);
+                        backdrop-filter: blur(28px) saturate(180%);
+                        -webkit-backdrop-filter: blur(28px) saturate(180%);
+                        animation:
+                            roomSessionNoticeRise 700ms cubic-bezier(0.16, 1, 0.3, 1) both,
+                            roomSessionNoticeExpand 400ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+                        transform-origin: bottom center;
+                    }
+
+                    .room-session-notice-content {
+                        animation: roomSessionNoticeContentReveal 280ms 250ms ease-out both;
+                    }
+
+                    .room-session-notice.room-session-notice-exiting {
+                        width: 100%;
+                        animation: roomSessionNoticeExit ${EXIT_DURATION}ms ease-in forwards;
+                    }
+
+                    @media (prefers-reduced-motion: reduce) {
+                        .room-session-notice,
+                        .room-session-notice-content {
+                            animation: none;
+                        }
+                    }
+                `}
+      </style>
+      <div className="pointer-events-none fixed inset-x-4 bottom-6 z-20 mx-auto flex max-w-md justify-center">
+        <aside
+          className={`room-session-notice pointer-events-auto relative min-h-18 overflow-hidden rounded-full border border-white/75 text-gray-950 shadow-lg ${isExiting ? "room-session-notice-exiting" : ""}`}
+          aria-label="진행 중인 방"
+        >
+          <div className="room-session-notice-content flex min-h-18 w-[min(calc(100vw-2rem),28rem)] items-center gap-3 px-5 py-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/45 text-gray-700 ring-1 ring-white/70">
+              <MyPageIcon name="users" className="size-5" />
             </span>
-            <span className="min-w-0 flex-1">
-                <small className="block text-amber-200">진행 중인 방</small>
-                <strong className="block truncate">{roomSession.roomName ?? "참여 중인 의상 고르기 방"}</strong>
-                <small className="text-slate-300">참여자 {roomSession.participantCount ?? 1}명 · 티어링크 진행 중</small>
+            <span className="min-w-0 flex-1 leading-tight">
+              <small className="mb-0.5 flex items-center gap-2 font-semibold text-amber-800">
+                <span
+                  className="size-2 rounded-full bg-amber-500 ring-3 ring-amber-100/80"
+                  aria-hidden="true"
+                />
+                진행 중인 방
+              </small>
+              <strong className="block truncate text-sm">
+                {roomSession.roomName ?? "참여 중인 티어메이커"}
+              </strong>
+              <small className="block truncate text-gray-600">
+                참여자 {roomSession.participantCount ?? 1}명 · 티어메이커 진행중
+              </small>
             </span>
-            <button type="button" onClick={onEnter} className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-950">입장 →</button>
-            <button type="button" onClick={onClose} aria-label="진행 중인 방 알림 닫기" className="text-lg text-slate-400 hover:text-white">×</button>
+            <button
+              type="button"
+              onClick={onEnter}
+              className="shrink-0 rounded-full bg-gray-950 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-gray-800"
+            >
+              입장
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsExiting(true)}
+              disabled={isExiting}
+              aria-label="진행 중인 방 알림 닫기"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full text-xl leading-none text-gray-600 transition-colors hover:bg-white/40 hover:text-gray-950"
+            >
+              ×
+            </button>
+          </div>
         </aside>
-    );
+      </div>
+    </>
+  );
 }

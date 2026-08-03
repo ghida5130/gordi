@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { createRecommendation, getRecommendation, getRecommendationOptions, replaceRecommendationItems } from "@/api/recommendations";
+import { getMyAvatar } from "@/api/users";
+import AvatarSetupPrompt from "@/components/common/AvatarSetupPrompt";
 import ClothingAddModal from "@/components/recommendation/ClothingAddModal";
 import { queryClient } from "@/lib/queryClient";
 import { getApiErrorMessage } from "@/utils/apiError";
@@ -33,7 +35,8 @@ function RecommendationPage() {
   const [form, setForm] = useState({ category: "", subcategory: "", minPrice: "", maxPrice: "", moodCodes: [], additionalInfo: "", referenceImages: [] });
   const roomSession = getRoomSession();
 
-  const optionsQuery = useQuery({ queryKey: ["recommendation-options"], queryFn: getRecommendationOptions });
+  const avatarQuery = useQuery({ queryKey: ["myAvatar"], queryFn: getMyAvatar, retry: false, refetchOnMount: "always" });
+  const optionsQuery = useQuery({ queryKey: ["recommendation-options"], queryFn: getRecommendationOptions, enabled: avatarQuery.isSuccess });
   const options = unwrap(optionsQuery.data);
   const categories = toArray(options.categories);
   const moods = toArray(options.moods);
@@ -127,6 +130,18 @@ function RecommendationPage() {
       idempotencyKey: createIdempotencyKey(),
     });
   };
+
+  if (avatarQuery.isPending || avatarQuery.isFetching) {
+    return <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16"><div className="mx-auto h-72 max-w-xl animate-pulse rounded-3xl bg-white" /></main>;
+  }
+
+  if (avatarQuery.isError) {
+    if (avatarQuery.error.response?.status === 404) {
+      return <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16"><AvatarSetupPrompt /></main>;
+    }
+
+    return <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16"><p className="mx-auto max-w-xl rounded-2xl bg-red-50 p-4 text-sm text-red-700">{getApiErrorMessage(avatarQuery.error, "아바타 정보를 불러오지 못했습니다.")}</p></main>;
+  }
 
   if (step === "results") return <><RecommendationResults items={recommendedItems} emptyReason={recommendationResult?.emptyReason} onBack={() => setStep("analysis")} onOpenModal={() => setIsModalOpen(true)} />{isModalOpen && <ClothingAddModal roomToken={roomSession?.roomToken} onClose={() => setIsModalOpen(false)} onAdd={handleAdd} />}{resultQuery.isError && <p className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-amber-600 px-4 py-3 text-sm text-white">{getRecommendationErrorMessage(resultQuery.error)}</p>}{replaceMutation.isError && <p className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-red-600 px-4 py-3 text-sm text-white">{getReplaceErrorMessage(replaceMutation.error)}</p>}</>;
 

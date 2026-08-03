@@ -1,7 +1,5 @@
 import { authApi, publicApi } from "@/api/request";
 
-import { publicApi } from "@/api/request";
-
 function roomTokenConfig(roomToken, config = {}) {
   return {
     ...config,
@@ -21,6 +19,10 @@ export function getProduct({ roomToken, productId }) {
     `v1/products/${encodeURIComponent(productId)}`,
     roomTokenConfig(roomToken),
   );
+}
+
+export function getAuthenticatedProduct({ roomToken, productId }) {
+  return authApi.get(`v1/products/${encodeURIComponent(productId)}`);
 }
 
 export function addCandidate({ roomToken, roomId, productId }) {
