@@ -46,7 +46,7 @@ public class RoomService {
     private static final int ROOM_CODE_LENGTH = 6;
     private static final int ROOM_CODE_GENERATION_ATTEMPTS = 20;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final List<String> DEFAULT_TIER_NAMES = List.of("S", "A", "B");
+    private static final List<String> DEFAULT_TIER_NAMES = List.of("S", "A", "B", "C");
 
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
