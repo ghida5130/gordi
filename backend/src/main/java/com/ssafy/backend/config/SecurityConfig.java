@@ -2,6 +2,7 @@ package com.ssafy.backend.config;
 
 import com.ssafy.backend.common.error.ApiErrorResponseWriter;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.filter.InternalTokenFilter;
 import com.ssafy.backend.filter.JWTFilter;
 import com.ssafy.backend.filter.LoginFilter;
 import com.ssafy.backend.handler.LoginSuccessHandler;
@@ -38,6 +39,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final RoomTokenProvider roomTokenProvider;
+    private final InternalTokenFilter internalTokenFilter;
 
     @Value("${oauth2.failure-redirect-url}")
     private String oauthFailureRedirectUrl;
@@ -52,7 +54,8 @@ public class SecurityConfig {
             CustomOAuth2UserService customOAuth2UserService,
             OAuth2SuccessHandler oAuth2SuccessHandler,
             RoomTokenProvider roomTokenProvider,
-            CookieUtil cookieUtil
+            CookieUtil cookieUtil,
+            InternalTokenFilter internalTokenFilter
     ) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.loginSuccessHandler = loginSuccessHandler;
@@ -63,6 +66,7 @@ public class SecurityConfig {
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
         this.roomTokenProvider = roomTokenProvider;
         this.cookieUtil = cookieUtil;
+        this.internalTokenFilter = internalTokenFilter;
     }
 
     // 로그인 필터 AuthenticationManager
@@ -96,6 +100,8 @@ public class SecurityConfig {
                         // WebSocket 핸드셰이크는 열어두고, 인증은 STOMP CONNECT 인터셉터에서 수행
                         .requestMatchers("/ws/v1/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/rooms").hasRole("USER")
+                        // 내부 호출(FastAPI 콜백)은 열어두고, 인증은 InternalTokenFilter 에서 수행
+                        .requestMatchers("/internal/**").permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("USER")
                         .requestMatchers("/api/v1/recommendation-options").hasRole("USER")
                         .requestMatchers("/api/v1/recommendations/**").hasRole("USER")
@@ -133,6 +139,9 @@ public class SecurityConfig {
 
         // JWT 인가 필터 등록 (JWTUtil static 접근이므로 기본 생성자로 생성)
         http.addFilterBefore(new JWTFilter(jwtUtil, roomTokenProvider, errorResponseWriter), LogoutFilter.class);
+
+        // 내부 호출 서비스 토큰 검증 (/internal/** 만 검사, 그 외 경로는 스스로 건너뜀)
+        http.addFilterBefore(internalTokenFilter, LogoutFilter.class);
 
         // 로그아웃 핸들러 등록
         http.logout(logout -> logout
