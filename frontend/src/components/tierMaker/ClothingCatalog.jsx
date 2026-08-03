@@ -11,7 +11,15 @@ const categories = [
   ['shoes', '신발'],
 ]
 
-function ClothingCatalog({ clothes, tierByItem, onDragStart, onUnrank }) {
+function ClothingCatalog({
+  clothes,
+  tierByItem,
+  itemLocks,
+  currentParticipantId,
+  onDragStart,
+  onDragEnd,
+  onUnrank,
+}) {
   const [activeCategory, setActiveCategory] = useState('all')
   const [keyword, setKeyword] = useState('')
 
@@ -73,13 +81,25 @@ function ClothingCatalog({ clothes, tierByItem, onDragStart, onUnrank }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 overflow-y-auto p-4">
-        {filteredClothes.map((item) => (
-          <div
-            key={item.id}
-            draggable
-            onDragStart={(event) => onDragStart(event, item.id)}
-            className="group relative cursor-grab rounded-2xl border border-slate-200 bg-white p-2 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing"
-          >
+        {filteredClothes.map((item) => {
+          const lock = itemLocks[item.id]
+          const isLockedByOther =
+            lock &&
+            String(lock.ownerParticipantId) !==
+              String(currentParticipantId)
+
+          return (
+            <div
+              key={item.id}
+              draggable={!isLockedByOther}
+              onDragStart={(event) => onDragStart(event, item.id)}
+              onDragEnd={(event) => onDragEnd(event, item.id)}
+              className={`group relative rounded-2xl border bg-white p-2 transition ${
+                isLockedByOther
+                  ? 'cursor-not-allowed border-amber-300 opacity-60'
+                  : 'cursor-grab border-slate-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing'
+              }`}
+            >
             <ClothingArtwork
               item={item}
               className="aspect-square w-full rounded-xl"
@@ -113,8 +133,16 @@ function ClothingCatalog({ clothes, tierByItem, onDragStart, onUnrank }) {
                 )}
               </div>
             </div>
-          </div>
-        ))}
+            {lock && (
+              <span className="absolute inset-x-2 top-2 truncate rounded-lg bg-slate-900/85 px-2 py-1 text-center text-[9px] font-bold text-white">
+                {isLockedByOther
+                  ? `${lock.ownerNickname ?? '다른 참여자'} 이동 중`
+                  : '내가 이동 중'}
+              </span>
+            )}
+            </div>
+          )
+        })}
 
         {filteredClothes.length === 0 && (
           <div className="col-span-2 py-12 text-center text-sm text-slate-400">

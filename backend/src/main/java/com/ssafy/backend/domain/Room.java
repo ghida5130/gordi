@@ -61,12 +61,20 @@ public class Room {
     @Column(name = "max_participants", nullable = false)
     private Integer maxParticipants;
 
+    /**
+     * 방의 확정 착장 스냅샷. HOST 가 성공한 착장 Job 하나를 지정하며 재지정할 수 있다.
+     * 확정 시 Room 이 갱신되므로 {@link #version} 이 함께 증가한다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "confirmed_try_on_job_id")
+    private TryOnJob confirmedTryOnJob;
+
     @Column(name = "idempotency_key", nullable = false, length = 36)
     private String idempotencyKey;
 
     @Builder.Default
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "WAITING";
+    private String status = "WAITING"; // WAITING, IN_PROGRESS, FINISHED, CLOSED
 
     @Version
     @Builder.Default

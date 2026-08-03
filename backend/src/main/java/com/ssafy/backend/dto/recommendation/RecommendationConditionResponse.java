@@ -6,6 +6,7 @@ import java.util.List;
 
 // 추천 스냅샷이 생성될 때 사용된 조건
 public record RecommendationConditionResponse(
+        String gender,
         String category,
         String subcategory,
         Integer budgetMin,
@@ -15,6 +16,7 @@ public record RecommendationConditionResponse(
 
     public static RecommendationConditionResponse of(Recommendation recommendation, List<String> moods) {
         return new RecommendationConditionResponse(
+                recommendation.getGender(),
                 recommendation.getCategory(),
                 recommendation.getSubcategory(),
                 recommendation.getBudgetMin(),

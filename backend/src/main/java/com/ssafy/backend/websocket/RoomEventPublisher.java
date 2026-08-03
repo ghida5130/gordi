@@ -1,12 +1,23 @@
 package com.ssafy.backend.websocket;
 
-import com.ssafy.backend.dto.room.ParticipantEventDataDTO;
-import com.ssafy.backend.dto.room.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
+import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.event.ItemMovedEvent;
+import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomFinishedEvent;
+import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
+import com.ssafy.backend.websocket.event.RoomStartedEvent;
+import com.ssafy.backend.websocket.event.TierRenamedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import java.util.Map;
 
 /**
  * 방 이벤트를 /topic/v1/rooms/{roomId}/participants 로 브로드캐스트.
@@ -36,6 +47,60 @@ public class RoomEventPublisher {
                         event.nickname(),
                         event.role()
                 )
+        ));
+    }
+
+    // - 인자: 아이템 이동 도메인 이벤트
+    // - 동작: 커밋 후 전체 placements를 담은 ITEM_MOVED 이벤트를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleItemMoved(ItemMovedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ITEM_MOVED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new ItemMovedEventDataDTO(event.placements())
+        ));
+    }
+
+    // - 인자: 방 시작 도메인 이벤트
+    // - 동작: 커밋 후 ROOM_STARTED 이벤트를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRoomStarted(RoomStartedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ROOM_STARTED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new RoomStartedEventDataDTO("IN_PROGRESS")
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRoomFinished(RoomFinishedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ROOM_FINISHED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                Map.of()
+        ));
+    }
+
+    // - 인자: 티어 이름 변경 도메인 이벤트
+    // - 동작: 커밋 후 TIER_RENAMED 이벤트를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTierRenamed(TierRenamedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TIER_RENAMED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TierRenamedEventDataDTO(event.tierId(), event.name())
         ));
     }
 

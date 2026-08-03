@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gordi · 추천 파이프라인 데모</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #12151d;
+    --panel-2: #171b25;
+    --line: #232936;
+    --text: #e8ebf1;
+    --text-dim: #9aa3b2;
+    --text-faint: #626c7d;
+    --accent: #7c8cff;
+    --accent-soft: rgba(124, 140, 255, .14);
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --radius: 14px;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f5f8;
+      --panel: #ffffff;
+      --panel-2: #f7f8fb;
+      --line: #e3e6ee;
+      --text: #171b25;
+      --text-dim: #5b6472;
+      --text-faint: #8a93a3;
+      --accent: #4f5fe8;
+      --accent-soft: rgba(79, 95, 232, .10);
+      color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", "Pretendard Variable", -apple-system,
+      BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
+      "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell { max-width: 1180px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .logo {
+    font-size: 20px; font-weight: 800; letter-spacing: -.02em;
+  }
+  .brand .logo em { color: var(--accent); font-style: normal; }
+  .brand .tag {
+    font-size: 12px; color: var(--text-faint);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 2px 10px;
+  }
+  #run-meta { font-size: 12px; color: var(--text-faint); text-align: right; }
+  #run-meta code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    color: var(--text-dim);
+  }
+
+  .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  /* ---------- query panel ---------- */
+  .query { padding: 20px; align-self: start; }
+  @media (min-width: 901px) { .query { position: sticky; top: 20px; } }
+  .query h1 {
+    margin: 0 0 4px; font-size: 16px; font-weight: 700;
+  }
+  .query .sub { margin: 0 0 18px; font-size: 13px; color: var(--text-dim); }
+
+  .field { margin-bottom: 16px; }
+  .field > label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text-dim); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .drop {
+    position: relative; display: flex; align-items: center;
+    justify-content: center; min-height: 132px; padding: 12px;
+    border: 1.5px dashed var(--line); border-radius: 12px;
+    background: var(--panel-2); cursor: pointer; text-align: center;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop:focus-visible, .drop.dragover {
+    border-color: var(--accent); background: var(--accent-soft);
+    outline: none;
+  }
+  .drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .drop .hint { font-size: 13px; color: var(--text-dim); pointer-events: none; }
+  .drop .hint strong { color: var(--text); }
+  .drop .hint small { display: block; margin-top: 4px; color: var(--text-faint); }
+  .drop img {
+    max-width: 100%; max-height: 180px; border-radius: 8px;
+    pointer-events: none;
+  }
+  .drop .clear {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    width: 26px; height: 26px; border-radius: 999px;
+    border: none; background: rgba(0,0,0,.55); color: #fff;
+    font-size: 14px; line-height: 1; cursor: pointer; display: none;
+  }
+  .drop.has-image .clear { display: block; }
+  .drop.has-image .hint { display: none; }
+
+  textarea {
+    width: 100%; min-height: 84px; resize: vertical;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font: inherit; font-size: 14px;
+  }
+  textarea:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+    border-color: transparent;
+  }
+  .counter { text-align: right; font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg label { flex: 1; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span {
+    display: block; text-align: center; padding: 8px 0;
+    font-size: 14px; color: var(--text-dim); cursor: pointer;
+    background: var(--panel-2); transition: background .12s, color .12s;
+  }
+  .seg label + label span { border-left: 1px solid var(--line); }
+  .seg input:checked + span {
+    background: var(--accent-soft); color: var(--accent); font-weight: 700;
+  }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  select, input[type="number"] {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 10px; font: inherit; font-size: 14px;
+  }
+
+  details.advanced { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+  details.advanced summary {
+    font-size: 12px; color: var(--text-faint); cursor: pointer;
+    user-select: none; margin-bottom: 10px;
+  }
+
+  .run {
+    width: 100%; margin-top: 6px; padding: 12px 0;
+    border: none; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 700;
+    transition: filter .12s, transform .06s;
+  }
+  .run:hover:not(:disabled) { filter: brightness(1.08); }
+  .run:active:not(:disabled) { transform: translateY(1px); }
+  .run:disabled { opacity: .55; cursor: progress; }
+
+  /* ---------- results ---------- */
+  .results { padding: 20px; min-height: 480px; display: flex; flex-direction: column; }
+  .results-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .results-head h2 { margin: 0; font-size: 16px; }
+  .results-head .count { font-size: 12px; color: var(--text-faint); }
+
+  .banner {
+    display: none; border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; margin-bottom: 14px; word-break: break-all;
+  }
+  .banner.error {
+    display: block; background: rgba(248, 113, 113, .1);
+    border: 1px solid rgba(248, 113, 113, .35); color: var(--bad);
+  }
+
+  .state {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 10px; color: var(--text-faint);
+    text-align: center; padding: 40px 16px; font-size: 14px;
+  }
+  .state .glyph { font-size: 34px; }
+  .state strong { color: var(--text-dim); }
+  .spinner {
+    width: 26px; height: 26px; border-radius: 999px;
+    border: 3px solid var(--line); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- live pipeline timeline ---------- */
+  .pipeline-live {
+    align-items: stretch; justify-content: flex-start;
+    max-width: 460px; margin: 0 auto; width: 100%;
+    text-align: left; padding: 32px 16px;
+  }
+  .pipe-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px; color: var(--text);
+  }
+  .pipe-head .elapsed {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px; color: var(--accent);
+  }
+  .pipe-steps { list-style: none; margin: 0; padding: 0; }
+  .pipe-steps li {
+    position: relative; display: flex; align-items: center; gap: 10px;
+    padding: 9px 0 9px 4px; font-size: 13.5px; color: var(--text-faint);
+  }
+  .pipe-steps li + li::before {
+    content: ""; position: absolute; left: 11px; top: -8px;
+    width: 2px; height: 16px; background: var(--line);
+  }
+  .pipe-steps .dot {
+    flex: 0 0 16px; height: 16px; border-radius: 999px;
+    border: 2px solid var(--line); background: var(--panel);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; transition: all .2s;
+  }
+  .pipe-steps .label { flex: 1; }
+  .pipe-steps .label small { color: var(--text-faint); font-size: 11px; }
+  .pipe-steps .detail {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11.5px; color: var(--text-faint);
+  }
+  .pipe-steps li.active { color: var(--text); }
+  .pipe-steps li.active .dot {
+    border-color: var(--accent);
+    border-top-color: transparent;
+    animation: spin .8s linear infinite;
+  }
+  .pipe-steps li.done { color: var(--text-dim); }
+  .pipe-steps li.done .dot {
+    border-color: var(--good); background: var(--good);
+  }
+  .pipe-steps li.done .dot::after { content: "✓"; }
+  .pipe-steps li.skipped { opacity: .45; }
+  .pipe-steps li.skipped .dot::after {
+    content: "–"; color: var(--text-faint);
+  }
+  .pipe-steps li.failed .dot {
+    border-color: var(--warn); background: var(--warn);
+  }
+  .pipe-steps li.failed .dot::after { content: "!"; }
+  .pipe-now {
+    margin: 12px 0 0; min-height: 18px; font-size: 12px;
+    color: var(--text-dim); overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .card {
+    display: flex; gap: 14px; padding: 14px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .thumb {
+    position: relative; flex: 0 0 96px; height: 128px;
+    border-radius: 8px; overflow: hidden; background: var(--line);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .noimg {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; color: var(--text-faint);
+  }
+  .thumb .rank {
+    position: absolute; top: 6px; left: 6px;
+    min-width: 24px; height: 24px; padding: 0 6px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px; background: rgba(0,0,0,.65); color: #fff;
+    font-size: 12px; font-weight: 800;
+  }
+  .card.top1 .rank { background: var(--accent); }
+
+  .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .info .meta { font-size: 11px; color: var(--text-faint); }
+  .info .name {
+    margin: 0; font-size: 14px; font-weight: 700; line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .info .price { font-size: 14px; font-weight: 800; }
+  .info .price small { font-weight: 500; color: var(--text-faint); }
+
+  .scores { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+  .score-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .score-row .k { flex: 0 0 34px; color: var(--text-faint); }
+  .score-row .bar {
+    flex: 1; height: 5px; border-radius: 999px; background: var(--line);
+    overflow: hidden;
+  }
+  .score-row .bar i {
+    display: block; height: 100%; border-radius: 999px;
+    background: var(--accent); transition: width .5s ease;
+  }
+  .score-row.final .bar i { background: linear-gradient(90deg, var(--accent), var(--good)); }
+  .score-row .v {
+    flex: 0 0 38px; text-align: right;
+    font-family: ui-monospace, Consolas, monospace; color: var(--text-dim);
+  }
+
+  .reason {
+    margin: 2px 0 0; font-size: 12px; color: var(--text-dim);
+    background: var(--accent-soft); border-radius: 8px; padding: 7px 9px;
+  }
+  .buy {
+    align-self: flex-start; margin-top: 2px; font-size: 12px;
+    color: var(--accent); text-decoration: none; font-weight: 600;
+  }
+  .buy:hover { text-decoration: underline; }
+
+  footer.note {
+    margin-top: 28px; font-size: 12px; color: var(--text-faint);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <span class="logo">Gordi <em>AI</em></span>
+      <span class="tag">recommendation demo</span>
+    </div>
+    <div id="run-meta"></div>
+  </header>
+
+  <div class="layout">
+    <!-- ============ query ============ -->
+    <form id="query-form" class="panel query" novalidate>
+      <h1>어떤 옷을 찾으세요?</h1>
+      <p class="sub">이미지나 설명 중 하나 이상을 입력하면 카탈로그 198개
+        상품에서 멀티모달 검색 → 궁합 재정렬을 거쳐 추천합니다.</p>
+
+      <div class="field">
+        <label for="image-input">기준 이미지 (선택)</label>
+        <div id="drop" class="drop" tabindex="0" role="button"
+             aria-label="이미지 업로드: 클릭하거나 파일을 끌어다 놓기">
+          <input id="image-input" type="file" accept="image/jpeg,image/png">
+          <button type="button" class="clear" id="image-clear"
+                  aria-label="이미지 제거">✕</button>
+          <div class="hint">
+            <strong>클릭 또는 드래그</strong>로 업로드
+            <small>JPEG / PNG · 최대 10MB</small>
+          </div>
+          <img id="image-preview" alt="" hidden>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="text-input">설명 (선택)</label>
+        <textarea id="text-input" maxlength="2000"
+          placeholder="예: 여름 저녁 산책에 입을 미니멀한 블랙 반팔. 과하지 않게."></textarea>
+        <div class="counter"><span id="text-count">0</span> / 2000</div>
+      </div>
+
+      <div class="field">
+        <label>아바타 성별</label>
+        <div class="seg" role="radiogroup" aria-label="아바타 성별">
+          <label><input type="radio" name="gender" value="MALE" checked><span>남성</span></label>
+          <label><input type="radio" name="gender" value="FEMALE"><span>여성</span></label>
+        </div>
+      </div>
+
+      <div class="field row2">
+        <div>
+          <label for="category">카테고리</label>
+          <select id="category">
+            <option value="">전체</option>
+            <option value="TOP">상의</option>
+            <option value="BOTTOM">하의</option>
+          </select>
+        </div>
+        <div>
+          <label for="subcategory">세부 분류</label>
+          <select id="subcategory">
+            <option value="">전체</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field row2">
+        <div>
+          <label for="budget-min">최소 예산 (원)</label>
+          <input id="budget-min" type="number" min="0" step="1000" value="0">
+        </div>
+        <div>
+          <label for="budget-max">최대 예산 (원)</label>
+          <input id="budget-max" type="number" min="0" step="1000"
+                 placeholder="제한 없음">
+        </div>
+      </div>
+
+      <details class="advanced">
+        <summary>고급 설정</summary>
+        <div class="field row2">
+          <div>
+            <label for="candidate-limit">검색 후보 수</label>
+            <input id="candidate-limit" type="number" min="1" max="200" value="50">
+          </div>
+          <div>
+            <label for="result-limit">결과 수</label>
+            <input id="result-limit" type="number" min="1" max="50" value="10">
+          </div>
+        </div>
+      </details>
+
+      <button id="run" class="run" type="submit">추천 실행</button>
+    </form>
+
+    <!-- ============ results ============ -->
+    <section class="panel results" aria-live="polite">
+      <div class="results-head">
+        <h2>추천 결과</h2>
+        <span id="result-count" class="count"></span>
+      </div>
+      <div id="error-banner" class="banner" role="alert"></div>
+      <div id="state-idle" class="state">
+        <div class="glyph">🧥</div>
+        <div><strong>아직 실행 전입니다</strong><br>
+          왼쪽에서 이미지나 설명을 입력하고 추천을 실행해 보세요.</div>
+      </div>
+      <div id="state-loading" class="state pipeline-live" hidden>
+        <div class="pipe-head">
+          <strong>파이프라인 실행 중</strong>
+          <span id="elapsed" class="elapsed">0.0s</span>
+        </div>
+        <ol id="pipe-steps" class="pipe-steps">
+          <li data-step="image_attributes">
+            <span class="dot"></span>
+            <span class="label">이미지 속성 추출 <small>VLM</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="retrieval">
+            <span class="dot"></span>
+            <span class="label">쿼리 임베딩 · 후보 검색 <small>Gemini + cosine</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="scoring">
+            <span class="dot"></span>
+            <span class="label">규칙 기반 궁합 점수 <small>color/season/style/pattern</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="rerank">
+            <span class="dot"></span>
+            <span class="label">VLM 코디 궁합 판정 <small>pairwise · 병렬</small></span>
+            <span class="detail"></span>
+          </li>
+          <li data-step="reasons">
+            <span class="dot"></span>
+            <span class="label">추천 이유 생성</span>
+            <span class="detail"></span>
+          </li>
+        </ol>
+        <p id="pipe-now" class="pipe-now"></p>
+      </div>
+      <div id="state-empty" class="state" hidden>
+        <div class="glyph">🫥</div>
+        <div><strong>조건에 맞는 상품이 없습니다</strong><br>
+          예산 범위나 카테고리 필터를 넓혀서 다시 시도해 보세요.</div>
+      </div>
+      <div id="result-grid" class="grid" hidden></div>
+    </section>
+  </div>
+
+  <footer class="note">
+    로컬 데모 전용 페이지입니다 · 실행할 때마다 쿼리 임베딩을 위한
+    OpenRouter 호출이 발생합니다
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const API_URL = "/api/v1/demo/recommendations";
+  const STREAM_URL = `${API_URL}/stream`;
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+  const SUBCATEGORIES = {
+    TOP: [
+      ["SHORT_SLEEVE", "반팔"],
+      ["LONG_SLEEVE", "긴팔"],
+      ["SHIRT", "셔츠"],
+      ["KNIT", "니트"],
+      ["HOODIE", "후드/맨투맨"],
+      ["SLEEVELESS", "민소매"],
+      ["SPORTS_TOP", "스포츠 상의"],
+      ["DRESS", "원피스"],
+      ["OTHER_TOP", "기타 상의"],
+    ],
+    BOTTOM: [
+      ["DENIM_PANTS", "데님 팬츠"],
+      ["SLACKS", "슬랙스"],
+      ["COTTON_PANTS", "코튼 팬츠"],
+      ["JOGGER_PANTS", "트레이닝/조거 팬츠"],
+      ["SHORTS", "반바지"],
+      ["SPORTS_BOTTOM", "스포츠 하의"],
+      ["OTHER_BOTTOM", "기타 하의"],
+    ],
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("query-form");
+  const drop = $("drop");
+  const fileInput = $("image-input");
+  const preview = $("image-preview");
+  const clearBtn = $("image-clear");
+  const textInput = $("text-input");
+  const textCount = $("text-count");
+  const categorySelect = $("category");
+  const subcategorySelect = $("subcategory");
+  const runBtn = $("run");
+  const grid = $("result-grid");
+  const errorBanner = $("error-banner");
+  const resultCount = $("result-count");
+  const runMeta = $("run-meta");
+  const states = {
+    idle: $("state-idle"),
+    loading: $("state-loading"),
+    empty: $("state-empty"),
+  };
+
+  let imageFile = null;
+  let controller = null;
+  let elapsedTimer = null;
+
+  /* ---------- live pipeline timeline ---------- */
+
+  const stepNode = (step) =>
+    document.querySelector(`#pipe-steps li[data-step="${step}"]`);
+
+  function resetSteps() {
+    for (const li of document.querySelectorAll("#pipe-steps li")) {
+      li.className = "";
+      li.querySelector(".detail").textContent = "";
+    }
+    $("pipe-now").textContent = "";
+  }
+
+  function startElapsed() {
+    const started = performance.now();
+    $("elapsed").textContent = "0.0s";
+    elapsedTimer = setInterval(() => {
+      $("elapsed").textContent =
+        `${((performance.now() - started) / 1000).toFixed(1)}s`;
+    }, 100);
+    return started;
+  }
+
+  function stopElapsed() {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
+
+  function applyProgress(stage, detail) {
+    const li = stepNode(stage);
+    if (!li) return;
+    const status = detail.status;
+    const detailBox = li.querySelector(".detail");
+    if (status === "start") {
+      li.className = "active";
+      if (stage === "rerank" && detail.total) {
+        detailBox.textContent = `0/${detail.total}`;
+      }
+    } else if (status === "progress") {
+      li.className = "active";
+      if (stage === "rerank") {
+        detailBox.textContent = `${detail.current}/${detail.total}`;
+        $("pipe-now").textContent =
+          `판정 완료: ${detail.product_name ?? ""}`;
+      }
+    } else if (status === "done") {
+      li.className = "done";
+      if (stage === "retrieval" && detail.candidates != null) {
+        detailBox.textContent = `${detail.candidates}개`;
+      } else if (stage === "rerank") {
+        detailBox.textContent = detail.failed
+          ? `${detail.total}개 · 실패 ${detail.failed}`
+          : `${detail.total}개`;
+        $("pipe-now").textContent = "";
+      } else if (stage === "scoring" && detail.candidates != null) {
+        detailBox.textContent = `${detail.candidates}개`;
+      } else if (stage === "reasons" && detail.total != null) {
+        detailBox.textContent = `${detail.total}개`;
+      } else if (stage === "image_attributes") {
+        const tags =
+          (detail.colors ?? 0) + (detail.seasons ?? 0) +
+          (detail.styles ?? 0) + (detail.patterns ?? 0);
+        detailBox.textContent = `태그 ${tags}개`;
+      }
+    } else if (status === "skipped") {
+      li.className = "skipped";
+      detailBox.textContent = "생략";
+    } else if (status === "failed") {
+      li.className = "failed";
+      detailBox.textContent = "실패 · 계속 진행";
+    }
+  }
+
+  /* ---------- state helpers ---------- */
+
+  function showState(name) {
+    for (const [key, node] of Object.entries(states)) {
+      node.hidden = key !== name;
+    }
+    grid.hidden = name !== null;
+    if (name !== null) grid.hidden = true;
+  }
+
+  function showGrid() {
+    for (const node of Object.values(states)) node.hidden = true;
+    grid.hidden = false;
+  }
+
+  function showError(message) {
+    errorBanner.textContent = message;
+    errorBanner.classList.add("error");
+  }
+
+  function clearError() {
+    errorBanner.textContent = "";
+    errorBanner.classList.remove("error");
+  }
+
+  /* ---------- image upload ---------- */
+
+  function setImage(file) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      showError("이미지는 JPEG 또는 PNG만 지원합니다.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showError("이미지가 10MB 제한을 초과합니다.");
+      return;
+    }
+    clearError();
+    imageFile = file;
+    const url = URL.createObjectURL(file);
+    preview.src = url;
+    preview.hidden = false;
+    preview.onload = () => URL.revokeObjectURL(url);
+    drop.classList.add("has-image");
+  }
+
+  function clearImage() {
+    imageFile = null;
+    fileInput.value = "";
+    preview.hidden = true;
+    preview.removeAttribute("src");
+    drop.classList.remove("has-image");
+  }
+
+  fileInput.addEventListener("change", () => setImage(fileInput.files[0]));
+  clearBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    clearImage();
+  });
+  drop.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      fileInput.click();
+    }
+  });
+  for (const type of ["dragenter", "dragover"]) {
+    drop.addEventListener(type, (event) => {
+      event.preventDefault();
+      drop.classList.add("dragover");
+    });
+  }
+  for (const type of ["dragleave", "drop"]) {
+    drop.addEventListener(type, (event) => {
+      event.preventDefault();
+      drop.classList.remove("dragover");
+    });
+  }
+  drop.addEventListener("drop", (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    if (file) setImage(file);
+  });
+
+  /* ---------- form niceties ---------- */
+
+  textInput.addEventListener("input", () => {
+    textCount.textContent = String(textInput.value.length);
+  });
+
+  function refreshSubcategories() {
+    const category = categorySelect.value;
+    subcategorySelect.innerHTML = "";
+    subcategorySelect.append(new Option("전체", ""));
+    const entries = category
+      ? SUBCATEGORIES[category] ?? []
+      : [...SUBCATEGORIES.TOP, ...SUBCATEGORIES.BOTTOM];
+    for (const [code, label] of entries) {
+      subcategorySelect.append(new Option(label, code));
+    }
+  }
+  categorySelect.addEventListener("change", refreshSubcategories);
+  refreshSubcategories();
+
+  /* ---------- rendering ---------- */
+
+  const krw = new Intl.NumberFormat("ko-KR");
+
+  function scoreRow(label, value, extraClass) {
+    const percent = Math.round(Math.max(0, Math.min(1, value)) * 100);
+    const row = document.createElement("div");
+    row.className = `score-row ${extraClass ?? ""}`;
+    row.innerHTML =
+      `<span class="k"></span>` +
+      `<span class="bar"><i style="width:${percent}%"></i></span>` +
+      `<span class="v">${value.toFixed(3)}</span>`;
+    row.querySelector(".k").textContent = label;
+    return row;
+  }
+
+  function renderCard(item) {
+    const card = document.createElement("article");
+    card.className = "card" + (item.rank === 1 ? " top1" : "");
+
+    const thumb = document.createElement("div");
+    thumb.className = "thumb";
+    const rank = document.createElement("span");
+    rank.className = "rank";
+    rank.textContent = `#${item.rank}`;
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.alt = item.name;
+    img.src = item.imageUrl;
+    img.addEventListener("error", () => {
+      img.remove();
+      const fallback = document.createElement("div");
+      fallback.className = "noimg";
+      fallback.textContent = "👕";
+      thumb.append(fallback);
+    });
+    thumb.append(img, rank);
+
+    const info = document.createElement("div");
+    info.className = "info";
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent =
+      `${item.brand} · ${item.category}/${item.subcategory}`;
+
+    const name = document.createElement("h3");
+    name.className = "name";
+    name.textContent = item.name;
+
+    const price = document.createElement("div");
+    price.className = "price";
+    price.innerHTML = `${krw.format(item.price)}<small> 원</small>`;
+
+    const scores = document.createElement("div");
+    scores.className = "scores";
+    scores.append(
+      scoreRow("최종", item.score, "final"),
+      scoreRow("유사", item.retrievalScore),
+      scoreRow("궁합", item.compatibilityScore),
+    );
+
+    const reason = document.createElement("p");
+    reason.className = "reason";
+    reason.textContent = item.reason;
+
+    const buy = document.createElement("a");
+    buy.className = "buy";
+    buy.href = item.purchaseUrl;
+    buy.target = "_blank";
+    buy.rel = "noopener noreferrer";
+    buy.textContent = "판매 페이지 →";
+
+    info.append(meta, name, price, scores, reason, buy);
+    card.append(thumb, info);
+    return card;
+  }
+
+  /* ---------- submit ---------- */
+
+  async function run(event) {
+    event.preventDefault();
+    clearError();
+
+    const text = textInput.value.trim();
+    if (!text && !imageFile) {
+      showError("이미지 또는 설명 중 하나 이상을 입력해 주세요.");
+      return;
+    }
+    const budgetMin = Number($("budget-min").value || 0);
+    const budgetMaxRaw = $("budget-max").value.trim();
+    if (budgetMaxRaw !== "" && Number(budgetMaxRaw) < budgetMin) {
+      showError("최대 예산은 최소 예산보다 커야 합니다.");
+      return;
+    }
+
+    const body = new FormData();
+    if (text) body.append("text", text);
+    if (imageFile) body.append("image", imageFile);
+    body.append(
+      "gender",
+      form.querySelector('input[name="gender"]:checked').value,
+    );
+    if (categorySelect.value) body.append("category", categorySelect.value);
+    if (subcategorySelect.value) {
+      body.append("subcategory", subcategorySelect.value);
+    }
+    body.append("budget_min", String(budgetMin));
+    if (budgetMaxRaw !== "") body.append("budget_max", budgetMaxRaw);
+    body.append("candidate_limit", $("candidate-limit").value || "50");
+    body.append("result_limit", $("result-limit").value || "10");
+
+    controller?.abort();
+    controller = new AbortController();
+    runBtn.disabled = true;
+    resultCount.textContent = "";
+    resetSteps();
+    showState("loading");
+    const started = startElapsed();
+
+    const finishWith = (payload) => {
+      const elapsed = ((performance.now() - started) / 1000).toFixed(1);
+      const results = payload.results ?? [];
+      runMeta.innerHTML =
+        `index <code>${(payload.indexVersion ?? "").slice(0, 12)}…</code>` +
+        ` · ${elapsed}s`;
+      if (!results.length) {
+        showState("empty");
+        return;
+      }
+      grid.replaceChildren(...results.map(renderCard));
+      resultCount.textContent =
+        `${results.length}개 · 후보 ${payload.candidateLimit}개 중`;
+      showGrid();
+    };
+
+    try {
+      const response = await fetch(STREAM_URL, {
+        method: "POST",
+        body,
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        let detail = `요청이 실패했습니다 (HTTP ${response.status})`;
+        try {
+          const payload = await response.json();
+          if (payload?.detail) {
+            detail = typeof payload.detail === "string"
+              ? payload.detail
+              : JSON.stringify(payload.detail);
+          }
+        } catch { /* keep default message */ }
+        showError(detail);
+        showState("idle");
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+
+      const handleEvent = (message) => {
+        if (message.event === "progress") {
+          applyProgress(message.stage, message.detail ?? {});
+        } else if (message.event === "result") {
+          finished = true;
+          finishWith(message.data ?? {});
+        } else if (message.event === "error") {
+          finished = true;
+          showError(message.detail ?? "파이프라인 실행에 실패했습니다.");
+          showState("idle");
+        }
+      };
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newline;
+        while ((newline = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, newline).trim();
+          buffer = buffer.slice(newline + 1);
+          if (line) handleEvent(JSON.parse(line));
+        }
+      }
+      if (!finished) {
+        showError("응답이 도중에 끊겼습니다. 컨테이너 로그를 확인해 주세요.");
+        showState("idle");
+      }
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      showError("서버에 연결하지 못했습니다. 컨테이너 로그를 확인해 주세요.");
+      showState("idle");
+    } finally {
+      stopElapsed();
+      runBtn.disabled = false;
+    }
+  }
+
+  form.addEventListener("submit", run);
+})();
+</script>
+</body>
+</html>
