@@ -252,6 +252,7 @@ public class RoomService {
                 room.getStatus(),
                 room.getVersion(),
                 room.getExpiresAt().atZone(AppZone.KST).toInstant(),
+                room.getRecommendation().getSubcategory(),
                 participants,
                 tiers
         );
