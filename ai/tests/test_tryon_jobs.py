@@ -147,6 +147,7 @@ def test_schema_parses_spring_shaped_payload() -> None:
 
 def test_processor_success_emits_processing_then_succeeded(
     tmp_path: Path,
+    clean_registry: None,
 ) -> None:
     processor, generator, sender, fetcher = make_processor(tmp_path)
     request = TryOnGenerationRequest.model_validate(java_payload())
@@ -182,7 +183,10 @@ def test_processor_success_emits_processing_then_succeeded(
     assert "자연광 느낌" in texts
 
 
-def test_processor_failure_emits_failed_event(tmp_path: Path) -> None:
+def test_processor_failure_emits_failed_event(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
     processor, _, sender, _ = make_processor(tmp_path, fail=True)
     request = TryOnGenerationRequest.model_validate(java_payload(8))
 
@@ -196,6 +200,9 @@ def test_processor_failure_emits_failed_event(tmp_path: Path) -> None:
     assert error["code"] == "GENERATION_FAILED"
     assert error["retryable"] is True
     assert "model unavailable" in error["message"]
+    record = job_registry.get(8)
+    assert record is not None and record.status == "FAILED"
+    assert record.error["code"] == "GENERATION_FAILED"
 
 
 @pytest.fixture
@@ -224,7 +231,17 @@ def test_submit_endpoint_runs_job_once(
         app.dependency_overrides.clear()
 
     assert first.status_code == 202
+    assert first.json() == {
+        "data": {"jobId": 21, "status": "QUEUED", "cacheHit": False}
+    }
     assert duplicate.status_code == 202
+    # TestClient 는 BackgroundTasks 를 응답 전에 실행하므로 중복 접수
+    # 시점엔 이미 종료 상태다 — 본문이 현재 상태를 그대로 비추는지 확인.
+    assert duplicate.json()["data"] == {
+        "jobId": 21,
+        "status": "SUCCEEDED",
+        "cacheHit": False,
+    }
     processing = [
         event
         for event in sender.events
@@ -233,21 +250,56 @@ def test_submit_endpoint_runs_job_once(
     assert len(processing) == 1
 
 
-def test_submit_endpoint_requires_matching_token(
+def test_submit_endpoint_requires_matching_api_key(
     clean_registry: None,
 ) -> None:
-    settings = Settings(internal_token="secret-token")
+    settings = Settings(internal_api_key="secret-key")
     app.dependency_overrides[get_settings] = lambda: settings
     try:
         denied = client.post(
             "/internal/v1/try-on-jobs",
             json=java_payload(31),
-            headers={"X-Internal-Token": "wrong"},
+            headers={"X-Internal-Api-Key": "wrong"},
         )
     finally:
         app.dependency_overrides.clear()
 
     assert denied.status_code == 401
+
+
+def test_status_endpoint_returns_terminal_job(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
+    processor, _, _, _ = make_processor(tmp_path)
+    app.dependency_overrides[get_tryon_processor] = lambda: processor
+    try:
+        client.post("/internal/v1/try-on-jobs", json=java_payload(41))
+        found = client.get("/internal/v1/try-on-jobs/41")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert found.status_code == 200
+    data = found.json()["data"]
+    assert data["jobId"] == 41
+    assert data["status"] == "SUCCEEDED"
+    assert data["attempt"] == 1
+    assert data["cacheHit"] is False
+    assert data["result"]["imageUrl"] == (
+        "http://localhost:8000/try-on-results/job-41.png"
+    )
+    assert data["error"] is None
+    assert data["modelVersion"] == "google/gemini-3-pro-image"
+    assert data["promptVersion"] == PROMPT_VERSION
+    assert data["createdAt"] and data["completedAt"]
+
+
+def test_status_endpoint_unknown_job_returns_404(
+    clean_registry: None,
+) -> None:
+    missing = client.get("/internal/v1/try-on-jobs/999999")
+
+    assert missing.status_code == 404
 
 
 def test_result_route_serves_saved_images(tmp_path: Path) -> None:

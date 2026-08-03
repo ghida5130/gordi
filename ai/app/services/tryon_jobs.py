@@ -141,20 +141,20 @@ class OpenRouterImageGenerator:
 
 
 class SpringEventSender:
-    """POST /internal/v1/try-on-jobs/{jobId}/events with the shared token."""
+    """POST /internal/v1/try-on-jobs/{jobId}/events with the shared key."""
 
     def __init__(
         self,
         *,
         base_url: str,
-        internal_token: str,
+        internal_api_key: str,
         client: httpx.Client | None = None,
         timeout_seconds: float = 10.0,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._headers = {}
-        if internal_token.strip():
-            self._headers["X-Internal-Token"] = internal_token.strip()
+        if internal_api_key.strip():
+            self._headers["X-Internal-Api-Key"] = internal_api_key.strip()
         self._client = client or httpx.Client(timeout=timeout_seconds)
 
     def send(self, job_id: int, payload: dict[str, Any]) -> None:
@@ -210,6 +210,7 @@ class TryOnJobProcessor:
             )
 
         try:
+            job_registry.mark_running(job_id)
             emit("PROCESSING")
             parts = self._build_parts(request)
             content, mime_type = self.generator.generate(parts)
@@ -218,30 +219,35 @@ class TryOnJobProcessor:
                 content,
                 mime_type,
             )
-            emit(
-                "SUCCEEDED",
-                result={
-                    "imageUrl": image_url,
-                    "width": width,
-                    "height": height,
-                    "fitSummary": _fit_summary(request.items),
-                    "disclaimer": (
-                        "AI 생성 이미지로 실제 착용감과 다를 수 있습니다."
-                    ),
-                },
-                cacheHit=False,
+            result = {
+                "imageUrl": image_url,
+                "width": width,
+                "height": height,
+                "fitSummary": _fit_summary(request.items),
+                "disclaimer": (
+                    "AI 생성 이미지로 실제 착용감과 다를 수 있습니다."
+                ),
+            }
+            job_registry.mark_succeeded(
+                job_id,
+                result=result,
+                model_version=self.model_version,
             )
+            emit("SUCCEEDED", result=result, cacheHit=False)
         except Exception as exc:  # noqa: BLE001 — job isolation
             logger.exception("try-on job %s failed", job_id)
+            error = {
+                "code": "GENERATION_FAILED",
+                "message": str(exc)[:255],
+                "retryable": True,
+            }
+            job_registry.mark_failed(
+                job_id,
+                error=error,
+                model_version=self.model_version,
+            )
             try:
-                emit(
-                    "FAILED",
-                    error={
-                        "code": "GENERATION_FAILED",
-                        "message": str(exc)[:255],
-                        "retryable": True,
-                    },
-                )
+                emit("FAILED", error=error)
             except Exception:  # noqa: BLE001
                 logger.exception(
                     "try-on job %s FAILED event delivery failed", job_id
@@ -395,23 +401,94 @@ def _fit_summary(items: list[TryOnItem]) -> list[str]:
     return summary
 
 
+@dataclass
+class TryOnJobRecord:
+    """Job state exposed to Spring's GET recovery worker."""
+
+    job_id: int
+    created_at: str
+    status: str = "QUEUED"  # QUEUED / RUNNING / SUCCEEDED / FAILED
+    attempt: int = 1  # AI 내부 자동 재시도 없음 — 항상 1
+    cache_hit: bool = False
+    result: dict[str, Any] | None = None
+    error: dict[str, Any] | None = None
+    model_version: str | None = None
+    completed_at: str | None = None
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 class TryOnJobRegistry:
-    """Per-process idempotency guard for accepted job ids."""
+    """Per-process idempotency guard and job state store.
+
+    In-memory on purpose: after a restart Spring's recovery worker gets
+    404 for lost jobs and fails them — the documented reconciliation
+    contract ("AI 가 모르는 Job").
+    """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._accepted: set[int] = set()
+        self._jobs: dict[int, TryOnJobRecord] = {}
 
     def try_accept(self, job_id: int) -> bool:
         with self._lock:
-            if job_id in self._accepted:
+            if job_id in self._jobs:
                 return False
-            self._accepted.add(job_id)
+            self._jobs[job_id] = TryOnJobRecord(
+                job_id=job_id,
+                created_at=_utc_now(),
+            )
             return True
+
+    def get(self, job_id: int) -> TryOnJobRecord | None:
+        with self._lock:
+            return self._jobs.get(job_id)
+
+    def mark_running(self, job_id: int) -> None:
+        with self._lock:
+            self._record(job_id).status = "RUNNING"
+
+    def mark_succeeded(
+        self,
+        job_id: int,
+        *,
+        result: dict[str, Any],
+        model_version: str,
+    ) -> None:
+        with self._lock:
+            record = self._record(job_id)
+            record.status = "SUCCEEDED"
+            record.result = result
+            record.model_version = model_version
+            record.completed_at = _utc_now()
+
+    def mark_failed(
+        self,
+        job_id: int,
+        *,
+        error: dict[str, Any],
+        model_version: str,
+    ) -> None:
+        with self._lock:
+            record = self._record(job_id)
+            record.status = "FAILED"
+            record.error = error
+            record.model_version = model_version
+            record.completed_at = _utc_now()
+
+    def _record(self, job_id: int) -> TryOnJobRecord:
+        # 접수 없이 process() 가 직접 불린 경우(테스트)에도 기록한다.
+        record = self._jobs.get(job_id)
+        if record is None:
+            record = TryOnJobRecord(job_id=job_id, created_at=_utc_now())
+            self._jobs[job_id] = record
+        return record
 
     def reset(self) -> None:
         with self._lock:
-            self._accepted.clear()
+            self._jobs.clear()
 
 
 job_registry = TryOnJobRegistry()
@@ -428,7 +505,7 @@ def build_processor() -> TryOnJobProcessor:
         ),
         event_sender=SpringEventSender(
             base_url=settings.spring_internal_base_url,
-            internal_token=settings.internal_token,
+            internal_api_key=settings.internal_api_key,
         ),
         image_fetcher=QueryImageFetcher.create(
             settings.recommendation_image_allowed_hosts
@@ -445,6 +522,7 @@ __all__ = [
     "SpringEventSender",
     "TryOnJobError",
     "TryOnJobProcessor",
+    "TryOnJobRecord",
     "TryOnJobRegistry",
     "build_processor",
     "job_registry",

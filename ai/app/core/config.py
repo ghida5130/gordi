@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     ai_port: int = 8000
     ai_reload: bool = True
 
+    # Spring <-> FastAPI 공유 키 (X-Internal-Api-Key 헤더). 추천 호출,
+    # try-on 접수 검증, try-on 콜백 발신이 모두 이 키 하나를 쓴다.
     internal_api_key: str = ""
-    # Spring <-> FastAPI 내부 토큰 (try-on 접수 검증 + 콜백 헤더 공용)
-    internal_token: str = ""
 
     openrouter_api_key: str = ""
     openrouter_embedding_model: str = "google/gemini-embedding-2"

@@ -6,26 +6,6 @@ from fastapi import Depends, Header, HTTPException, status
 from app.core.config import Settings, get_settings
 
 
-def verify_internal_token(
-    x_internal_token: Annotated[
-        str | None,
-        Header(alias="X-Internal-Token"),
-    ] = None,
-    settings: Settings = Depends(get_settings),
-) -> None:
-    """Service-to-service token shared with Spring (try-on contract)."""
-    expected = settings.internal_token.strip()
-    if not expected:
-        return
-
-    provided = (x_internal_token or "").strip()
-    if not provided or not secrets.compare_digest(provided, expected):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid internal token.",
-        )
-
-
 def verify_internal_api_key(
     x_internal_api_key: Annotated[
         str | None,
