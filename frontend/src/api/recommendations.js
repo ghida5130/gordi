@@ -23,7 +23,7 @@ export function replaceRecommendationItems({
   idempotencyKey,
 }) {
   return authApi.post(
-    `v1/recommendations/${recommendationId}/replacements`,
+    `v1/recommendations/${encodeURIComponent(recommendationId)}/replacements`,
     { baseVersion, productIds },
     {
       headers: {

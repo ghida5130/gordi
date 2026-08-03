@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
@@ -27,6 +28,7 @@ public class CandidateService {
     private final RoomRepository roomRepository;
     private final ProductRepository productRepository;
     private final RoomAccessValidator roomAccessValidator;
+    private final ImageUrlResolver imageUrlResolver;
 
     /** 후보 의상 추가: product를 room에 넣는다 */
     public CandidateResponseDTO add(CandidateAddRequestDTO request, RoomPrincipal principal) {
@@ -77,7 +79,7 @@ public class CandidateService {
                                 ri.getProduct().getName(),
                                 ri.getProduct().getBrand(),
                                 ri.getProduct().getPrice(),
-                                ri.getProduct().getImageUrl(),
+                                imageUrlResolver.resolve(ri.getProduct().getImageUrl()),
                                 ri.getPosition(),
                                 ri.getTier() != null ? ri.getTier().getId() : null))
                         .toList();

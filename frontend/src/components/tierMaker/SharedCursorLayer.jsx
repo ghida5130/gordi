@@ -68,7 +68,7 @@ function SharedCursorLayer({
           return (
             <div
               key={cursor.participantId}
-              className="absolute transition-[left,top] duration-75 ease-linear"
+              className="absolute"
               style={{
                 left: `${cursor.x * 100}%`,
                 top: `${cursor.y * 100}%`,
@@ -77,10 +77,10 @@ function SharedCursorLayer({
               <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
-                className={`size-6 -translate-x-1 -translate-y-1 drop-shadow-sm ${color.text}`}
+                className={`block size-6 overflow-visible drop-shadow-sm ${color.text}`}
               >
                 <path
-                  d="M4 3.5 19.5 14l-7.2 1.2L8.5 22 4 3.5Z"
+                  d="M0 0 19.5 13.2l-7.7 1.3-4.2 8L0 0Z"
                   fill="currentColor"
                   stroke="white"
                   strokeWidth="1.5"

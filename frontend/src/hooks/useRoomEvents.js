@@ -62,6 +62,7 @@ function updateParticipants(currentParticipants, eventType, data) {
 function normalizeSnapshot(data) {
     const tiers = Array.isArray(data.tiers) ? data.tiers : [];
     const unclassifiedItems = Array.isArray(data.unclassifiedItems) ? data.unclassifiedItems : [];
+    const status = data.status ?? "WAITING";
     const tierItems = tiers.flatMap((tier) =>
         (tier.items ?? []).map((item) => ({
             ...item,
@@ -87,7 +88,8 @@ function normalizeSnapshot(data) {
 
     return {
         participants: Array.isArray(data.participants) ? data.participants : [],
-        status: data.status ?? "WAITING",
+        status,
+        terminalEvent: status === "FINISHED" ? "ROOM_FINISHED" : status === "EXPIRED" ? "ROOM_EXPIRED" : null,
         tiers: tiers.map(({ tierId, name, position }) => ({
             tierId,
             name,
@@ -119,12 +121,33 @@ function roomEventReducer(state, event) {
         };
 
         state.pendingEvents
-            .filter((pendingEvent) => Number(pendingEvent.version ?? 0) >= snapshotVersion)
+            .filter((pendingEvent) => Number(pendingEvent.version ?? 0) > snapshotVersion)
             .forEach((pendingEvent) => {
                 nextState = roomEventReducer(nextState, pendingEvent);
             });
 
         return nextState;
+    }
+
+    if (eventType === "ROOM_STATUS_LOADED") {
+        const statusVersion = Number(event.version ?? 0);
+
+        if (state.hasSnapshot && statusVersion < state.version) {
+            return state;
+        }
+
+        const status = data.status ?? state.status;
+
+        return {
+            ...state,
+            status,
+            terminalEvent: status === "FINISHED" ? "ROOM_FINISHED" : status === "EXPIRED" ? "ROOM_EXPIRED" : state.terminalEvent,
+            participants: Array.isArray(data.participants) ? data.participants : state.participants,
+            tiers: Array.isArray(data.tiers)
+                ? data.tiers.map(({ tierId, name, position }) => ({ tierId, name, position }))
+                : state.tiers,
+            version: nextVersion,
+        };
     }
 
     if (eventType === "ITEM_LOCKED") {
@@ -308,12 +331,54 @@ export function useRoomEvents(roomSession) {
     const processedEventIdsRef = useRef(new Set());
     const ownedLockTokensRef = useRef(new Map());
     const versionRef = useRef(Number(roomSession?.version ?? 0));
+    const hasSnapshotRef = useRef(false);
+    const activeSyncRequestRef = useRef(null);
+    const deferredEventsRef = useRef([]);
     const lastCursorPublishAtRef = useRef(0);
+    const pendingCursorRef = useRef(null);
+    const cursorPublishTimerRef = useRef(null);
     const [roomState, dispatch] = useReducer(roomEventReducer, roomSession, createInitialState);
     const [cursors, setCursors] = useState({});
     const [sharedDemoPlacements, setSharedDemoPlacements] = useState(null);
     const [connectionState, setConnectionState] = useState(() => (roomSession?.roomToken && roomSession?.roomId ? "CONNECTING" : "DISCONNECTED"));
     const [connectionError, setConnectionError] = useState("");
+
+    const requestSync = useCallback(() => {
+        if (activeSyncRequestRef.current) {
+            return activeSyncRequestRef.current.promise;
+        }
+
+        const client = clientRef.current;
+
+        if (!client?.connected || !roomId) {
+            return Promise.resolve(null);
+        }
+
+        const clientEventId = crypto.randomUUID();
+        let resolveRequest;
+        const promise = new Promise((resolve) => {
+            resolveRequest = resolve;
+        });
+        const timer = window.setTimeout(() => {
+            if (activeSyncRequestRef.current?.clientEventId !== clientEventId) return;
+
+            activeSyncRequestRef.current = null;
+            setConnectionError("방 상태 동기화 응답을 받지 못했습니다.");
+            resolveRequest(null);
+        }, 5_000);
+
+        activeSyncRequestRef.current = {
+            clientEventId,
+            promise,
+            resolve: resolveRequest,
+            timer,
+        };
+        client.publish({
+            destination: `/app/rooms/${roomId}/sync`,
+            body: JSON.stringify({ clientEventId }),
+        });
+        return promise;
+    }, [roomId]);
 
     useEffect(() => {
         versionRef.current = roomState.version;
@@ -338,6 +403,64 @@ export function useRoomEvents(roomSession) {
             return undefined;
         }
 
+        const ownedLockTokens = ownedLockTokensRef.current;
+
+        const applyEvent = (event) => {
+            dispatch(event);
+
+            const eventVersion = Number(event.version);
+
+            if (Number.isFinite(eventVersion)) {
+                versionRef.current = Math.max(versionRef.current, eventVersion);
+            }
+        };
+
+        const completeSyncRequest = (event) => {
+            const activeRequest = activeSyncRequestRef.current;
+
+            if (!activeRequest) return;
+
+            window.clearTimeout(activeRequest.timer);
+            activeSyncRequestRef.current = null;
+            activeRequest.resolve(event);
+        };
+
+        const applySnapshot = (event) => {
+            const snapshotVersion = Number(event.version ?? 0);
+
+            if (hasSnapshotRef.current && snapshotVersion < versionRef.current) {
+                return;
+            }
+
+            applyEvent(event);
+            hasSnapshotRef.current = true;
+            setConnectionError("");
+            completeSyncRequest(event);
+
+            const deferredEvents = deferredEventsRef.current
+                .sort((left, right) => Number(left.version ?? 0) - Number(right.version ?? 0));
+            deferredEventsRef.current = [];
+            let replayVersion = Math.max(versionRef.current, snapshotVersion);
+
+            for (let index = 0; index < deferredEvents.length; index += 1) {
+                const deferredEvent = deferredEvents[index];
+                const deferredVersion = Number(deferredEvent.version);
+
+                if (!Number.isFinite(deferredVersion) || deferredVersion <= replayVersion) {
+                    continue;
+                }
+
+                if (deferredVersion > replayVersion + 1) {
+                    deferredEventsRef.current = deferredEvents.slice(index);
+                    requestSync();
+                    break;
+                }
+
+                applyEvent(deferredEvent);
+                replayVersion = deferredVersion;
+            }
+        };
+
         const handleMessage = (message) => {
             try {
                 const event = JSON.parse(message.body);
@@ -352,6 +475,11 @@ export function useRoomEvents(roomSession) {
 
                 if (event.eventId) {
                     processedEventIdsRef.current.add(event.eventId);
+                }
+
+                if (event.eventType === "BOARD_SNAPSHOT") {
+                    applySnapshot(event);
+                    return;
                 }
 
                 if (event.eventType === "PARTICIPANT_LEFT") {
@@ -380,7 +508,20 @@ export function useRoomEvents(roomSession) {
                     }
                 }
 
-                dispatch(event);
+                const eventVersion = Number(event.version);
+                const hasEventVersion = Number.isFinite(eventVersion);
+
+                if (
+                    hasSnapshotRef.current &&
+                    hasEventVersion &&
+                    (activeSyncRequestRef.current || eventVersion > versionRef.current + 1)
+                ) {
+                    deferredEventsRef.current.push(event);
+                    requestSync();
+                    return;
+                }
+
+                applyEvent(event);
             } catch {
                 setConnectionError("방 이벤트를 해석하지 못했습니다.");
             }
@@ -401,8 +542,8 @@ export function useRoomEvents(roomSession) {
                     ...currentCursors,
                     [participantId]: {
                         participantId: cursor.participantId,
-                        x,
-                        y,
+                        x: Math.max(0, Math.min(1, x)),
+                        y: Math.max(0, Math.min(1, y)),
                         updatedAt: Date.now(),
                     },
                 }));
@@ -425,7 +566,7 @@ export function useRoomEvents(roomSession) {
             }
         };
 
-        // - 방 이벤트와 커서, 개인 동기화 응답 구독 후 최신 상태 요청
+        // - 방 이벤트와 커서, 개인 동기화 응답 구독 관리
         const client = new Client({
             brokerURL: createWebSocketUrl(roomSession.webSocketUrl ?? "/ws/v1"),
             connectHeaders: {
@@ -445,7 +586,7 @@ export function useRoomEvents(roomSession) {
                     ack: "auto",
                 });
                 client.subscribe(ROOM_SYNC_QUEUE, handleMessage, {
-                    id: "sub-room-sync",
+                    id: "sub-sync",
                     ack: "auto",
                 });
                 client.subscribe("/user/queue/item-locks", handleMessage, {
@@ -460,12 +601,6 @@ export function useRoomEvents(roomSession) {
                     id: "sub-room-demo-placements",
                     ack: "auto",
                 });
-                client.publish({
-                    destination: `/app/rooms/${roomSession.roomId}/sync`,
-                    body: JSON.stringify({
-                        clientEventId: crypto.randomUUID(),
-                    }),
-                });
             },
             onStompError: (frame) => {
                 setConnectionState("ERROR");
@@ -476,6 +611,14 @@ export function useRoomEvents(roomSession) {
                 setConnectionError("방 연결에 실패했습니다.");
             },
             onWebSocketClose: () => {
+                const activeSyncRequest = activeSyncRequestRef.current;
+
+                if (activeSyncRequest) {
+                    window.clearTimeout(activeSyncRequest.timer);
+                    activeSyncRequest.resolve(null);
+                    activeSyncRequestRef.current = null;
+                }
+
                 setConnectionState("DISCONNECTED");
             },
         });
@@ -484,12 +627,29 @@ export function useRoomEvents(roomSession) {
         client.activate();
 
         return () => {
+            const activeSyncRequest = activeSyncRequestRef.current;
+
+            if (activeSyncRequest) {
+                window.clearTimeout(activeSyncRequest.timer);
+                activeSyncRequest.resolve(null);
+                activeSyncRequestRef.current = null;
+            }
+
             clientRef.current = null;
-            ownedLockTokensRef.current.clear();
+            ownedLockTokens.clear();
+            deferredEventsRef.current = [];
+            hasSnapshotRef.current = false;
             lastCursorPublishAtRef.current = 0;
+            pendingCursorRef.current = null;
+
+            if (cursorPublishTimerRef.current !== null) {
+                window.clearTimeout(cursorPublishTimerRef.current);
+                cursorPublishTimerRef.current = null;
+            }
+
             client.deactivate();
         };
-    }, [roomSession]);
+    }, [requestSync, roomSession]);
 
     const publishCommand = useCallback(
         (destination, data) => {
@@ -511,6 +671,18 @@ export function useRoomEvents(roomSession) {
         },
         [roomId],
     );
+
+    const applyRoomStatus = useCallback((roomStatus) => {
+        if (!roomStatus) return;
+
+        const statusVersion = Number(roomStatus.version ?? 0);
+        versionRef.current = Math.max(versionRef.current, statusVersion);
+        dispatch({
+            eventType: "ROOM_STATUS_LOADED",
+            version: statusVersion,
+            data: roomStatus,
+        });
+    }, []);
 
     const startRoom = useCallback(() => publishCommand("start", {}), [publishCommand]);
 
@@ -613,28 +785,58 @@ export function useRoomEvents(roomSession) {
         [publishCommand],
     );
 
-    const finishRoom = useCallback(() => publishCommand("finish", {}), [publishCommand]);
+    const publishPendingCursor = useCallback(() => {
+        cursorPublishTimerRef.current = null;
+
+        const client = clientRef.current;
+        const cursor = pendingCursorRef.current;
+
+        if (!client?.connected || !cursor) {
+            pendingCursorRef.current = null;
+            return false;
+        }
+
+        pendingCursorRef.current = null;
+        lastCursorPublishAtRef.current = performance.now();
+        client.publish({
+            destination: `/app/rooms/${roomId}/cursor`,
+            body: JSON.stringify(cursor),
+        });
+        return true;
+    }, [roomId]);
 
     const moveCursor = useCallback(
         ({ x, y }) => {
             const client = clientRef.current;
             const now = performance.now();
 
-            if (!client?.connected || !Number.isFinite(x) || !Number.isFinite(y) || now - lastCursorPublishAtRef.current < CURSOR_PUBLISH_INTERVAL_MS) {
+            if (!client?.connected || !Number.isFinite(x) || !Number.isFinite(y)) {
                 return false;
             }
 
-            lastCursorPublishAtRef.current = now;
-            client.publish({
-                destination: `/app/rooms/${roomId}/cursor`,
-                body: JSON.stringify({
-                    x: Math.max(0, Math.min(1, x)),
-                    y: Math.max(0, Math.min(1, y)),
-                }),
-            });
+            pendingCursorRef.current = {
+                x: Math.max(0, Math.min(1, x)),
+                y: Math.max(0, Math.min(1, y)),
+            };
+
+            const elapsed = now - lastCursorPublishAtRef.current;
+
+            if (elapsed >= CURSOR_PUBLISH_INTERVAL_MS) {
+                if (cursorPublishTimerRef.current !== null) {
+                    window.clearTimeout(cursorPublishTimerRef.current);
+                    cursorPublishTimerRef.current = null;
+                }
+
+                return publishPendingCursor();
+            }
+
+            if (cursorPublishTimerRef.current === null) {
+                cursorPublishTimerRef.current = window.setTimeout(publishPendingCursor, CURSOR_PUBLISH_INTERVAL_MS - elapsed);
+            }
+
             return true;
         },
-        [roomId],
+        [publishPendingCursor],
     );
 
     const shareDemoPlacements = useCallback(
@@ -674,7 +876,8 @@ export function useRoomEvents(roomSession) {
         unlockItem,
         moveItem,
         renameTier,
-        finishRoom,
+        requestSync,
+        applyRoomStatus,
         moveCursor,
         shareDemoPlacements,
     };

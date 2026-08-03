@@ -3,8 +3,9 @@ import MyPageIcon from "@/components/mypage/MyPageIcon";
 
 const EXIT_DURATION = 260;
 
-export default function RoomSessionNotice({ roomSession, onEnter, onClose }) {
+export default function RoomSessionNotice({ activeRoom, onEnter, onClose }) {
   const [isExiting, setIsExiting] = useState(false);
+  const isWaiting = activeRoom.status === "WAITING";
 
   useEffect(() => {
     if (!isExiting) return undefined;
@@ -99,13 +100,14 @@ export default function RoomSessionNotice({ roomSession, onEnter, onClose }) {
                   className="size-2 rounded-full bg-amber-500 ring-3 ring-amber-100/80"
                   aria-hidden="true"
                 />
-                진행 중인 방
+                {isWaiting ? "대기 중인 방" : "진행 중인 방"}
               </small>
               <strong className="block truncate text-sm">
-                {roomSession.roomName ?? "참여 중인 티어메이커"}
+                티어메이커 방 {activeRoom.roomCode}
               </strong>
               <small className="block truncate text-gray-600">
-                참여자 {roomSession.participantCount ?? 1}명 · 티어메이커 진행중
+                {activeRoom.role === "HOST" ? "방장" : "참여자"} ·{" "}
+                {isWaiting ? "시작 대기 중" : "티어메이커 진행 중"}
               </small>
             </span>
             <button

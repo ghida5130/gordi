@@ -13,6 +13,7 @@ import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.results.RoomResultResponseDTO;
 import com.ssafy.backend.repository.ResultBoardItemRepository;
 import com.ssafy.backend.repository.ResultRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,8 @@ class ResultServiceTest {
     private final ResultService resultService = new ResultService(
             resultRepository,
             resultBoardItemRepository,
-            roomAccessValidator
+            roomAccessValidator,
+            new ImageUrlResolver("")
     );
 
     @Test

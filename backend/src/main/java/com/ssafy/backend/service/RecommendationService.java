@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.config.RecommendationPolicy;
 import com.ssafy.backend.config.enums.CategoryCode;
 import com.ssafy.backend.config.enums.EmptyReason;
@@ -63,6 +64,7 @@ public class RecommendationService {
     private final RecommendationRankClient rankClient;
     private final IdempotencyService idempotencyService;
     private final RecommendationPolicy policy;
+    private final ImageUrlResolver imageUrlResolver;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
@@ -73,7 +75,8 @@ public class RecommendationService {
             UserRepository userRepository,
             RecommendationRankClient rankClient,
             IdempotencyService idempotencyService,
-            RecommendationPolicy policy
+            RecommendationPolicy policy,
+            ImageUrlResolver imageUrlResolver
     ) {
         this.recommendationRepository = recommendationRepository;
         this.recommendationItemRepository = recommendationItemRepository;
@@ -84,6 +87,7 @@ public class RecommendationService {
         this.rankClient = rankClient;
         this.idempotencyService = idempotencyService;
         this.policy = policy;
+        this.imageUrlResolver = imageUrlResolver;
     }
 
     // ---------- 추천 옵션 조회 ----------
@@ -327,7 +331,7 @@ public class RecommendationService {
                 recommendation.getId(),
                 recommendation.getStatus(),
                 recommendation.getVersion(),
-                currentItems.stream().map(RecommendationItemResponse::from).toList(),
+                currentItems.stream().map(item -> RecommendationItemResponse.from(item, imageUrlResolver::resolve)).toList(),
                 List.of(),
                 requestedProductIds
         );
@@ -394,7 +398,7 @@ public class RecommendationService {
                 recommendation.getId(),
                 recommendation.getStatus(),
                 nextVersion,
-                nextItems.stream().map(RecommendationItemResponse::from).toList(),
+                nextItems.stream().map(item -> RecommendationItemResponse.from(item, imageUrlResolver::resolve)).toList(),
                 replaced,
                 unreplacedProductIds
         );
@@ -465,7 +469,7 @@ public class RecommendationService {
         }
 
         recommendationItemRepository.saveAll(items);
-        return items.stream().map(RecommendationItemResponse::from).toList();
+        return items.stream().map(item -> RecommendationItemResponse.from(item, imageUrlResolver::resolve)).toList();
     }
 
     private void saveMoods(Recommendation recommendation, List<String> moods) {
@@ -509,7 +513,7 @@ public class RecommendationService {
         List<RecommendationItemResponse> items = recommendationItemRepository
                 .findVersionItems(recommendation.getId(), recommendation.getVersion())
                 .stream()
-                .map(RecommendationItemResponse::from)
+                .map(item -> RecommendationItemResponse.from(item, imageUrlResolver::resolve))
                 .toList();
 
         return RecommendationResponse.of(recommendation, readMoodCodes(recommendation.getId()), items);

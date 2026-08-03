@@ -33,6 +33,7 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -112,7 +113,8 @@ class TryOnServiceTest {
                 // 해시 계산은 실제 구현을 사용하고 저장소만 대체한다.
                 new IdempotencyService(idempotencyRecordRepository, new ObjectMapper()),
                 tryOnGenerationClient,
-                new TryOnPolicy(20, 1500L, 5, 120_000L, 20)
+                new TryOnPolicy(20, 1500L, 5, 120_000L, 20),
+                new ImageUrlResolver("")
         );
     }
 

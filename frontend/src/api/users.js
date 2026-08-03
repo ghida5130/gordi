@@ -4,6 +4,10 @@ export function getMyInfo() {
     return authApi.get("/v1/users/me");
 }
 
+export function getMyActiveRoom() {
+    return authApi.get("/v1/users/me/active-room");
+}
+
 export function getMyAvatar() {
     return authApi.get("/v1/users/me/avatar");
 }

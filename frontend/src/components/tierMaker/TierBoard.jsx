@@ -143,8 +143,8 @@ function TierBoard({
   }
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+    <section className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-bold text-slate-900">오늘의 티어</h2>
@@ -156,13 +156,13 @@ function TierBoard({
             의상을 원하는 등급으로 드래그하세요
           </p>
         </div>
-        <div className="hidden items-center gap-1.5 text-xs text-slate-400 sm:flex">
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
           <TierMakerIcon name="users" size={15} />
           모두에게 실시간 공유
         </div>
       </div>
 
-      <div className="p-3 sm:p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           {tiers.map((tier, tierIndex) => (
             <div
@@ -184,7 +184,7 @@ function TierBoard({
               }`}
             >
               <div
-                className={`flex w-[68px] shrink-0 items-center justify-center text-3xl font-black sm:w-[78px] ${
+                className={`flex w-[78px] shrink-0 items-center justify-center text-3xl font-black ${
                   tierStyles[tierIndex % tierStyles.length]
                 }`}
               >

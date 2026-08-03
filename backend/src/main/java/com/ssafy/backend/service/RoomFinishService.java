@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Result;
@@ -54,6 +55,7 @@ public class RoomFinishService {
     private final ResultTierRepository resultTierRepository;
     private final ResultBoardItemRepository resultBoardItemRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ImageUrlResolver imageUrlResolver;
 
     @Transactional
     public RoomFinishResponseDTO finish(
@@ -158,7 +160,7 @@ public class RoomFinishService {
         return new SavedResult(
                 result.getId(),
                 topProducts,
-                tryOnJob == null ? null : tryOnJob.getResultImageUrl()
+                tryOnJob == null ? null : imageUrlResolver.resolve(tryOnJob.getResultImageUrl())
         );
     }
 
@@ -284,7 +286,7 @@ public class RoomFinishService {
                 product.getName(),
                 product.getBrand(),
                 product.getPrice(),
-                product.getImageUrl()
+                imageUrlResolver.resolve(product.getImageUrl())
         );
     }
 

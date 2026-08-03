@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.domain.User;
 import com.ssafy.backend.dto.users.UserRequestDTO;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.dto.users.UserResponseDTO;
 import com.ssafy.backend.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,11 +21,14 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ImageUrlResolver imageUrlResolver;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       JwtService jwtService, ImageUrlResolver imageUrlResolver) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.imageUrlResolver = imageUrlResolver;
     }
 
     // 자체 로그인 회원 가입 (존재 여부 검증)
@@ -89,7 +93,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다: " + email));
 
-        return UserResponseDTO.from(user);
+        return UserResponseDTO.from(user, imageUrlResolver::resolve);
     }
 
     // 자체 로그인 회원 탈퇴

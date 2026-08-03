@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { signup } from "@/api/auth";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { setAccessToken } from "@/utils/tokenStorage";
 
 // 약관 및 정책 텍스트 정의
@@ -82,15 +83,7 @@ export default function SignupPage() {
             navigate("/signup/complete", { replace: true });
         },
         onError: (error) => {
-            const status = error.response?.status;
-            if (status === 409) {
-                toast.error("이미 가입된 이메일이거나 중복된 닉네임입니다.");
-            } else if (status === 400) {
-                toast.warning("입력하신 정보의 형식이 올바르지 않습니다.");
-            } else {
-                console.error("회원가입 실패:", error);
-                toast.error("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-            }
+            toast.error(getApiErrorMessage(error, "회원가입에 실패했습니다. 입력 정보를 확인하고 다시 시도해 주세요."));
         },
     });
 

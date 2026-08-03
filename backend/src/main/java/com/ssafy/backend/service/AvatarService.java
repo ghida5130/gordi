@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.User;
 import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +32,7 @@ public class AvatarService {
 
     private final AvatarRepository avatarRepository;
     private final UserRepository userRepository;
+    private final ImageUrlResolver imageUrlResolver;
 
     /** 나의 아바타 조회 */
     @Transactional(readOnly = true)
@@ -40,7 +41,7 @@ public class AvatarService {
         if (avatar == null) {
             throw new ApiException(ErrorCode.AVATAR_NOT_FOUND, "선택된 아바타가 없습니다.");
         }
-        return AvatarResponseDTO.from(avatar);
+        return AvatarResponseDTO.from(avatar, imageUrlResolver::resolve);
     }
 
     /** 아바타 프리셋 선택·변경 */
@@ -72,7 +73,7 @@ public class AvatarService {
                     .orElseThrow(() -> new ApiException(ErrorCode.AVATAR_NOT_FOUND,
                             Map.of("avatarId", avatarId)));
             return new AvatarTemplateListResponseDTO(
-                    List.of(AvatarResponseDTO.from(avatar)));
+                    List.of(AvatarResponseDTO.from(avatar, imageUrlResolver::resolve)));
         }
 
         // 키만 입력 → 해당 키 구간의 기본 프리셋
@@ -82,7 +83,7 @@ public class AvatarService {
                     .orElseThrow(() -> new ApiException(ErrorCode.AVATAR_NOT_FOUND,
                             Map.of("gender", gender, "heightId", heightId)));
             return new AvatarTemplateListResponseDTO(
-                    List.of(AvatarResponseDTO.from(fallback)));
+                    List.of(AvatarResponseDTO.from(fallback, imageUrlResolver::resolve)));
         }
 
         // 몸무게만 입력 → 정의되지 않은 조합
@@ -102,7 +103,9 @@ public class AvatarService {
         }
 
         return new AvatarTemplateListResponseDTO(
-                candidates.stream().map(AvatarResponseDTO::from).toList());
+                candidates.stream()
+                        .map(a -> AvatarResponseDTO.from(a, imageUrlResolver::resolve))
+                        .toList());
     }
 
     private User findUser(String email) {

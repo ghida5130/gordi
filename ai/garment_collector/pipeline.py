@@ -97,7 +97,10 @@ class CollectionPipeline:
 
     def run(self, product_ids: Iterable[str]) -> RunReport:
         ids = [str(pid).strip() for pid in product_ids if str(pid).strip()]
-        if len(ids) > self.settings.max_items:
+        if (
+            self.settings.max_items is not None
+            and len(ids) > self.settings.max_items
+        ):
             raise ValueError(
                 f"requested {len(ids)} products exceeds max_items="
                 f"{self.settings.max_items}"
@@ -183,6 +186,18 @@ class CollectionPipeline:
         product_client: SlowHttpClient,
         image_client: SlowHttpClient,
     ) -> ProductOutcome:
+        if self.settings.skip_existing:
+            existing = self.storage.normalized_path(
+                self.adapter.name, product_id
+            )
+            if existing.exists():
+                logger.info("skip existing product %s", product_id)
+                return ProductOutcome(
+                    product_id=product_id,
+                    status="skipped",
+                    error="already collected",
+                )
+
         url = self.adapter.product_url(product_id)
         logger.info("fetch product %s %s", product_id, url)
 

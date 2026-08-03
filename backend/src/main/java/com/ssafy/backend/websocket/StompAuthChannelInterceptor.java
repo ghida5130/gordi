@@ -2,6 +2,7 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.util.RoomTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -40,6 +41,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             Pattern.compile("^/topic/v1/rooms/(\\d+)(/.*)?$");
 
     private final RoomTokenProvider roomTokenProvider;
+    private final RoomParticipantRepository roomParticipantRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -73,6 +75,11 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         } catch (ApiException e) {
             // TOKEN_EXPIRED / INVALID_TOKEN 을 ERROR frame message 헤더로 구분 전달
             throw new MessageDeliveryException(e.getErrorCode().getCode());
+        }
+
+        if (!roomParticipantRepository.existsByIdAndRoomIdAndLeftAtIsNull(
+                claims.participantId(), claims.roomId())) {
+            throw new MessageDeliveryException(ErrorCode.FORBIDDEN.getCode());
         }
 
         // 세션 바인딩 - Room 전용 Principal 인터페이스 구현체

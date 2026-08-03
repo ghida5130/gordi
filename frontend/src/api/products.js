@@ -21,7 +21,11 @@ export function getProduct({ roomToken, productId }) {
   );
 }
 
-export function getAuthenticatedProduct({ roomToken, productId }) {
+export function getAuthenticatedProduct(productOrOptions) {
+  const productId =
+    typeof productOrOptions === "object"
+      ? productOrOptions.productId
+      : productOrOptions;
   return authApi.get(`v1/products/${encodeURIComponent(productId)}`);
 }
 
