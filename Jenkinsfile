@@ -75,6 +75,17 @@ pipeline {
             }
         }
 
+        stage('Livekit 배포') {
+            when { expression { env.BUILD_BACK == 'true' } }
+            steps {
+                sh '''
+                    export DOCKER_BUILDKIT=0
+                    export COMPOSE_DOCKER_CLI_BUILD=0
+                    $COMPOSE up -d --build livekit
+                '''
+            }
+        }
+
         stage('Frontend 배포') {
             when { expression { env.BUILD_FRONT == 'true' } }
             steps {
