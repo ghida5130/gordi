@@ -81,6 +81,10 @@ public class TryOnService {
      */
     private static final long NO_RECOMMENDATION = 0L;
 
+    /** 착장이 취급하는 slot. 아우터·신발은 실측 치수 데이터가 없어 제외한다. */
+    private static final Set<CategoryCode> SUPPORTED_SLOTS =
+            EnumSet.of(CategoryCode.TOP, CategoryCode.BOTTOM);
+
     private final TryOnJobRepository tryOnJobRepository;
     private final TryOnJobItemRepository tryOnJobItemRepository;
     private final RoomRepository roomRepository;
@@ -427,8 +431,7 @@ public class TryOnService {
         int position = 0;
 
         for (TryOnJobCreateRequestDTO.Item item : requested) {
-            CategoryCode slot = CategoryCode.find(item.slot())
-                    .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, Map.of("slot", item.slot())));
+            CategoryCode slot = requireSupportedSlot(item.slot());
             if (!usedSlots.add(slot)) {
                 throw new ApiException(ErrorCode.BAD_REQUEST, Map.of("duplicatedSlot", slot.name()));
             }
@@ -446,6 +449,28 @@ public class TryOnService {
                     item.sizeName(),
                     resolveSizeProfile(product, slot, item.sizeName())
             ));
+        }
+        return resolved;
+    }
+
+    /**
+     * 착장이 취급하는 slot 인지 검증한다.
+     * 아우터·신발은 실측 치수 데이터가 없어 정식 취급하지 않는다(팀 합의).
+     * 조용히 제외하면 "왜 안 입혀졌는지" 알 수 없으므로 요청 단계에서 거절한다.
+     */
+    private CategoryCode requireSupportedSlot(String slot) {
+        CategoryCode resolved = CategoryCode.find(slot)
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, Map.of("slot", slot)));
+
+        if (!SUPPORTED_SLOTS.contains(resolved)) {
+            throw new ApiException(
+                    ErrorCode.BAD_REQUEST,
+                    "착장에 사용할 수 없는 종류입니다.",
+                    Map.of(
+                            "slot", resolved.name(),
+                            "supportedSlots", SUPPORTED_SLOTS.stream().map(CategoryCode::name).toList()
+                    )
+            );
         }
         return resolved;
     }
@@ -487,7 +512,6 @@ public class TryOnService {
     /**
      * 사용자가 고른 사이즈의 실측 행을 찾아 생성 요청용 치수로 펼친다.
      * 상의와 하의는 실측 항목이 서로 다르므로 slot 으로 조회 대상을 가른다.
-     * 치수 표가 없는 slot(아우터·신발)은 치수 없이 사이즈명만 전달한다.
      */
     private TryOnGenerationRequest.SizeProfile resolveSizeProfile(
             Product product,
@@ -525,8 +549,11 @@ public class TryOnService {
             );
         }
 
-        return new TryOnGenerationRequest.SizeProfile(
-                sizeName, null, null, null, null, null, null, null, null);
+        // requireSupportedSlot 이 TOP/BOTTOM 만 통과시키므로 여기 오면 검증이 빠진 것이다.
+        throw new ApiException(
+                ErrorCode.INTERNAL_SERVER_ERROR,
+                Map.of("unsupportedSlot", slot.name())
+        );
     }
 
     // 어떤 사이즈를 고를 수 있는지 알려 주어야 클라이언트가 요청을 고칠 수 있다.

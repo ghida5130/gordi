@@ -540,6 +540,39 @@ class TryOnServiceTest {
         }
 
         @Test
+        void 아우터는_착장에_사용할_수_없다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+
+            TryOnJobCreateRequestDTO request = soloRequest(500L, "OUTER");
+
+            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+                    .isInstanceOf(ApiException.class)
+                    .satisfies(thrown -> {
+                        ApiException exception = (ApiException) thrown;
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+                        assertThat(exception.getDetails())
+                                .containsEntry("slot", "OUTER")
+                                .containsEntry("supportedSlots", List.of("TOP", "BOTTOM"));
+                    });
+
+            verify(tryOnGenerationClient, never()).submit(any());
+        }
+
+        @Test
+        void 신발도_착장에_사용할_수_없다() {
+            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
+
+            TryOnJobCreateRequestDTO request = soloRequest(500L, "SHOES");
+
+            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(exception -> ((ApiException) exception).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+
+        @Test
         void 같은_slot이_중복되면_BAD_REQUEST() {
             when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
