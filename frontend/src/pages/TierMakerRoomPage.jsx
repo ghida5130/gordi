@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getCandidates } from "@/api/candidates";
 import { getProduct } from "@/api/products";
+import { finishRoom as finishRoomRequest, getRoomStatus } from "@/api/rooms";
 import { createTryOnJob } from "@/api/tryOn";
 import { getMyAvatar } from "@/api/users";
 import ClothingCatalog from "@/components/tierMaker/ClothingCatalog";
@@ -20,48 +21,10 @@ import {
   getRoomSession,
   removeRoomSession,
 } from "@/utils/roomSessionStorage";
-
-const categoryDetails = {
-  TOP: {
-    category: "top",
-    categoryLabel: "상의",
-    artwork: "shirt",
-    color: "text-sky-300",
-    surface: "bg-sky-50",
-    fittingColor: "#7dd3fc",
-  },
-  OUTER: {
-    category: "outer",
-    categoryLabel: "아우터",
-    artwork: "jacket",
-    color: "text-slate-800",
-    surface: "bg-slate-100",
-    fittingColor: "#1e293b",
-  },
-  BOTTOM: {
-    category: "bottom",
-    categoryLabel: "하의",
-    artwork: "pants",
-    color: "text-blue-500",
-    surface: "bg-blue-50",
-    fittingColor: "#3b82f6",
-  },
-  SHOES: {
-    category: "shoes",
-    categoryLabel: "신발",
-    artwork: "sneakers",
-    color: "text-slate-100",
-    surface: "bg-slate-200",
-    fittingColor: "#f8fafc",
-  },
-};
-
-const categoryAliases = {
-  상의: "TOP",
-  아우터: "OUTER",
-  하의: "BOTTOM",
-  신발: "SHOES",
-};
+import {
+  createTierMakerClothing,
+  tierMakerCategoryDetails,
+} from "@/utils/tierMakerClothing";
 
 const demoClothes = [
   {
@@ -72,7 +35,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "TOP",
     isDemo: true,
-    ...categoryDetails.TOP,
+    ...tierMakerCategoryDetails.TOP,
     artwork: "shirt",
   },
   {
@@ -83,7 +46,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "TOP",
     isDemo: true,
-    ...categoryDetails.TOP,
+    ...tierMakerCategoryDetails.TOP,
     artwork: "knit",
     color: "text-violet-300",
     surface: "bg-violet-50",
@@ -96,7 +59,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "OUTER",
     isDemo: true,
-    ...categoryDetails.OUTER,
+    ...tierMakerCategoryDetails.OUTER,
     artwork: "jacket",
     color: "text-blue-700",
     surface: "bg-blue-50",
@@ -109,7 +72,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "OUTER",
     isDemo: true,
-    ...categoryDetails.OUTER,
+    ...tierMakerCategoryDetails.OUTER,
     artwork: "cardigan",
     color: "text-amber-700",
     surface: "bg-amber-50",
@@ -122,7 +85,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "BOTTOM",
     isDemo: true,
-    ...categoryDetails.BOTTOM,
+    ...tierMakerCategoryDetails.BOTTOM,
     artwork: "pants",
   },
   {
@@ -133,7 +96,7 @@ const demoClothes = [
     imageUrl: "",
     slot: "SHOES",
     isDemo: true,
-    ...categoryDetails.SHOES,
+    ...tierMakerCategoryDetails.SHOES,
     artwork: "sneakers",
   },
 ];
@@ -182,44 +145,6 @@ function getMovedDemoPlacements(
   ];
 }
 
-function normalizeCategory(category) {
-  const normalized = String(category ?? "").toUpperCase();
-  return categoryDetails[normalized]
-    ? normalized
-    : categoryAliases[category] ?? "TOP";
-}
-
-function resolveArtwork(subcategory, category) {
-  const normalized = String(subcategory ?? "").toUpperCase();
-
-  if (normalized.includes("CARDIGAN")) return "cardigan";
-  if (normalized.includes("KNIT")) return "knit";
-  if (normalized.includes("SHIRT")) return "shirt";
-  if (normalized.includes("SKIRT")) return "skirt";
-  if (normalized.includes("LOAFER")) return "loafers";
-  if (normalized.includes("SNEAKER")) return "sneakers";
-
-  return categoryDetails[category].artwork;
-}
-
-function createClothing(roomItem, product) {
-  const category = normalizeCategory(product?.category);
-  const details = categoryDetails[category];
-
-  return {
-    id: String(roomItem.roomItemId),
-    roomItemId: roomItem.roomItemId,
-    productId: roomItem.productId,
-    name: roomItem.name ?? product?.name ?? `상품 #${roomItem.productId}`,
-    brand: roomItem.brand ?? product?.brand ?? "",
-    price: roomItem.price ?? product?.price ?? null,
-    imageUrl: roomItem.imageUrl ?? product?.imageUrl ?? "",
-    slot: category,
-    ...details,
-    artwork: resolveArtwork(product?.subcategory, category),
-  };
-}
-
 const emptyTryOn = {
   status: "IDLE",
   jobId: null,
@@ -246,6 +171,22 @@ function TierMakerRoomPage() {
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const applyRoomStatus = roomEvents.applyRoomStatus;
+  const requestRoomSync = roomEvents.requestSync;
+  const roomStatusQuery = useQuery({
+    queryKey: ["roomStatus", roomSession?.roomCode],
+    queryFn: () =>
+      getRoomStatus({
+        roomCode: roomSession.roomCode,
+        roomToken: roomSession.roomToken,
+      }),
+    enabled:
+      Boolean(isCurrentRoom) &&
+      Boolean(roomSession?.roomCode) &&
+      Boolean(roomSession?.roomToken) &&
+      roomEvents.connectionState === "CONNECTED",
+    staleTime: 0,
+  });
   const voiceChat = useVoiceChat({
     roomCode: roomSession?.roomCode,
     roomToken: roomSession?.roomToken,
@@ -262,8 +203,9 @@ function TierMakerRoomPage() {
     enabled:
       Boolean(isCurrentRoom) &&
       Boolean(roomSession?.roomToken) &&
-      roomEvents.hasSnapshot &&
-      roomEvents.status === "IN_PROGRESS",
+      roomEvents.connectionState === "CONNECTED" &&
+      roomEvents.status !== "FINISHED" &&
+      roomEvents.status !== "EXPIRED",
     staleTime: 30 * 1000,
   });
   const candidateItems = useMemo(
@@ -285,7 +227,11 @@ function TierMakerRoomPage() {
   const productQueries = useQueries({
     queries: productIds.map((productId) => ({
       queryKey: ["products", productId],
-      queryFn: () => getProduct(productId),
+      queryFn: () =>
+        getProduct({
+          roomToken: roomSession.roomToken,
+          productId,
+        }),
       staleTime: 5 * 60 * 1000,
     })),
   });
@@ -299,7 +245,7 @@ function TierMakerRoomPage() {
   );
   const isDemoMode = false;
   const clothes = candidateItems.map((roomItem) =>
-    createClothing(roomItem, productsById[roomItem.productId]),
+    createTierMakerClothing(roomItem, productsById[roomItem.productId]),
   );
   const clothesById = Object.fromEntries(
     clothes.map((item) => [item.id, item]),
@@ -321,7 +267,7 @@ function TierMakerRoomPage() {
     position: item.position,
   }));
   const sortedPlacements = [
-    ...(roomEvents.placements.length > 0
+    ...(roomEvents.hasSnapshot
       ? roomEvents.placements
       : candidatePlacements),
   ].sort((left, right) => left.position - right.position);
@@ -344,6 +290,33 @@ function TierMakerRoomPage() {
     .map((itemId) => clothesById[itemId])
     .filter(Boolean);
   const isHost = roomSession?.role === "HOST";
+
+  useEffect(() => {
+    const roomStatus = roomStatusQuery.data?.data;
+
+    if (roomStatus) {
+      applyRoomStatus(roomStatus);
+    }
+  }, [applyRoomStatus, roomStatusQuery.data]);
+
+  useEffect(() => {
+    if (
+      roomEvents.connectionState === "CONNECTED" &&
+      roomStatusQuery.isFetched &&
+      !roomStatusQuery.isFetching &&
+      candidateQuery.isFetched &&
+      !candidateQuery.isFetching
+    ) {
+      requestRoomSync();
+    }
+  }, [
+    candidateQuery.isFetched,
+    candidateQuery.isFetching,
+    roomEvents.connectionState,
+    requestRoomSync,
+    roomStatusQuery.isFetched,
+    roomStatusQuery.isFetching,
+  ]);
 
   useEffect(() => {
     if (
@@ -392,6 +365,41 @@ function TierMakerRoomPage() {
 
     toast.warning(getLockConflictMessage(rejection.ownerNickname));
   }, [roomEvents.lockRejection, toast]);
+
+  const finishRoomMutation = useMutation({
+    mutationFn: async () => {
+      const requestFinish = (expectedVersion) =>
+        finishRoomRequest({
+          roomCode: roomSession.roomCode,
+          roomToken: roomSession.roomToken,
+          expectedVersion,
+        });
+
+      try {
+        return await requestFinish(roomEvents.version);
+      } catch (error) {
+        const errorCode = error.response?.data?.code;
+
+        if (
+          error.response?.status !== 409 ||
+          (errorCode && errorCode !== "VERSION_CONFLICT")
+        ) {
+          throw error;
+        }
+
+        const snapshot = await requestRoomSync();
+
+        if (!snapshot) {
+          throw error;
+        }
+
+        return requestFinish(Number(snapshot.version ?? roomEvents.version));
+      }
+    },
+    onError: () => {
+      toast.error("방 종료에 실패했습니다.");
+    },
+  });
 
   const tryOnMutation = useMutation({
     mutationFn: async () => {
@@ -605,7 +613,7 @@ function TierMakerRoomPage() {
   const handleFinishRoom = () => {
     if (!window.confirm("티어메이킹 방을 종료할까요?")) return;
 
-    roomEvents.finishRoom();
+    finishRoomMutation.mutate();
   };
 
   const handleBoardPointerMove = (event) => {
@@ -614,6 +622,9 @@ function TierMakerRoomPage() {
     if (!board) return;
 
     const bounds = board.getBoundingClientRect();
+
+    if (bounds.width === 0 || bounds.height === 0) return;
+
     roomEvents.moveCursor({
       x: (event.clientX - bounds.left) / bounds.width,
       y: (event.clientY - bounds.top) / bounds.height,
@@ -679,11 +690,16 @@ function TierMakerRoomPage() {
             <button
               type="button"
               onClick={handleFinishRoom}
-              disabled={roomEvents.connectionState !== "CONNECTED"}
+              disabled={
+                roomEvents.connectionState !== "CONNECTED" ||
+                !roomEvents.hasSnapshot ||
+                roomEvents.status !== "IN_PROGRESS" ||
+                finishRoomMutation.isPending
+              }
               className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <TierMakerIcon name="door" size={16} />
-              보드 종료
+              {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
             </button>
           )}
         </div>
@@ -691,11 +707,17 @@ function TierMakerRoomPage() {
 
       <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8">
         {(roomEvents.connectionError ||
+          roomStatusQuery.isError ||
           candidateQuery.isError ||
           productQueries.some((query) => query.isError)) && (
           <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {roomEvents.connectionError ||
-              (candidateQuery.isError
+              (roomStatusQuery.isError
+                ? getApiErrorMessage(
+                    roomStatusQuery.error,
+                    "방 상태를 불러오지 못했습니다.",
+                  )
+                : candidateQuery.isError
                 ? getApiErrorMessage(
                     candidateQuery.error,
                     "후보 상품을 불러오지 못했습니다.",
@@ -705,6 +727,7 @@ function TierMakerRoomPage() {
         )}
 
         {!roomEvents.hasSnapshot ||
+        roomStatusQuery.isPending ||
         (roomEvents.status === "IN_PROGRESS" && candidateQuery.isPending) ? (
           <section className="flex min-h-96 items-center justify-center rounded-3xl border bg-white">
             <div className="text-center">
@@ -723,12 +746,13 @@ function TierMakerRoomPage() {
                 저장되지는 않습니다.
               </p>
             )}
-            <div
-              ref={sharedBoardRef}
-              onPointerMove={handleBoardPointerMove}
-              onDragOverCapture={handleBoardPointerMove}
-              className="relative grid items-start gap-5 xl:grid-cols-[280px_minmax(520px,1fr)_310px]"
-            >
+            <div className="overflow-x-auto pb-2">
+              <div
+                ref={sharedBoardRef}
+                onPointerMove={handleBoardPointerMove}
+                onDragOverCapture={handleBoardPointerMove}
+                className="relative grid h-[720px] w-[1530px] grid-cols-[280px_900px_310px] gap-5"
+              >
               <SharedCursorLayer
                 cursors={roomEvents.cursors}
                 participants={roomEvents.participants}
@@ -782,15 +806,16 @@ function TierMakerRoomPage() {
                 canRename={isHost}
                 onRenameTier={handleRenameTier}
               />
-              <ClothingCatalog
-                clothes={clothes}
-                tierByItem={tierByItem}
-                itemLocks={roomEvents.itemLocks}
-                currentParticipantId={roomSession.participantId}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onUnrank={handleUnrank}
-              />
+                <ClothingCatalog
+                  clothes={clothes}
+                  tierByItem={tierByItem}
+                  itemLocks={roomEvents.itemLocks}
+                  currentParticipantId={roomSession.participantId}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onUnrank={handleUnrank}
+                />
+              </div>
             </div>
 
             <ParticipantDock

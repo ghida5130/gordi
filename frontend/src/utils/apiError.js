@@ -15,12 +15,15 @@ export function getApiErrorMessage(
     return fallbackMessage
   }
 
-  if (error.response?.status === 401) {
-    return (
-      error.response.data?.message ??
-      '로그인이 만료되었습니다. 다시 로그인해 주세요.'
-    )
+  const serverMessage = error.response?.data?.message
+
+  if (typeof serverMessage === 'string' && serverMessage.trim()) {
+    return serverMessage
   }
 
-  return error.response?.data?.message ?? error.message ?? fallbackMessage
+  if (error.response?.status === 401) {
+    return '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  return fallbackMessage
 }
