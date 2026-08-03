@@ -40,7 +40,8 @@ pipeline {
             when { expression { env.BUILD_BACK == 'true' } }
             steps {
                 sh '''
-                    docker run --rm \
+                    docker run --rm  \
+                    -e TZ=Asia/Seoul \
                     -v jenkins_home:/ws -w /ws/workspace/gordi-backend/backend \
                     -v gradle-cache:/root/.gradle \
                     eclipse-temurin:21-jdk-alpine \
