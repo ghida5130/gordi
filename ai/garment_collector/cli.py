@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from garment_collector.adapters.musinsa import MusinsaAdapter
-from garment_collector.config import MAX_ITEMS_PILOT, CollectorSettings
+from garment_collector.config import CollectorSettings
 from garment_collector.models import GarmentRecord
 from garment_collector.mysql_seeder import (
     MySQLSettings,
@@ -72,14 +72,20 @@ def _build_parser() -> argparse.ArgumentParser:
     collect.add_argument(
         "--max-items",
         type=int,
-        default=MAX_ITEMS_PILOT,
-        help=f"Max products this run (cap {MAX_ITEMS_PILOT})",
+        default=None,
+        help=(
+            "Optional safety cap on this run (default: no cap). "
+            "Expansion target is 500 per gender×slot cell."
+        ),
     )
     collect.add_argument(
         "--product-delay",
         type=float,
         default=None,
-        help="Seconds between product requests (min 3.0)",
+        help=(
+            "Seconds between products / first paced product request "
+            "(min 3.0; same-product secondary APIs are unpaced)"
+        ),
     )
     collect.add_argument(
         "--image-delay",
@@ -91,6 +97,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Resolve IDs and exit without network writes",
+    )
+    collect.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip IDs whose normalized JSON already exists in "
+            "--dataset-root (safe batch resume without re-fetching)"
+        ),
     )
 
     validate = sub.add_parser(
@@ -137,7 +151,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     export_seed = sub.add_parser(
         "export-seed",
-        help="Export the strict 198-product backend seed manifest",
+        help=(
+            "Export the strict backend seed manifest "
+            "(defaults to the original 198-product split)"
+        ),
     )
     export_seed.add_argument(
         "--dataset-root",
@@ -156,6 +173,23 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Output manifest path (kept outside Git)",
+    )
+    export_seed.add_argument(
+        "--expected-counts-file",
+        type=Path,
+        help=(
+            "JSON file overriding expected group counts, e.g. "
+            '{"MALE/TOP": 100, "FEMALE/BOTTOM": 100}; '
+            "defaults to the original 198-product split"
+        ),
+    )
+    export_seed.add_argument(
+        "--expected-size-rows",
+        type=int,
+        help=(
+            "Expected total size-row count for the expanded selection; "
+            "required together with --expected-counts-file"
+        ),
     )
 
     upload_s3 = sub.add_parser(
@@ -212,6 +246,64 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Required with --apply; JSON backup of targeted existing rows",
     )
+    seed_db.add_argument(
+        "--expected-products",
+        type=int,
+        help=(
+            "Expected product count for the expanded manifest; "
+            "required together with --expected-size-rows "
+            "(defaults to the original 198-product split)"
+        ),
+    )
+    seed_db.add_argument(
+        "--expected-size-rows",
+        type=int,
+        help="Expected total size-row count for the expanded manifest",
+    )
+
+    review_images = sub.add_parser(
+        "review-images",
+        help=(
+            "Fill primary-image review fields with a small VLM and "
+            "promote clean records to READY"
+        ),
+    )
+    review_images.add_argument(
+        "--dataset-root",
+        type=Path,
+        required=True,
+    )
+    review_images.add_argument(
+        "--model",
+        default=os.environ.get(
+            "RECOMMENDATION_VLM_MODEL",
+            "openai/gpt-5.6-luna",
+        ),
+    )
+    review_images.add_argument(
+        "--endpoint",
+        default="https://openrouter.ai/api/v1/chat/completions",
+    )
+    review_images.add_argument(
+        "--reviewer",
+        default=None,
+        help="Recorded reviewer id (default: vlm:<model>)",
+    )
+    review_images.add_argument("--limit", type=int, default=None)
+    review_images.add_argument("--concurrency", type=int, default=8)
+    review_images.add_argument(
+        "--reasoning-effort",
+        default="low",
+        help=(
+            "reasoning effort for review calls (minimal/low/medium/"
+            "high); pass 'none' for models that reject the field"
+        ),
+    )
+    review_images.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Count target records without VLM calls or writes",
+    )
 
     return parser
 
@@ -246,18 +338,20 @@ def cmd_collect(args: argparse.Namespace) -> int:
     if not ids:
         print("error: provide --ids and/or --ids-file", file=sys.stderr)
         return 2
-    if len(ids) > args.max_items:
+    if args.max_items is not None and len(ids) > args.max_items:
         print(
             f"error: {len(ids)} ids exceeds --max-items {args.max_items}",
             file=sys.stderr,
         )
         return 2
 
-    kwargs = {
+    kwargs: dict = {
         "dataset_root": args.dataset_root.resolve(),
-        "max_items": args.max_items,
         "dry_run": args.dry_run,
+        "skip_existing": args.skip_existing,
     }
+    if args.max_items is not None:
+        kwargs["max_items"] = args.max_items
     if args.product_delay is not None:
         kwargs["product_delay_sec"] = args.product_delay
     if args.image_delay is not None:
@@ -336,14 +430,50 @@ def cmd_reprocess(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_expected_counts(path: Path) -> dict[str, int]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or not payload:
+        raise ManifestError(
+            "expected-counts file must be a non-empty JSON object"
+        )
+    counts: dict[str, int] = {}
+    for group, count in payload.items():
+        if (
+            not isinstance(group, str)
+            or isinstance(count, bool)
+            or not isinstance(count, int)
+            or count < 1
+        ):
+            raise ManifestError(
+                "expected-counts entries must map group names to "
+                "positive integers"
+            )
+        counts[group] = count
+    return counts
+
+
 def cmd_export_seed(args: argparse.Namespace) -> int:
     try:
+        if (args.expected_counts_file is None) != (
+            args.expected_size_rows is None
+        ):
+            raise ManifestError(
+                "--expected-counts-file and --expected-size-rows "
+                "must be provided together"
+            )
+        expected_group_counts = None
+        if args.expected_counts_file is not None:
+            expected_group_counts = _load_expected_counts(
+                args.expected_counts_file
+            )
         manifest = export_seed_manifest(
             args.dataset_root,
             args.selection_file,
             args.output,
+            expected_group_counts=expected_group_counts,
+            expected_size_rows=args.expected_size_rows,
         )
-    except ManifestError as exc:
+    except (ManifestError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     print(
@@ -408,9 +538,23 @@ def cmd_seed_db(args: argparse.Namespace) -> int:
             )
         if args.apply and args.backup_output is None:
             raise SeedError("--backup-output is required with --apply")
+        if (args.expected_products is None) != (
+            args.expected_size_rows is None
+        ):
+            raise SeedError(
+                "--expected-products and --expected-size-rows must be "
+                "provided together"
+            )
+        manifest_kwargs = {}
+        if args.expected_products is not None:
+            manifest_kwargs = {
+                "expected_product_count": args.expected_products,
+                "expected_size_row_count": args.expected_size_rows,
+            }
         manifest = load_uploaded_manifest(
             args.manifest,
             image_base_url=image_base_url,
+            **manifest_kwargs,
         )
         connection = connect_database(settings)
         report = seed_database(
@@ -442,6 +586,60 @@ def cmd_seed_db(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review_images(args: argparse.Namespace) -> int:
+    from garment_collector.image_review import (
+        ImageReviewError,
+        review_dataset_images,
+    )
+
+    try:
+        if args.dry_run:
+            client = None
+        else:
+            # Reuse the shared OpenAI-compatible client; imported lazily
+            # so the collector stays usable without the app package.
+            from app.recommendation.vlm import (
+                OpenAICompatibleVLMClient,
+                VLMSettings,
+            )
+
+            api_key = (
+                os.environ.get("RECOMMENDATION_VLM_API_KEY", "").strip()
+                or os.environ.get("OPENROUTER_API_KEY", "").strip()
+            )
+            if "openrouter.ai" in args.endpoint and not api_key:
+                raise ImageReviewError(
+                    "OPENROUTER_API_KEY (or RECOMMENDATION_VLM_API_KEY) "
+                    "is required"
+                )
+            client = OpenAICompatibleVLMClient(
+                VLMSettings(
+                    model=args.model,
+                    endpoint=args.endpoint,
+                    api_key=api_key,
+                )
+            )
+        effort = args.reasoning_effort.strip().lower()
+        report = review_dataset_images(
+            args.dataset_root,
+            client,
+            reviewer=args.reviewer or f"vlm:{args.model}",
+            limit=args.limit,
+            concurrency=args.concurrency,
+            dry_run=args.dry_run,
+            reasoning_effort=(
+                None if effort in {"", "none"} else effort
+            ),
+        )
+    except ImageReviewError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    payload = report.to_dict()
+    payload["errors"] = payload["errors"][:20]
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0 if report.failed == 0 else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -461,6 +659,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_upload_s3(args)
     if args.command == "seed-db":
         return cmd_seed_db(args)
+    if args.command == "review-images":
+        return cmd_review_images(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

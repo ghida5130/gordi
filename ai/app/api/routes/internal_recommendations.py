@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import require_recommendation_pipeline
@@ -22,10 +24,21 @@ from app.schemas.recommendation import (
     SearchRecommendationRequest,
     SearchRecommendationResponse,
 )
+from app.services.recommendation_pipeline import (
+    RecommendationRuntimeError,
+    get_catalog_index,
+    get_embedding_provider,
+)
 from app.services.recommendation_ranker import (
     SCHEMA_VERSION,
     recommendation_ranker,
 )
+from app.services.vector_ranker import (
+    VectorRankError,
+    VectorRecommendationRanker,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/recommendations",
@@ -33,12 +46,55 @@ router = APIRouter(
 )
 
 
+def get_vector_ranker(
+    settings: Settings = Depends(get_settings),
+) -> VectorRecommendationRanker | None:
+    """Vector ranker when the runtime allows it; None → keyword baseline."""
+    if not settings.recommendation_rank_vector_enabled:
+        return None
+    try:
+        return VectorRecommendationRanker(
+            get_catalog_index(),
+            get_embedding_provider(),
+        )
+    except RecommendationRuntimeError as exc:
+        logger.warning(
+            "vector rank runtime unavailable (%s); using baseline",
+            exc,
+        )
+        return None
+
+
 @router.post(
     "/rank",
     response_model=RankResponse,
     summary="추천 후보 상품 순위 계산",
 )
-async def rank_recommendations(request: RankRequest) -> RankResponse:
+async def rank_recommendations(
+    request: RankRequest,
+    vector_ranker: VectorRecommendationRanker | None = Depends(
+        get_vector_ranker
+    ),
+) -> RankResponse:
+    if vector_ranker is not None:
+        try:
+            ranked = vector_ranker.rank(
+                condition=request.condition,
+                candidates=request.candidates,
+                limit=request.limit,
+            )
+            return RankResponse(
+                schema_version=SCHEMA_VERSION,
+                ranked=ranked,
+            )
+        except VectorRankError:
+            # Ranking must stay available even when embeddings or the
+            # snapshot generation are broken — fall through to the
+            # deterministic keyword baseline.
+            logger.warning(
+                "vector rank failed; falling back to baseline",
+                exc_info=True,
+            )
     ranked = recommendation_ranker.rank(
         condition=request.condition,
         candidates=request.candidates,

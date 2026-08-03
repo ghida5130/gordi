@@ -12,8 +12,13 @@ from garment_collector import (
     __version__,
 )
 
-# Hard limits — do not expose easy CLI overrides that lift these.
-MAX_ITEMS_PILOT = 200
+# Expansion target (gender × slot cells): not a hard run cap.
+TARGET_ITEMS_PER_CELL = 500
+TARGET_CELLS = ("MALE/TOP", "MALE/BOTTOM", "FEMALE/TOP", "FEMALE/BOTTOM")
+TARGET_TOTAL_ITEMS = TARGET_ITEMS_PER_CELL * len(TARGET_CELLS)
+
+# Inter-product delay floor (seconds). Intra-product multi-API calls for the
+# same product_id may run without this spacing; the next product still waits.
 PRODUCT_REQUEST_DELAY_SEC = 3.0
 IMAGE_REQUEST_DELAY_SEC = 1.0
 MAX_RETRIES = 2
@@ -32,31 +37,32 @@ DEFAULT_USER_AGENT = (
 
 STOP_HTTP_STATUSES = frozenset({403, 429, 503})
 
+# Backward-compatible alias (no longer a hard run cap).
+MAX_ITEMS_PILOT = TARGET_TOTAL_ITEMS
+
 
 @dataclass(frozen=True)
 class CollectorSettings:
-    """Runtime settings with policy caps applied."""
+    """Runtime settings with policy floors applied."""
 
     dataset_root: Path
     source: str = "MUSINSA"
-    max_items: int = MAX_ITEMS_PILOT
+    # None = no per-run item cap (preferred for overnight expansion).
+    max_items: int | None = None
     product_delay_sec: float = PRODUCT_REQUEST_DELAY_SEC
     image_delay_sec: float = IMAGE_REQUEST_DELAY_SEC
     max_retries: int = MAX_RETRIES
     user_agent: str = DEFAULT_USER_AGENT
     dry_run: bool = False
+    skip_existing: bool = False
 
     def __post_init__(self) -> None:
-        if self.max_items < 1:
-            raise ValueError("max_items must be >= 1")
-        if self.max_items > MAX_ITEMS_PILOT:
-            raise ValueError(
-                f"max_items cannot exceed pilot cap {MAX_ITEMS_PILOT} "
-                "(revise policy document before expanding)"
-            )
+        if self.max_items is not None and self.max_items < 1:
+            raise ValueError("max_items must be >= 1 when set")
         if self.product_delay_sec < PRODUCT_REQUEST_DELAY_SEC:
             raise ValueError(
-                f"product_delay_sec must be >= {PRODUCT_REQUEST_DELAY_SEC}"
+                f"product_delay_sec must be >= {PRODUCT_REQUEST_DELAY_SEC} "
+                "(inter-product floor; policy v1.1)"
             )
         if self.image_delay_sec < IMAGE_REQUEST_DELAY_SEC:
             raise ValueError(

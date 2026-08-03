@@ -1,0 +1,123 @@
+{
+  "started_at": "2026-08-01T17:48:11.640064+09:00",
+  "finished_at": "2026-08-01T17:49:35.378301+09:00",
+  "target_per_cell": 500,
+  "oversample": 1.6,
+  "page_delay_sec": 1.5,
+  "existing_ids": 465,
+  "stopped": false,
+  "stop_reason": null,
+  "cells": {
+    "MALE/TOP": {
+      "cell": "MALE/TOP",
+      "requested_new": 624,
+      "discovered_new": 624,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001",
+          "note": "상의",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 443
+        },
+        {
+          "gf": "M",
+          "category": "001",
+          "note": "상의",
+          "sort_code": "NEW",
+          "pages_fetched": 4,
+          "new_ids": 181
+        }
+      ],
+      "have": 110,
+      "gap": 390,
+      "id_count": 624
+    },
+    "MALE/BOTTOM": {
+      "cell": "MALE/BOTTOM",
+      "requested_new": 546,
+      "discovered_new": 546,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003",
+          "note": "바지",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 357
+        },
+        {
+          "gf": "M",
+          "category": "003",
+          "note": "바지",
+          "sort_code": "NEW",
+          "pages_fetched": 4,
+          "new_ids": 189
+        }
+      ],
+      "have": 159,
+      "gap": 341,
+      "id_count": 546
+    },
+    "FEMALE/TOP": {
+      "cell": "FEMALE/TOP",
+      "requested_new": 671,
+      "discovered_new": 671,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001",
+          "note": "상의",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 342
+        },
+        {
+          "gf": "F",
+          "category": "001",
+          "note": "상의",
+          "sort_code": "NEW",
+          "pages_fetched": 6,
+          "new_ids": 329
+        }
+      ],
+      "have": 81,
+      "gap": 419,
+      "id_count": 671
+    },
+    "FEMALE/BOTTOM": {
+      "cell": "FEMALE/BOTTOM",
+      "requested_new": 637,
+      "discovered_new": 637,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003",
+          "note": "바지",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 292
+        },
+        {
+          "gf": "F",
+          "category": "003",
+          "note": "바지",
+          "sort_code": "NEW",
+          "pages_fetched": 7,
+          "new_ids": 345
+        }
+      ],
+      "have": 102,
+      "gap": 398,
+      "id_count": 637
+    }
+  },
+  "overnight_new_count": 2478,
+  "current_cells": {
+    "MALE/TOP": 110,
+    "MALE/BOTTOM": 159,
+    "FEMALE/TOP": 81,
+    "FEMALE/BOTTOM": 102
+  }
+}

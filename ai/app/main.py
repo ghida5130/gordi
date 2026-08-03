@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.internal_tryon import results_router
 from app.api.routes.recommendation_demo import page_router
 from app.api.internal_router import internal_api_router
 from app.api.router import api_router
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     application.include_router(api_router, prefix=settings.api_prefix)
     application.include_router(internal_api_router)
     application.include_router(page_router)
+    application.include_router(results_router)
     return application
 
 

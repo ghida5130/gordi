@@ -11,6 +11,7 @@ from garment_collector.adapters.musinsa.parser import (
     build_product_url,
     parse_goods_detail_payload,
     parse_musinsa_html,
+    sizes_available_without_options,
 )
 from garment_collector.http_client import SlowHttpClient
 from garment_collector.models import ParsedProduct
@@ -41,28 +42,38 @@ class MusinsaAdapter(SourceAdapter):
     def fetch_product(
         self, product_id: str, client: SlowHttpClient
     ) -> tuple[ParsedProduct, dict[str, Any], bytes]:
-        """Fetch detail + actual-size (+ options) and parse.
+        """Fetch detail + actual-size (+ options if needed) and parse.
+
+        Rate-limit policy (v1.1):
+        - First product endpoint is paced (inter-product floor).
+        - Same-product secondary endpoints use pace=False.
+        - Options is skipped when sizes already exist without it.
 
         Returns (parsed, raw_bundle, primary_body_bytes).
         """
         detail_url = self.detail_api_url(product_id)
-        detail_resp = client.get(detail_url)
+        detail_resp = client.get(detail_url, pace=True)
         detail_payload = json.loads(detail_resp.content.decode("utf-8"))
 
         actual_size_payload: dict[str, Any] | None = None
         actual_size_url = self.actual_size_api_url(product_id)
         try:
-            actual_resp = client.get(actual_size_url)
+            actual_resp = client.get(actual_size_url, pace=False)
             actual_size_payload = json.loads(actual_resp.content.decode("utf-8"))
         except Exception:
             actual_size_payload = None
 
         options_payload: dict[str, Any] | None = None
-        try:
-            options_resp = client.get(self.options_api_url(product_id))
-            options_payload = json.loads(options_resp.content.decode("utf-8"))
-        except Exception:
-            options_payload = None
+        options_url = self.options_api_url(product_id)
+        options_skipped = sizes_available_without_options(
+            detail_payload, actual_size_payload
+        )
+        if not options_skipped:
+            try:
+                options_resp = client.get(options_url, pace=False)
+                options_payload = json.loads(options_resp.content.decode("utf-8"))
+            except Exception:
+                options_payload = None
 
         parsed = parse_goods_detail_payload(
             product_id,
@@ -78,5 +89,6 @@ class MusinsaAdapter(SourceAdapter):
             "actual_size_url": actual_size_url,
             "actual_size": actual_size_payload,
             "options": options_payload,
+            "options_skipped": options_skipped,
         }
         return parsed, raw_bundle, detail_resp.content
