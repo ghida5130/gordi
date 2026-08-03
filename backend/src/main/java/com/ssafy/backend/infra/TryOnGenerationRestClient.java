@@ -28,18 +28,19 @@ public class TryOnGenerationRestClient implements TryOnGenerationClient {
     private static final Logger log = LoggerFactory.getLogger(TryOnGenerationRestClient.class);
 
     private static final String SUBMIT_PATH = "/internal/v1/try-on-jobs";
-    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
+    // FastAPI 의 verify_internal_api_key 가 보는 헤더. 추천 호출과 같은 규약을 쓴다.
+    private static final String INTERNAL_API_KEY_HEADER = "X-Internal-Api-Key";
     private static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 
     private final RestClient aiRestClient;
-    private final String internalToken;
+    private final String internalApiKey;
 
     public TryOnGenerationRestClient(
             RestClient aiRestClient,
-            @Value("${gordi.internal.token:}") String internalToken
+            @Value("${gordi.ai.internal-api-key:}") String internalApiKey
     ) {
         this.aiRestClient = aiRestClient;
-        this.internalToken = internalToken;
+        this.internalApiKey = internalApiKey;
     }
 
     @Override
@@ -51,8 +52,8 @@ public class TryOnGenerationRestClient implements TryOnGenerationClient {
                     .uri(SUBMIT_PATH)
                     .contentType(MediaType.APPLICATION_JSON)
                     .headers(headers -> {
-                        if (StringUtils.hasText(internalToken)) {
-                            headers.set(INTERNAL_TOKEN_HEADER, internalToken);
+                        if (StringUtils.hasText(internalApiKey)) {
+                            headers.set(INTERNAL_API_KEY_HEADER, internalApiKey);
                         }
                         headers.set(RequestIdUtils.REQUEST_ID_HEADER, requestId);
                         // Job 하나당 접수는 한 번이므로 jobId 를 멱등 키로 쓴다.
@@ -81,8 +82,8 @@ public class TryOnGenerationRestClient implements TryOnGenerationClient {
             response = aiRestClient.get()
                     .uri(SUBMIT_PATH + "/{jobId}", jobId)
                     .headers(headers -> {
-                        if (StringUtils.hasText(internalToken)) {
-                            headers.set(INTERNAL_TOKEN_HEADER, internalToken);
+                        if (StringUtils.hasText(internalApiKey)) {
+                            headers.set(INTERNAL_API_KEY_HEADER, internalApiKey);
                         }
                         headers.set(RequestIdUtils.REQUEST_ID_HEADER, requestId);
                     })
