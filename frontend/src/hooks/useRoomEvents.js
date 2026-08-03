@@ -309,6 +309,8 @@ export function useRoomEvents(roomSession) {
     const ownedLockTokensRef = useRef(new Map());
     const versionRef = useRef(Number(roomSession?.version ?? 0));
     const lastCursorPublishAtRef = useRef(0);
+    const pendingCursorRef = useRef(null);
+    const cursorPublishTimerRef = useRef(null);
     const [roomState, dispatch] = useReducer(roomEventReducer, roomSession, createInitialState);
     const [cursors, setCursors] = useState({});
     const [sharedDemoPlacements, setSharedDemoPlacements] = useState(null);
@@ -401,8 +403,8 @@ export function useRoomEvents(roomSession) {
                     ...currentCursors,
                     [participantId]: {
                         participantId: cursor.participantId,
-                        x,
-                        y,
+                        x: Math.max(0, Math.min(1, x)),
+                        y: Math.max(0, Math.min(1, y)),
                         updatedAt: Date.now(),
                     },
                 }));
@@ -487,6 +489,13 @@ export function useRoomEvents(roomSession) {
             clientRef.current = null;
             ownedLockTokensRef.current.clear();
             lastCursorPublishAtRef.current = 0;
+            pendingCursorRef.current = null;
+
+            if (cursorPublishTimerRef.current !== null) {
+                window.clearTimeout(cursorPublishTimerRef.current);
+                cursorPublishTimerRef.current = null;
+            }
+
             client.deactivate();
         };
     }, [roomSession]);
@@ -615,26 +624,58 @@ export function useRoomEvents(roomSession) {
 
     const finishRoom = useCallback(() => publishCommand("finish", {}), [publishCommand]);
 
+    const publishPendingCursor = useCallback(() => {
+        cursorPublishTimerRef.current = null;
+
+        const client = clientRef.current;
+        const cursor = pendingCursorRef.current;
+
+        if (!client?.connected || !cursor) {
+            pendingCursorRef.current = null;
+            return false;
+        }
+
+        pendingCursorRef.current = null;
+        lastCursorPublishAtRef.current = performance.now();
+        client.publish({
+            destination: `/app/rooms/${roomId}/cursor`,
+            body: JSON.stringify(cursor),
+        });
+        return true;
+    }, [roomId]);
+
     const moveCursor = useCallback(
         ({ x, y }) => {
             const client = clientRef.current;
             const now = performance.now();
 
-            if (!client?.connected || !Number.isFinite(x) || !Number.isFinite(y) || now - lastCursorPublishAtRef.current < CURSOR_PUBLISH_INTERVAL_MS) {
+            if (!client?.connected || !Number.isFinite(x) || !Number.isFinite(y)) {
                 return false;
             }
 
-            lastCursorPublishAtRef.current = now;
-            client.publish({
-                destination: `/app/rooms/${roomId}/cursor`,
-                body: JSON.stringify({
-                    x: Math.max(0, Math.min(1, x)),
-                    y: Math.max(0, Math.min(1, y)),
-                }),
-            });
+            pendingCursorRef.current = {
+                x: Math.max(0, Math.min(1, x)),
+                y: Math.max(0, Math.min(1, y)),
+            };
+
+            const elapsed = now - lastCursorPublishAtRef.current;
+
+            if (elapsed >= CURSOR_PUBLISH_INTERVAL_MS) {
+                if (cursorPublishTimerRef.current !== null) {
+                    window.clearTimeout(cursorPublishTimerRef.current);
+                    cursorPublishTimerRef.current = null;
+                }
+
+                return publishPendingCursor();
+            }
+
+            if (cursorPublishTimerRef.current === null) {
+                cursorPublishTimerRef.current = window.setTimeout(publishPendingCursor, CURSOR_PUBLISH_INTERVAL_MS - elapsed);
+            }
+
             return true;
         },
-        [roomId],
+        [publishPendingCursor],
     );
 
     const shareDemoPlacements = useCallback(

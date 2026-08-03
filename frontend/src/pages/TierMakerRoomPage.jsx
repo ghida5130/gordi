@@ -614,6 +614,9 @@ function TierMakerRoomPage() {
     if (!board) return;
 
     const bounds = board.getBoundingClientRect();
+
+    if (bounds.width === 0 || bounds.height === 0) return;
+
     roomEvents.moveCursor({
       x: (event.clientX - bounds.left) / bounds.width,
       y: (event.clientY - bounds.top) / bounds.height,
@@ -723,12 +726,13 @@ function TierMakerRoomPage() {
                 저장되지는 않습니다.
               </p>
             )}
-            <div
-              ref={sharedBoardRef}
-              onPointerMove={handleBoardPointerMove}
-              onDragOverCapture={handleBoardPointerMove}
-              className="relative grid items-start gap-5 xl:grid-cols-[280px_minmax(520px,1fr)_310px]"
-            >
+            <div className="overflow-x-auto pb-2">
+              <div
+                ref={sharedBoardRef}
+                onPointerMove={handleBoardPointerMove}
+                onDragOverCapture={handleBoardPointerMove}
+                className="relative grid h-[720px] w-[1530px] grid-cols-[280px_900px_310px] gap-5"
+              >
               <SharedCursorLayer
                 cursors={roomEvents.cursors}
                 participants={roomEvents.participants}
@@ -782,15 +786,16 @@ function TierMakerRoomPage() {
                 canRename={isHost}
                 onRenameTier={handleRenameTier}
               />
-              <ClothingCatalog
-                clothes={clothes}
-                tierByItem={tierByItem}
-                itemLocks={roomEvents.itemLocks}
-                currentParticipantId={roomSession.participantId}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onUnrank={handleUnrank}
-              />
+                <ClothingCatalog
+                  clothes={clothes}
+                  tierByItem={tierByItem}
+                  itemLocks={roomEvents.itemLocks}
+                  currentParticipantId={roomSession.participantId}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onUnrank={handleUnrank}
+                />
+              </div>
             </div>
 
             <ParticipantDock
