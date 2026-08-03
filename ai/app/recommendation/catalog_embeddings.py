@@ -426,7 +426,7 @@ def build_catalog_embeddings(
             document,
             resolved,
         )
-        reused = reusable.get((product.product_id, input_sha256))
+        reused = reusable.get(input_sha256)
         if reused is not None:
             embedding = _validated_normalized_embedding(
                 reused.get("embedding"),
@@ -539,8 +539,12 @@ def _load_reusable_items(
     paths: list[Path],
     model: str,
     dimensions: int,
-) -> dict[tuple[int, str], dict[str, Any]]:
-    reusable: dict[tuple[int, str], dict[str, Any]] = {}
+) -> dict[str, dict[str, Any]]:
+    # 재사용 키는 embedding_input_sha256 하나로 충분하다: 해시가
+    # model/dimensions/document/이미지 내용을 모두 커버하므로 임베딩은
+    # 이 입력만의 순수 함수다. product_id는 DB auto-increment 값이라
+    # 같은 상품이라도 DB(로컬/EC2)마다 달라져 키에 넣으면 재사용이 깨진다.
+    reusable: dict[str, dict[str, Any]] = {}
     for path in paths:
         if not path.is_file():
             continue
@@ -559,11 +563,10 @@ def _load_reusable_items(
             continue
         for item in payload.get("items", []):
             try:
-                product_id = int(item["product"]["product_id"])
                 input_sha256 = str(item["embedding_input_sha256"])
-            except (KeyError, TypeError, ValueError):
+            except (KeyError, TypeError):
                 continue
-            reusable[(product_id, input_sha256)] = item
+            reusable[input_sha256] = item
     return reusable
 
 
