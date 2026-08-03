@@ -72,17 +72,25 @@ def get_vlm_client() -> OpenAICompatibleVLMClient:
 
 
 @lru_cache
-def get_recommendation_pipeline() -> RecommendationPipeline:
+def get_catalog_index() -> CatalogVectorIndex:
+    settings = get_settings()
+    try:
+        return CatalogVectorIndex.load(
+            settings.catalog_embedding_index_path
+        )
+    except VectorIndexError as exc:
+        raise RecommendationRuntimeError(str(exc)) from exc
+
+
+@lru_cache
+def get_embedding_provider() -> OpenRouterEmbeddingProvider:
     settings = get_settings()
     if not settings.openrouter_api_key.strip():
         raise RecommendationRuntimeError(
             "OPENROUTER_API_KEY is not configured"
         )
     try:
-        index = CatalogVectorIndex.load(
-            settings.catalog_embedding_index_path
-        )
-        provider = OpenRouterEmbeddingProvider(
+        return OpenRouterEmbeddingProvider(
             EmbeddingSettings(
                 api_key=settings.openrouter_api_key,
                 model=settings.openrouter_embedding_model,
@@ -102,8 +110,21 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
                 allow_fallbacks=settings.openrouter_allow_fallbacks,
             )
         )
+    except CatalogEmbeddingError as exc:
+        raise RecommendationRuntimeError(str(exc)) from exc
+
+
+@lru_cache
+def get_recommendation_pipeline() -> RecommendationPipeline:
+    settings = get_settings()
+    try:
+        index = get_catalog_index()
+        provider = get_embedding_provider()
         retriever = CandidateRetriever(index, provider)
-    except (CatalogEmbeddingError, VectorIndexError) as exc:
+    except (
+        CatalogEmbeddingError,
+        VectorIndexError,
+    ) as exc:
         raise RecommendationRuntimeError(str(exc)) from exc
     image_intent_extractor = None
     if settings.recommendation_image_attributes_enabled:

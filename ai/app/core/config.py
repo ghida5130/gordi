@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     recommendation_image_attributes_enabled: bool = False
     recommendation_vlm_rerank_enabled: bool = False
     recommendation_llm_reasons_enabled: bool = False
+    # /rank 를 벡터 파이프라인으로 처리 (인덱스/키 불가 시 baseline fallback)
+    recommendation_rank_vector_enabled: bool = True
     recommendation_vlm_rerank_top_k: int = Field(
         default=20,
         ge=1,
