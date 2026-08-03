@@ -4,7 +4,10 @@ import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
+import com.ssafy.backend.websocket.dto.RoomLeaveRequestDTO;
 import com.ssafy.backend.websocket.dto.RoomStartRequestDTO;
+import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
+import com.ssafy.backend.websocket.service.RoomLeaveService;
 import com.ssafy.backend.websocket.service.RoomStartService;
 import com.ssafy.backend.websocket.service.RoomSyncService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ public class RoomLifecycleController {
     private static final String SYNC_QUEUE = "/queue/sync";
 
     private final RoomStartService roomStartService;
+    private final RoomLeaveService roomLeaveService;
     private final RoomSyncService roomSyncService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -63,6 +67,37 @@ public class RoomLifecycleController {
             );
         } catch (ApiException exception) {
             handleFailure(roomId, roomPrincipal, request, exception);
+        }
+    }
+
+    // - 인자: 경로의 roomId, 요청 식별자, 세션 Principal
+    // - 동작: 현재 참가자를 멱등하게 퇴장시키고 커밋 후 PARTICIPANT_LEFT를 방송한다.
+    @MessageMapping("/rooms/{roomId}/leave")
+    public void leave(
+            @DestinationVariable Long roomId,
+            @Payload RoomLeaveRequestDTO request,
+            Principal principal
+    ) {
+        if (!(principal instanceof RoomPrincipal roomPrincipal)) {
+            log.warn("leave 요청에 RoomPrincipal이 없어 무시: roomId={}", roomId);
+            return;
+        }
+        if (!roomPrincipal.roomId().equals(roomId)) {
+            log.warn("다른 방 leave 요청 무시: requestedRoomId={}, principalRoomId={}, participantId={}",
+                    roomId, roomPrincipal.roomId(), roomPrincipal.participantId());
+            return;
+        }
+
+        try {
+            roomLeaveService.leave(
+                    roomId,
+                    roomPrincipal.participantId(),
+                    request == null ? null : request.clientEventId(),
+                    ParticipantLeaveReason.USER_REQUEST
+            );
+        } catch (ApiException exception) {
+            log.warn("leave 처리 실패: roomId={}, participantId={}, errorCode={}",
+                    roomId, roomPrincipal.participantId(), exception.getErrorCode().getCode());
         }
     }
 

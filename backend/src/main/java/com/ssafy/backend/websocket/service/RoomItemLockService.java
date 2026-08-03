@@ -13,6 +13,7 @@ import com.ssafy.backend.websocket.dto.ItemUnlockedEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.event.ItemUnlockReason;
 import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
+import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 아이템 드래그 잠금(ITEM_LOCKED) 처리.
@@ -193,6 +195,25 @@ public class RoomItemLockService {
             return existing;
         });
         return released.get();
+    }
+
+    // - 인자: 방/참가자 ID
+    // - 동작: 참가자가 보유한 해당 방의 모든 휘발성 잠금을 제거하고 제거 개수를 반환한다.
+    public int releaseAllOwnedBy(Long roomId, Long participantId) {
+        AtomicInteger released = new AtomicInteger();
+        locks.forEach((key, existing) -> {
+            if (key.roomId().equals(roomId)
+                    && existing.participantId().equals(participantId)
+                    && locks.remove(key, existing)) {
+                released.incrementAndGet();
+            }
+        });
+        return released.get();
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleParticipantLeft(ParticipantLeftEvent event) {
+        releaseAllOwnedBy(event.roomId(), event.participantId());
     }
 
     // - 인자: 방/아이템 ID, 확인 주체 participantId
