@@ -84,7 +84,7 @@ export function useRoomParticipants(roomSession) {
 
     // 참여자 이벤트 구독 및 연결 생명주기 관리
     const client = new Client({
-      brokerURL: createWebSocketUrl(roomSession.webSocketUrl ?? "/ws/v1"),
+      brokerURL: createWebSocketUrl("/ws/v1"),
       connectHeaders: {
         Authorization: `Bearer ${roomSession.roomToken}`,
       },

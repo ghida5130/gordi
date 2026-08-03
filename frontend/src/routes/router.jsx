@@ -11,8 +11,11 @@ import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
 import LoginPage from "@/pages/LoginPage";
 import AvatarSetupPage from "@/pages/AvatarSetupPage";
+import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import RecommendationPage from "@/pages/RecommendationPage";
+import MyPage from "@/pages/MyPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
@@ -54,16 +57,28 @@ export const router = createBrowserRouter([
         element: <ApiExamplePage />,
       },
       {
-        path: "tierm",
+        path: "rooms/:roomId/tier-maker",
         element: <TierMakerRoomPage />,
       },
       {
-        path: "avatar/setup",
+        path: "signup/complete",
+        element: <SignupCompletePage />,
+      },
+      {
+        path: "mypage",
+        element: <MyPage />,
+      },
+      {
+        path: "mypage/avatar/edit",
         element: <AvatarSetupPage />,
       },
       {
         path: "oauth/callback",
         element: <OAuthCallbackPage />,
+      },
+      {
+        path: "recommendation",
+        element: <RecommendationPage />,
       },
       {
         path: "*",

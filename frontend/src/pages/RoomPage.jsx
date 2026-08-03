@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import PageContainer from "@/components/common/PageContainer";
-import { useRoomParticipants } from "@/hooks/useRoomParticipants";
-import { getRoomSession } from "@/utils/roomSessionStorage";
+import { useRoomEvents } from "@/hooks/useRoomEvents";
+import {
+  getRoomSession,
+  removeRoomSession,
+} from "@/utils/roomSessionStorage";
 
 const CONNECTION_LABELS = {
   CONNECTING: "연결 중",
@@ -14,18 +17,66 @@ const CONNECTION_LABELS = {
 
 function RoomPage() {
   const { roomId } = useParams();
+  const navigate = useNavigate();
   const [roomSession] = useState(getRoomSession);
   const [isCopied, setIsCopied] = useState(false);
+  const [isStartRequested, setIsStartRequested] = useState(false);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
-  const { participants, connectionState, connectionError } =
-    useRoomParticipants(isCurrentRoom ? roomSession : null);
+  const {
+    participants,
+    status,
+    hasSnapshot,
+    terminalEvent,
+    connectionState,
+    connectionError,
+    startRoom,
+  } = useRoomEvents(isCurrentRoom ? roomSession : null);
+
+  useEffect(() => {
+    if (status === "IN_PROGRESS") {
+      navigate(`/rooms/${roomId}/tier-maker`, { replace: true });
+    }
+  }, [navigate, roomId, status]);
+
+  useEffect(() => {
+    if (!terminalEvent) return;
+
+    removeRoomSession();
+    navigate("/rooms", {
+      replace: true,
+      state: {
+        roomNotice:
+          terminalEvent === "ROOM_EXPIRED"
+            ? "방 이용 시간이 만료되었습니다."
+            : "방이 종료되었습니다.",
+      },
+    });
+  }, [navigate, terminalEvent]);
+
+  useEffect(() => {
+    if (!isStartRequested) return undefined;
+
+    const resetTimer = window.setTimeout(() => {
+      setIsStartRequested(false);
+    }, 5_000);
+
+    return () => window.clearTimeout(resetTimer);
+  }, [isStartRequested]);
 
   const handleCopyRoomCode = async () => {
     if (!roomSession?.roomCode) return;
 
     await navigator.clipboard.writeText(roomSession.roomCode);
     setIsCopied(true);
+  };
+
+  const handleStartRoom = () => {
+    const clientEventId = startRoom();
+
+    if (clientEventId) {
+      setIsStartRequested(true);
+    }
   };
 
   if (!isCurrentRoom) {
@@ -138,6 +189,29 @@ function RoomPage() {
               );
             })}
           </div>
+
+          {roomSession.role === "HOST" ? (
+            <button
+              type="button"
+              onClick={handleStartRoom}
+              disabled={
+                connectionState !== "CONNECTED" ||
+                !hasSnapshot ||
+                isStartRequested
+              }
+              className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-3 font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isStartRequested
+                ? "방을 시작하는 중..."
+                : hasSnapshot
+                  ? "티어메이킹 시작"
+                  : "방 상태 확인 중..."}
+            </button>
+          ) : (
+            <p className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
+              방장이 티어메이킹을 시작할 때까지 기다려 주세요.
+            </p>
+          )}
         </section>
       </PageContainer>
     </main>

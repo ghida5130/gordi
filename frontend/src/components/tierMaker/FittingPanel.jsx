@@ -62,10 +62,17 @@ function FittingPanel({
   onDropCandidate,
   onRemoveCandidate,
   onDragStart,
+  onDragEnd,
+  onGenerate,
+  canGenerate,
+  generateDisabledMessage,
+  isSubmitting,
+  tryOn,
+  errorMessage,
 }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedItems, setGeneratedItems] = useState([])
+  const isProcessing =
+    isSubmitting || tryOn.status === 'PROCESSING'
 
   const handleDrop = (event) => {
     event.preventDefault()
@@ -74,13 +81,9 @@ function FittingPanel({
   }
 
   const handleGenerate = () => {
-    if (candidates.length === 0 || isGenerating) return
+    if (candidates.length === 0 || isProcessing || !canGenerate) return
 
-    setIsGenerating(true)
-    window.setTimeout(() => {
-      setGeneratedItems(candidates)
-      setIsGenerating(false)
-    }, 900)
+    onGenerate()
   }
 
   return (
@@ -113,18 +116,25 @@ function FittingPanel({
         >
           <div className="absolute inset-x-8 bottom-3 h-8 rounded-[50%] bg-slate-300/25 blur-sm" />
           <div className="relative flex min-h-[292px] items-center justify-center pt-3">
-            {isGenerating ? (
+            {isProcessing ? (
               <div className="flex flex-col items-center">
                 <span className="size-12 animate-spin rounded-full border-4 border-violet-100 border-t-violet-600" />
                 <p className="mt-4 text-sm font-semibold text-violet-700">
                   착장을 만들고 있어요
                 </p>
               </div>
+            ) : tryOn.status === 'SUCCEEDED' &&
+              tryOn.resultImageUrl ? (
+              <img
+                src={tryOn.resultImageUrl}
+                alt="가상 피팅 결과"
+                className="h-[292px] w-full object-cover"
+              />
             ) : (
-              <Mannequin generatedItems={generatedItems} />
+              <Mannequin generatedItems={candidates} />
             )}
           </div>
-          {generatedItems.length === 0 && !isGenerating && (
+          {candidates.length === 0 && !isProcessing && (
             <p className="absolute inset-x-0 bottom-3 text-center text-[11px] text-slate-400">
               의상을 놓고 아바타를 생성해 보세요
             </p>
@@ -153,6 +163,7 @@ function FittingPanel({
                   key={item.id}
                   draggable
                   onDragStart={(event) => onDragStart(event, item.id)}
+                  onDragEnd={(event) => onDragEnd(event, item.id)}
                   className="group relative cursor-grab"
                 >
                   <ClothingArtwork
@@ -177,14 +188,26 @@ function FittingPanel({
           </div>
         </div>
 
+        {(tryOn.status === 'FAILED' || errorMessage) && (
+          <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">
+            {errorMessage || tryOn.reason}
+          </p>
+        )}
+
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={candidates.length === 0 || isGenerating}
+          disabled={
+            candidates.length === 0 || isProcessing || !canGenerate
+          }
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           <TierMakerIcon name="sparkles" size={17} />
-          {isGenerating ? '생성 중...' : '아바타 생성하기'}
+          {isProcessing
+            ? '생성 중...'
+            : canGenerate
+              ? '아바타 생성하기'
+              : generateDisabledMessage}
         </button>
       </div>
     </aside>
