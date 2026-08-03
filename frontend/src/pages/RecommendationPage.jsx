@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 import {
   createRecommendation,
   getRecommendationOptions,
   replaceRecommendationItems,
 } from "@/api/recommendations";
+import { createRoom } from "@/api/rooms";
+import { getAuthenticatedProduct } from "@/api/products";
 import { getMyAvatar } from "@/api/users";
 import AvatarSetupPrompt from "@/components/common/AvatarSetupPrompt";
-import ClothingAddModal from "@/components/recommendation/ClothingAddModal";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { getRoomSession } from "@/utils/roomSessionStorage";
+import { setRoomSession } from "@/utils/roomSessionStorage";
 
 const unwrap = (response) => {
   let payload = response;
@@ -30,7 +32,7 @@ const createIdempotencyKey = () => crypto.randomUUID();
 const getReplaceErrorMessage = (error) =>
   error?.response?.status === 409
     ? "추천 결과가 변경되었습니다. 최신 결과를 다시 확인해 주세요."
-    : getApiErrorMessage(error, "의상을 추가하지 못했습니다.");
+    : getApiErrorMessage(error, "선택한 의상을 다시 추천하지 못했습니다.");
 const getRecommendationErrorMessage = (error) => {
   if (error?.response?.status === 403)
     return "이 추천 결과를 조회할 권한이 없습니다.";
@@ -39,11 +41,14 @@ const getRecommendationErrorMessage = (error) => {
 };
 
 function RecommendationPage() {
+  const navigate = useNavigate();
+  const roomIdempotencyKey = useRef(crypto.randomUUID());
   const [step, setStep] = useState("form");
   const [recommendation, setRecommendation] = useState(null);
   const [submittedConditions, setSubmittedConditions] = useState(null);
   const [submittedRecommendation, setSubmittedRecommendation] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [replacementNotice, setReplacementNotice] = useState("");
   const [form, setForm] = useState({
     category: "",
     subcategory: "",
@@ -53,8 +58,6 @@ function RecommendationPage() {
     additionalInfo: "",
     referenceImages: [],
   });
-  const roomSession = getRoomSession();
-
   const avatarQuery = useQuery({
     queryKey: ["myAvatar"],
     queryFn: getMyAvatar,
@@ -70,28 +73,19 @@ function RecommendationPage() {
   const categories = toArray(options.categories);
   const moods = toArray(options.moods);
   const budgetPolicy = options.budgetPolicy ?? {};
-
-  useEffect(() => {
-    if (!optionsQuery.data) return;
-
-    setForm((current) => ({
-      ...current,
-      minPrice: current.minPrice || String(budgetPolicy.minAllowed ?? ""),
-      maxPrice: current.maxPrice || String(budgetPolicy.maxAllowed ?? ""),
-    }));
-  }, [budgetPolicy.maxAllowed, budgetPolicy.minAllowed, optionsQuery.data]);
-
-  useEffect(() => {
-    const firstCategory = categories[0];
-    if (!firstCategory) return;
-
-    setForm((current) => ({
-      ...current,
-      category: current.category || firstCategory.code,
-      subcategory:
-        current.subcategory || firstCategory.subcategories?.[0]?.code || "",
-    }));
-  }, [categories]);
+  const selectedFormCategory =
+    categories.find((category) => category.code === form.category) ??
+    categories[0];
+  const recommendationForm = {
+    ...form,
+    category: selectedFormCategory?.code ?? form.category,
+    subcategory:
+      form.subcategory || selectedFormCategory?.subcategories?.[0]?.code || "",
+    minPrice:
+      form.minPrice || String(budgetPolicy.minAllowed ?? ""),
+    maxPrice:
+      form.maxPrice || String(budgetPolicy.maxAllowed ?? ""),
+  };
 
   const createMutation = useMutation({
     mutationFn: createRecommendation,
@@ -102,14 +96,6 @@ function RecommendationPage() {
   const recommendationId =
     recommendation?.recommendationId ?? recommendation?.id;
   const recommendationResult = recommendation;
-  const replaceMutation = useMutation({
-    mutationFn: replaceRecommendationItems,
-    onSuccess: (response) => {
-      const updatedRecommendation = unwrap(response);
-      setRecommendation(updatedRecommendation);
-      setIsModalOpen(false);
-    },
-  });
 
   const recommendedItems = useMemo(
     () =>
@@ -120,6 +106,105 @@ function RecommendationPage() {
       ),
     [recommendationResult],
   );
+  const recommendedProductIds = useMemo(
+    () => [
+      ...new Set(
+        recommendedItems
+          .map((item) => item.productId ?? item.id)
+          .filter((productId) => productId != null),
+      ),
+    ],
+    [recommendedItems],
+  );
+  const productQueries = useQueries({
+    queries: recommendedProductIds.map((productId) => ({
+      queryKey: ["products", productId],
+      queryFn: () => getAuthenticatedProduct({ productId }),
+      enabled: step === "results" && Boolean(recommendationResult),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const productsById = Object.fromEntries(
+    productQueries
+      .map((query, index) => [
+        String(recommendedProductIds[index]),
+        query.data?.data,
+      ])
+      .filter(([, product]) => product),
+  );
+  const detailedItems = recommendedItems.map((item) => {
+    const productId = item.productId ?? item.id;
+    const product = productsById[String(productId)];
+
+    return {
+      ...item,
+      ...product,
+      productId,
+    };
+  });
+  const replaceMutation = useMutation({
+    mutationFn: replaceRecommendationItems,
+    onSuccess: (response) => {
+      const replacementResult = unwrap(response);
+      const replacements = toArray(replacementResult.replaced);
+
+      setRecommendation((currentRecommendation) => {
+        if (!currentRecommendation) return currentRecommendation;
+
+        const currentItems = toArray(
+          currentRecommendation.items ??
+            currentRecommendation.recommendedItems ??
+            currentRecommendation.products,
+        );
+        const nextItems = currentItems.map((item) => {
+          const productId = item.productId ?? item.id;
+          const replacement = replacements.find(
+            (currentReplacement) =>
+              String(currentReplacement.oldProductId) === String(productId),
+          );
+
+          if (!replacement) return item;
+
+          return {
+            productId: replacement.newProductId,
+            rank: replacement.position ?? item.rank,
+          };
+        });
+
+        return {
+          ...currentRecommendation,
+          ...replacementResult,
+          items: nextItems,
+        };
+      });
+      setSelectedProductIds([]);
+
+      const unreplacedCount = toArray(
+        replacementResult.unreplacedProductIds,
+      ).length;
+      setReplacementNotice(
+        unreplacedCount > 0
+          ? `${unreplacedCount}개 항목은 대체할 상품을 찾지 못했습니다.`
+          : "선택한 항목을 새로운 추천으로 교체했습니다.",
+      );
+    },
+  });
+  const createRoomMutation = useMutation({
+    mutationFn: (roomInformation) =>
+      createRoom(roomInformation, roomIdempotencyKey.current),
+    onSuccess: (response) => {
+      setRoomSession({
+        ...response.data,
+        role: "HOST",
+        nickname: "방장",
+      });
+      navigate(`/rooms/${response.data.roomId}`, { replace: true });
+    },
+  });
+
+  useEffect(() => {
+    roomIdempotencyKey.current = crypto.randomUUID();
+  }, [recommendationId, recommendationResult?.version]);
 
   const toggleMood = (moodCode) =>
     setForm((current) => ({
@@ -139,49 +224,88 @@ function RecommendationPage() {
   const handleSubmit = (event) => {
     event.preventDefault();
     const selectedCategory = categories.find(
-      (category) => category.code === form.category,
+      (category) => category.code === recommendationForm.category,
     );
     const selectedSubcategory = selectedCategory?.subcategories?.find(
-      (subcategory) => subcategory.code === form.subcategory,
+      (subcategory) => subcategory.code === recommendationForm.subcategory,
     );
     setSubmittedConditions({
-      category: selectedCategory?.label ?? form.category,
-      subcategory: selectedSubcategory?.label ?? form.subcategory,
+      category: selectedCategory?.label ?? recommendationForm.category,
+      subcategory:
+        selectedSubcategory?.label ?? recommendationForm.subcategory,
       moods: moods
-        .filter((mood) => form.moodCodes.includes(mood.code))
+        .filter((mood) => recommendationForm.moodCodes.includes(mood.code))
         .map((mood) => mood.label),
-      budgetMin: Number(form.minPrice),
-      budgetMax: Number(form.maxPrice),
+      budgetMin: Number(recommendationForm.minPrice),
+      budgetMax: Number(recommendationForm.maxPrice),
     });
     setSubmittedRecommendation({
-      category: form.category,
-      subcategory: form.subcategory,
-      budgetMin: Number(form.minPrice),
-      budgetMax: Number(form.maxPrice),
-      moods: form.moodCodes,
+      category: recommendationForm.category,
+      subcategory: recommendationForm.subcategory,
+      budgetMin: Number(recommendationForm.minPrice),
+      budgetMax: Number(recommendationForm.maxPrice),
+      moods: recommendationForm.moodCodes,
     });
     setRecommendation(null);
     createMutation.reset();
+    replaceMutation.reset();
+    createRoomMutation.reset();
+    setSelectedProductIds([]);
+    setReplacementNotice("");
     setStep("analysis");
   };
   const handleRecommend = () => {
     if (!submittedRecommendation || createMutation.isPending) return;
 
     setRecommendation(null);
-    setIsModalOpen(false);
+    setSelectedProductIds([]);
+    setReplacementNotice("");
     setStep("results");
     createMutation.mutate({
       recommendation: submittedRecommendation,
       idempotencyKey: createIdempotencyKey(),
     });
   };
-  const handleAdd = (clothing) => {
-    const productId = clothing.productId ?? clothing.id;
+  const toggleSelectedProduct = (productId) => {
+    setSelectedProductIds((currentProductIds) =>
+      currentProductIds.includes(productId)
+        ? currentProductIds.filter((currentId) => currentId !== productId)
+        : [...currentProductIds, productId],
+    );
+  };
+  const handleReplaceSelected = () => {
+    if (
+      !recommendationId ||
+      !recommendationResult?.version ||
+      selectedProductIds.length === 0 ||
+      replaceMutation.isPending
+    ) {
+      return;
+    }
+
+    setReplacementNotice("");
+    createRoomMutation.reset();
     replaceMutation.mutate({
       recommendationId,
       baseVersion: recommendationResult?.version,
-      productIds: [productId],
+      productIds: selectedProductIds.map(Number),
       idempotencyKey: createIdempotencyKey(),
+    });
+  };
+  const handleCreateRoom = () => {
+    if (
+      !recommendationId ||
+      !recommendationResult?.version ||
+      createRoomMutation.isPending
+    ) {
+      return;
+    }
+
+    replaceMutation.reset();
+    createRoomMutation.mutate({
+      recommendationId: Number(recommendationId),
+      recommendationVersion: Number(recommendationResult.version),
+      maxParticipants: 4,
     });
   };
 
@@ -216,31 +340,37 @@ function RecommendationPage() {
 
   if (step === "results")
     return (
-      <>
-        <RecommendationResults
-          items={recommendedItems}
-          emptyReason={recommendationResult?.emptyReason}
-          isPending={
-            createMutation.isPending ||
-            (!recommendationResult && !createMutation.isError)
-          }
-          error={createMutation.error}
-          onBack={() => setStep("analysis")}
-          onOpenModal={() => setIsModalOpen(true)}
-        />
-        {isModalOpen && recommendationResult && (
-          <ClothingAddModal
-            roomToken={roomSession?.roomToken}
-            onClose={() => setIsModalOpen(false)}
-            onAdd={handleAdd}
-          />
+      <RecommendationResults
+        items={detailedItems}
+        emptyReason={recommendationResult?.emptyReason}
+        isPending={
+          createMutation.isPending ||
+          (!recommendationResult && !createMutation.isError)
+        }
+        isReplacing={replaceMutation.isPending}
+        isCreatingRoom={createRoomMutation.isPending}
+        error={createMutation.error}
+        actionError={
+          replaceMutation.isError
+            ? getReplaceErrorMessage(replaceMutation.error)
+            : createRoomMutation.isError
+              ? getApiErrorMessage(
+                  createRoomMutation.error,
+                  "티어메이커 방을 만들지 못했습니다.",
+                )
+              : ""
+        }
+        replacementNotice={replacementNotice}
+        selectedProductIds={selectedProductIds}
+        hasProductError={productQueries.some((query) => query.isError)}
+        canRequestActions={Boolean(
+          recommendationId && recommendationResult?.version,
         )}
-        {replaceMutation.isError && (
-          <p className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-red-600 px-4 py-3 text-sm text-white">
-            {getReplaceErrorMessage(replaceMutation.error)}
-          </p>
-        )}
-      </>
+        onBack={() => setStep("analysis")}
+        onToggleProduct={toggleSelectedProduct}
+        onReplaceSelected={handleReplaceSelected}
+        onCreateRoom={handleCreateRoom}
+      />
     );
 
   return (
@@ -267,7 +397,7 @@ function RecommendationPage() {
         </header>
         {step === "form" ? (
           <RecommendationForm
-            form={form}
+            form={recommendationForm}
             categories={categories}
             moods={moods}
             budgetPolicy={budgetPolicy}
@@ -285,18 +415,6 @@ function RecommendationPage() {
           />
         )}
       </section>
-      {isModalOpen && (
-        <ClothingAddModal
-          roomToken={roomSession?.roomToken}
-          onClose={() => setIsModalOpen(false)}
-          onAdd={handleAdd}
-        />
-      )}
-      {replaceMutation.isError && (
-        <p className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-red-600 px-4 py-3 text-sm text-white">
-          {getReplaceErrorMessage(replaceMutation.error)}
-        </p>
-      )}
     </main>
   );
 }
@@ -515,31 +633,69 @@ function AnalysisCard({ fallbackConditions, onRetry, onResults }) {
   );
 }
 
+function RecommendationLoading({ title, description }) {
+  return (
+    <main
+      className="flex min-h-screen items-center justify-center bg-[#f4f3ef] px-4"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="text-center">
+        <span
+          className="mx-auto block size-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900"
+          aria-hidden="true"
+        />
+        <h1 className="mt-6 text-xl font-bold text-slate-950">{title}</h1>
+        <p className="mt-2 text-sm text-slate-500">{description}</p>
+      </div>
+    </main>
+  );
+}
+
 function RecommendationResults({
   items,
   emptyReason,
   isPending,
+  isReplacing,
+  isCreatingRoom,
   error,
+  actionError,
+  replacementNotice,
+  selectedProductIds,
+  hasProductError,
+  canRequestActions,
   onBack,
-  onOpenModal,
+  onToggleProduct,
+  onReplaceSelected,
+  onCreateRoom,
 }) {
-  if (isPending)
+  if (isPending) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f4f3ef] px-4">
-        <div className="text-center">
-          <span
-            className="mx-auto block size-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900"
-            aria-hidden="true"
-          />
-          <h1 className="mt-6 text-xl font-bold text-slate-950">
-            AI가 의상을 추천하는 중
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            추천 결과를 준비하고 있습니다. 잠시만 기다려 주세요.
-          </p>
-        </div>
-      </main>
+      <RecommendationLoading
+        title="사용자 맞춤형 의상을 선별 중입니다"
+        description="AI가 입력하신 조건을 분석하고 있습니다. 잠시만 기다려 주세요."
+      />
     );
+  }
+
+  if (isReplacing) {
+    return (
+      <RecommendationLoading
+        title="선택한 의상을 다시 추천하는 중입니다"
+        description="더 잘 어울리는 의상을 찾는 동안 잠시만 기다려 주세요."
+      />
+    );
+  }
+
+  if (isCreatingRoom) {
+    return (
+      <RecommendationLoading
+        title="티어메이커 방을 만들고 있습니다"
+        description="추천 결과를 방에 담고 있습니다. 잠시만 기다려 주세요."
+      />
+    );
+  }
+
   if (error)
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f4f3ef] px-4">
@@ -558,53 +714,147 @@ function RecommendationResults({
       </main>
     );
   return (
-    <main className="min-h-screen bg-[#f4f3ef] p-4 sm:p-6">
-      <header className="mb-5 flex items-center justify-between">
-        <button onClick={onBack} className="font-bold">
-          ← {items.length}개 추천 아이템
-        </button>
-        <button
-          onClick={onOpenModal}
-          className="rounded-xl bg-white px-4 py-2 text-sm font-bold shadow-sm"
-        >
-          ＋ 의상 추가
-        </button>
-      </header>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {items.map((item, index) => {
-          const name = item.name ?? item.productName ?? "추천 의상";
-          const image = item.imageUrl ?? item.thumbnailUrl ?? item.image;
-          return (
-            <article
-              key={item.productId ?? item.id ?? index}
-              className="overflow-hidden rounded-2xl bg-white shadow-sm"
+    <main className="min-h-screen bg-[#f4f3ef] px-6 py-8 text-slate-950">
+      <div className="mx-auto max-w-[1600px]">
+        <header className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-sm font-semibold text-slate-500 hover:text-slate-900"
             >
-              <div className="aspect-[3/4] bg-slate-200">
-                {image && (
-                  <img
-                    src={image}
-                    alt={name}
-                    className="size-full object-cover"
+              ← 추천 조건으로 돌아가기
+            </button>
+            <h1 className="mt-2 text-2xl font-black">
+              {items.length}개 추천 아이템
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              다시 추천받을 의상을 복수로 선택할 수 있습니다.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onReplaceSelected}
+              disabled={
+                !canRequestActions || selectedProductIds.length === 0
+              }
+              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold shadow-sm transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              선택한 항목 다시 추천받기
+              {selectedProductIds.length > 0
+                ? ` (${selectedProductIds.length})`
+                : ""}
+            </button>
+            <button
+              type="button"
+              onClick={onCreateRoom}
+              disabled={!canRequestActions || items.length === 0}
+              className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              티어 메이커로 이동
+            </button>
+          </div>
+        </header>
+
+        {actionError && (
+          <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </p>
+        )}
+        {replacementNotice && (
+          <p className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {replacementNotice}
+          </p>
+        )}
+        {hasProductError && (
+          <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            일부 상품의 상세 정보를 불러오지 못해 추천 응답의 정보를 표시합니다.
+          </p>
+        )}
+
+        <div className="grid grid-cols-5 gap-4">
+          {items.map((item, index) => {
+            const productId = item.productId ?? item.id;
+            const name = item.name ?? item.productName ?? "추천 의상";
+            const image = item.imageUrl ?? item.thumbnailUrl ?? item.image;
+            const isSelected = selectedProductIds.includes(productId);
+            return (
+              <article
+                key={productId ?? index}
+                className={`relative overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition ${
+                  isSelected
+                    ? "border-violet-600 ring-4 ring-violet-100"
+                    : "border-transparent hover:-translate-y-0.5 hover:shadow-lg"
+                }`}
+              >
+                <label className="block cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleProduct(productId)}
+                    className="sr-only"
                   />
+                  <span
+                    className={`absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-full border-2 text-sm font-black shadow-sm ${
+                      isSelected
+                        ? "border-violet-600 bg-violet-600 text-white"
+                        : "border-white bg-white/90 text-transparent"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                  <div className="aspect-[3/4] bg-slate-200">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={name}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center text-xs text-slate-400">
+                        상품 이미지 준비 중
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <p className="truncate text-xs font-semibold text-slate-400">
+                      {item.brand ?? "브랜드 정보 없음"}
+                    </p>
+                    <p className="mt-1 truncate text-sm font-bold">{name}</p>
+                    <p className="mt-2 text-sm font-black">
+                      {item.price != null
+                        ? `${Number(item.price).toLocaleString()}원`
+                        : "가격 정보 없음"}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-slate-500">
+                      {[item.category, item.subcategory]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                </label>
+                {item.purchaseUrl && (
+                  <a
+                    href={item.purchaseUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mx-4 mb-4 block rounded-lg bg-slate-100 px-3 py-2 text-center text-xs font-bold text-slate-700 hover:bg-slate-200"
+                  >
+                    상품 보러가기
+                  </a>
                 )}
-              </div>
-              <div className="p-3">
-                <p className="truncate text-sm font-bold">{name}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {item.price
-                    ? `₩${Number(item.price).toLocaleString()}`
-                    : (item.categoryName ?? item.category ?? "")}
-                </p>
-              </div>
-            </article>
-          );
-        })}
+              </article>
+            );
+          })}
+        </div>
+        {!items.length && (
+          <p className="py-24 text-center text-slate-400">
+            {emptyReason ?? "조건에 맞는 추천 의상이 없습니다."}
+          </p>
+        )}
       </div>
-      {!items.length && (
-        <p className="py-24 text-center text-slate-400">
-          {emptyReason ?? "조건에 맞는 추천 의상이 없습니다."}
-        </p>
-      )}
     </main>
   );
 }

@@ -14,6 +14,7 @@ import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import TierMakerDesignPage from "@/pages/TierMakerDesignPage";
 import RecommendationPage from "@/pages/RecommendationPage";
 import MyPage from "@/pages/MyPage";
 
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
       {
         path: "rooms/:roomId/tier-maker",
         element: <TierMakerRoomPage />,
+      },
+      {
+        path: "tier-maker-design",
+        element: <TierMakerDesignPage />,
       },
       {
         path: "signup/complete",
