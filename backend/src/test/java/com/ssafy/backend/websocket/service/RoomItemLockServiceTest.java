@@ -15,6 +15,8 @@ import com.ssafy.backend.websocket.dto.ItemUnlockedEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.event.ItemUnlockReason;
 import com.ssafy.backend.websocket.event.ItemUnlockRequestedEvent;
+import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
+import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import com.ssafy.backend.websocket.service.RoomItemLockService.ItemLockResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -272,5 +274,18 @@ class RoomItemLockServiceTest {
                 .isInstanceOf(ApiException.class)
                 .extracting(e -> ((ApiException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ROOM_CLOSED);
+    }
+
+    @Test
+    void 참가자_퇴장_커밋_후_해당_참가자의_모든_잠금을_정리한다() {
+        stubValidRoomAndItem();
+        roomItemLockService.tryLock(31L, 42L, "철수", request(91L, "token-1"));
+
+        roomItemLockService.handleParticipantLeft(new ParticipantLeftEvent(
+                31L, 12L, 42L, "request-uuid", ParticipantLeaveReason.USER_REQUEST));
+
+        ItemLockResult result = roomItemLockService.tryLock(
+                31L, 50L, "영희", request(91L, "token-2"));
+        assertThat(result.acquired()).isTrue();
     }
 }

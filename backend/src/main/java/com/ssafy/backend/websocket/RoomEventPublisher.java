@@ -2,10 +2,12 @@ package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
+import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
+import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
@@ -47,6 +49,20 @@ public class RoomEventPublisher {
                         event.nickname(),
                         event.role()
                 )
+        ));
+    }
+
+    // - 인자: 명시적 또는 연결 유실로 확정된 참가자 퇴장 이벤트
+    // - 동작: 커밋 후 PARTICIPANT_LEFT를 방 토픽으로 브로드캐스트
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleParticipantLeft(ParticipantLeftEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.PARTICIPANT_LEFT,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.participantId(),
+                new ParticipantLeftEventDataDTO(event.participantId(), event.reason())
         ));
     }
 

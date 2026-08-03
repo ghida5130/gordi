@@ -61,4 +61,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         scheduler.initialize();
         return scheduler;
     }
+
+    @Bean
+    public TaskScheduler roomDisconnectScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("room-disconnect-");
+        scheduler.initialize();
+        return scheduler;
+    }
 }
