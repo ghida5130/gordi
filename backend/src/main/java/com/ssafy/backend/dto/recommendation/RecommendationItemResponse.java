@@ -4,6 +4,7 @@ import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.RecommendationItem;
 
 import java.math.BigDecimal;
+import java.util.function.UnaryOperator;
 
 // 추천 결과 개별 상품
 public record RecommendationItemResponse(
@@ -20,7 +21,8 @@ public record RecommendationItemResponse(
         BigDecimal score
 ) {
 
-    public static RecommendationItemResponse from(RecommendationItem item) {
+    public static RecommendationItemResponse from(
+            RecommendationItem item, UnaryOperator<String> imageUrlResolver) {
         Product product = item.getProduct();
         return new RecommendationItemResponse(
                 product.getId(),
@@ -30,7 +32,7 @@ public record RecommendationItemResponse(
                 product.getCurrency(),
                 product.getCategory(),
                 product.getSubcategory(),
-                product.getImageUrl(),
+                imageUrlResolver.apply(product.getImageUrl()),
                 product.getPurchaseUrl(),
                 item.getRank(),
                 item.getScore()

@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.dto.product.ProductDetailResponseDTO;
 import com.ssafy.backend.dto.product.ProductSearchResponseDTO;
@@ -26,6 +27,7 @@ public class ProductService {
     private final ProductTopSizeRepository productTopSizeRepository;
     private final ProductBottomSizeRepository productBottomSizeRepository;
     private final RoomAccessValidator roomAccessValidator;
+    private final ImageUrlResolver imageUrlResolver;
 
     public ProductDetailResponseDTO getDetail(Long productId, RoomPrincipal principal) {
         roomAccessValidator.requireParticipant(principal.roomId(), principal);
@@ -53,7 +55,7 @@ public class ProductService {
         return new ProductDetailResponseDTO(
                 product.getId(), product.getName(), product.getBrand(), product.getPrice(),
                 product.getCategory(), product.getSubcategory(),
-                product.getImageUrl(), product.getPurchaseUrl(), product.getDescription(),
+                imageUrlResolver.resolve(product.getImageUrl()), product.getPurchaseUrl(), product.getDescription(),
                 topSizes, bottomSizes);
     }
 
@@ -72,7 +74,7 @@ public class ProductService {
                         .map(p -> new ProductSearchResponseDTO.Item(
                                 p.getId(), p.getName(), p.getBrand(), p.getPrice(),
                                 p.getCategory(), p.getSubcategory(),
-                                p.getImageUrl(), p.getPurchaseUrl()))
+                                imageUrlResolver.resolve(p.getImageUrl()), p.getPurchaseUrl()))
                         .toList(),
                 result.getNumber(), result.getSize(), result.getTotalElements());
     }

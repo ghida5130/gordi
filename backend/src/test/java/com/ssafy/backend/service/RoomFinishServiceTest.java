@@ -23,6 +23,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +81,8 @@ class RoomFinishServiceTest {
                 resultRepository,
                 resultTierRepository,
                 resultBoardItemRepository,
-                eventPublisher
+                eventPublisher,
+                new ImageUrlResolver("")
         );
     }
 

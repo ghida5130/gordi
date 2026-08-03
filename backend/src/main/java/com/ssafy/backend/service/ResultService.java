@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.domain.Result;
 import com.ssafy.backend.domain.ResultBoardItem;
@@ -32,6 +33,7 @@ public class ResultService {
     private final ResultRepository resultRepository;
     private final ResultBoardItemRepository resultBoardItemRepository;
     private final RoomAccessValidator roomAccessValidator;
+    private final ImageUrlResolver imageUrlResolver;
 
     public MyResultListResponseDTO readMyResults(String email) {
         List<Result> results = resultRepository.findAllByOwnerEmail(email);
@@ -114,7 +116,7 @@ public class ResultService {
         if (result.getTryOnJob() == null) {
             return null;
         }
-        return result.getTryOnJob().getResultImageUrl();
+        return imageUrlResolver.resolve(result.getTryOnJob().getResultImageUrl());
     }
 
     private List<MyResultListResponseDTO.TopItem> toMyResultTopItems(
@@ -126,7 +128,7 @@ public class ResultService {
                         item.getProduct().getName(),
                         item.getProduct().getBrand(),
                         item.getProduct().getPrice(),
-                        item.getProduct().getImageUrl()
+                        imageUrlResolver.resolve(item.getProduct().getImageUrl())
                 ))
                 .toList();
     }

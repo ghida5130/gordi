@@ -45,6 +45,7 @@ public class TryOnJobEventService {
         TryOnJob job = tryOnJobRepository.findById(jobId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, Map.of("jobId", jobId)));
 
+        // 동일 중복 재전송 시 500 -> 예외 잡아서 중복 간주 (204) 처리
         if (tryOnJobEventRepository.existsByTryOnJobIdAndEventId(jobId, request.eventId())) {
             log.info("Duplicate try-on event ignored. jobId={}, eventId={}", jobId, request.eventId());
             return;

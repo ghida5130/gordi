@@ -30,6 +30,7 @@ import com.ssafy.backend.dto.tryon.TryOnJobCreateResponseDTO;
 import com.ssafy.backend.dto.tryon.TryOnJobDetailResponseDTO;
 import com.ssafy.backend.dto.tryon.TryOnJobRetryResponseDTO;
 import com.ssafy.backend.infra.TryOnGenerationClient;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.repository.AvatarRepository;
 import com.ssafy.backend.repository.ProductBottomSizeRepository;
 import com.ssafy.backend.repository.ProductRepository;
@@ -93,6 +94,7 @@ public class TryOnService {
     private final IdempotencyService idempotencyService;
     private final TryOnGenerationClient tryOnGenerationClient;
     private final TryOnPolicy tryOnPolicy;
+    private final ImageUrlResolver imageUrlResolver;
 
     /* ==================== 조회 ==================== */
 
@@ -729,7 +731,7 @@ public class TryOnService {
     private TryOnJobDetailResponseDTO toDetail(TryOnJob job) {
         TryOnJobDetailResponseDTO.Result result = job.isSucceeded()
                 ? new TryOnJobDetailResponseDTO.Result(
-                job.getResultImageUrl(),
+                imageUrlResolver.resolve(job.getResultImageUrl()),
                 job.getResultWidth(),
                 job.getResultHeight(),
                 job.getFitSummary(),

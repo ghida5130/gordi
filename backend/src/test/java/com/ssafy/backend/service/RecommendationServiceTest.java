@@ -24,6 +24,7 @@ import com.ssafy.backend.repository.RecommendationMoodRepository;
 import com.ssafy.backend.repository.RecommendationRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,7 +91,8 @@ class RecommendationServiceTest {
                 userRepository,
                 rankClient,
                 idempotencyService,
-                policy
+                policy,
+                new ImageUrlResolver("")
         );
 
         owner = user(1L);
