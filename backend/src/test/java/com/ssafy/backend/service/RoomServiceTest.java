@@ -405,6 +405,7 @@ class RoomServiceTest {
         assertThat(response.version()).isEqualTo(12L);
         assertThat(response.expiresAt())
                 .isEqualTo(room.getExpiresAt().atZone(AppZone.KST).toInstant());
+        assertThat(response.subcategory()).isEqualTo("SHIRT");
         assertThat(response.participants())
                 .extracting(RoomStatusResponseDTO.Participant::participantId)
                 .containsExactly(42L, 43L);
@@ -498,6 +499,7 @@ class RoomServiceTest {
                 .id(21L)
                 .user(host)
                 .category("TOP")
+                .subcategory("SHIRT")
                 .status("READY")
                 .version(2L)
                 .build();
