@@ -19,10 +19,12 @@ public class JwtService {
 
     private final RefreshRepository refreshRepository;
     private final JWTUtil jwtUtil;
+    private final CookieUtil cookieUtil;
 
-    public JwtService(RefreshRepository refreshRepository, JWTUtil jwtUtil) {
+    public JwtService(RefreshRepository refreshRepository, JWTUtil jwtUtil, CookieUtil cookieUtil) {
         this.refreshRepository = refreshRepository;
         this.jwtUtil = jwtUtil;
+        this.cookieUtil = cookieUtil;
     }
 
     // Refresh 토큰으로 Access/Refresh 토큰 재발급 (Refresh Token Rotation - RTR)
@@ -60,7 +62,7 @@ public class JwtService {
                         .build()
         );
 
-        response.addHeader("Set-Cookie", CookieUtil.createRefreshCookie(newRefreshToken));
+        response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(newRefreshToken));
 
         return new JWTResponseDTO(newAccessToken);
     }

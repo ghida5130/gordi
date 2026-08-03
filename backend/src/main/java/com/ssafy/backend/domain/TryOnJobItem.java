@@ -45,6 +45,10 @@ public class TryOnJobItem {
     @Column(name = "slot", nullable = false, length = 50)
     private String slot;
 
+    // 사용자가 고른 사이즈. 재시도 시 같은 사이즈로 다시 요청하기 위해 보관한다.
+    @Column(name = "size_name", length = 50)
+    private String sizeName;
+
     @Column(name = "position", nullable = false)
     private Integer position;
 }

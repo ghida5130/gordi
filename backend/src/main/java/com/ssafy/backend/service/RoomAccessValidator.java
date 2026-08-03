@@ -37,4 +37,17 @@ public class RoomAccessValidator {
                 )
                 .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
     }
+
+    public RoomParticipant requireParticipant(
+            Long requestedRoomId,
+            String email
+    ) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+
+        return roomParticipantRepository
+                .findByRoomIdAndUserEmailAndLeftAtIsNull(requestedRoomId, email)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+    }
 }

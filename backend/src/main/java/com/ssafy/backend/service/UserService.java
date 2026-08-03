@@ -64,6 +64,7 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user).getId();
     }
 
+    // 닉네임 수정
     @Transactional
     public void updateNickname(String nickname) {
         String email = SecurityContextHolder.getContext()
