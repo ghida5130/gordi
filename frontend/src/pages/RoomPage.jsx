@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { getRoomStatus } from "@/api/rooms";
 import PageContainer from "@/components/common/PageContainer";
 import { useRoomEvents } from "@/hooks/useRoomEvents";
+import { getApiErrorMessage } from "@/utils/apiError";
 import {
   getRoomSession,
   removeRoomSession,
@@ -31,7 +34,46 @@ function RoomPage() {
     connectionState,
     connectionError,
     startRoom,
+    applyRoomStatus,
+    requestSync,
   } = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const roomStatusQuery = useQuery({
+    queryKey: ["roomStatus", roomSession?.roomCode],
+    queryFn: () =>
+      getRoomStatus({
+        roomCode: roomSession.roomCode,
+        roomToken: roomSession.roomToken,
+      }),
+    enabled:
+      Boolean(isCurrentRoom) &&
+      Boolean(roomSession?.roomCode) &&
+      Boolean(roomSession?.roomToken) &&
+      connectionState === "CONNECTED",
+    staleTime: 0,
+  });
+
+  useEffect(() => {
+    const roomStatus = roomStatusQuery.data?.data;
+
+    if (roomStatus) {
+      applyRoomStatus(roomStatus);
+    }
+  }, [applyRoomStatus, roomStatusQuery.data]);
+
+  useEffect(() => {
+    if (
+      connectionState === "CONNECTED" &&
+      roomStatusQuery.isFetched &&
+      !roomStatusQuery.isFetching
+    ) {
+      requestSync();
+    }
+  }, [
+    connectionState,
+    requestSync,
+    roomStatusQuery.isFetched,
+    roomStatusQuery.isFetching,
+  ]);
 
   useEffect(() => {
     if (status === "IN_PROGRESS") {
@@ -153,9 +195,13 @@ function RoomPage() {
             </span>
           </div>
 
-          {connectionError && (
+          {(connectionError || roomStatusQuery.isError) && (
             <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              {connectionError}
+              {connectionError ||
+                getApiErrorMessage(
+                  roomStatusQuery.error,
+                  "방 상태를 불러오지 못했습니다.",
+                )}
             </p>
           )}
 
@@ -197,6 +243,7 @@ function RoomPage() {
               disabled={
                 connectionState !== "CONNECTED" ||
                 !hasSnapshot ||
+                roomStatusQuery.isPending ||
                 isStartRequested
               }
               className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-3 font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"

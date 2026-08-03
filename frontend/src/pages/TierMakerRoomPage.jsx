@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getCandidates } from "@/api/candidates";
 import { getProduct } from "@/api/products";
+import { finishRoom as finishRoomRequest, getRoomStatus } from "@/api/rooms";
 import { createTryOnJob } from "@/api/tryOn";
 import { getMyAvatar } from "@/api/users";
 import ClothingCatalog from "@/components/tierMaker/ClothingCatalog";
@@ -246,6 +247,22 @@ function TierMakerRoomPage() {
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const applyRoomStatus = roomEvents.applyRoomStatus;
+  const requestRoomSync = roomEvents.requestSync;
+  const roomStatusQuery = useQuery({
+    queryKey: ["roomStatus", roomSession?.roomCode],
+    queryFn: () =>
+      getRoomStatus({
+        roomCode: roomSession.roomCode,
+        roomToken: roomSession.roomToken,
+      }),
+    enabled:
+      Boolean(isCurrentRoom) &&
+      Boolean(roomSession?.roomCode) &&
+      Boolean(roomSession?.roomToken) &&
+      roomEvents.connectionState === "CONNECTED",
+    staleTime: 0,
+  });
   const voiceChat = useVoiceChat({
     roomCode: roomSession?.roomCode,
     roomToken: roomSession?.roomToken,
@@ -262,8 +279,9 @@ function TierMakerRoomPage() {
     enabled:
       Boolean(isCurrentRoom) &&
       Boolean(roomSession?.roomToken) &&
-      roomEvents.hasSnapshot &&
-      roomEvents.status === "IN_PROGRESS",
+      roomEvents.connectionState === "CONNECTED" &&
+      roomEvents.status !== "FINISHED" &&
+      roomEvents.status !== "EXPIRED",
     staleTime: 30 * 1000,
   });
   const candidateItems = useMemo(
@@ -321,7 +339,7 @@ function TierMakerRoomPage() {
     position: item.position,
   }));
   const sortedPlacements = [
-    ...(roomEvents.placements.length > 0
+    ...(roomEvents.hasSnapshot
       ? roomEvents.placements
       : candidatePlacements),
   ].sort((left, right) => left.position - right.position);
@@ -344,6 +362,33 @@ function TierMakerRoomPage() {
     .map((itemId) => clothesById[itemId])
     .filter(Boolean);
   const isHost = roomSession?.role === "HOST";
+
+  useEffect(() => {
+    const roomStatus = roomStatusQuery.data?.data;
+
+    if (roomStatus) {
+      applyRoomStatus(roomStatus);
+    }
+  }, [applyRoomStatus, roomStatusQuery.data]);
+
+  useEffect(() => {
+    if (
+      roomEvents.connectionState === "CONNECTED" &&
+      roomStatusQuery.isFetched &&
+      !roomStatusQuery.isFetching &&
+      candidateQuery.isFetched &&
+      !candidateQuery.isFetching
+    ) {
+      requestRoomSync();
+    }
+  }, [
+    candidateQuery.isFetched,
+    candidateQuery.isFetching,
+    roomEvents.connectionState,
+    requestRoomSync,
+    roomStatusQuery.isFetched,
+    roomStatusQuery.isFetching,
+  ]);
 
   useEffect(() => {
     if (
@@ -392,6 +437,41 @@ function TierMakerRoomPage() {
 
     toast.warning(getLockConflictMessage(rejection.ownerNickname));
   }, [roomEvents.lockRejection, toast]);
+
+  const finishRoomMutation = useMutation({
+    mutationFn: async () => {
+      const requestFinish = (expectedVersion) =>
+        finishRoomRequest({
+          roomCode: roomSession.roomCode,
+          roomToken: roomSession.roomToken,
+          expectedVersion,
+        });
+
+      try {
+        return await requestFinish(roomEvents.version);
+      } catch (error) {
+        const errorCode = error.response?.data?.code;
+
+        if (
+          error.response?.status !== 409 ||
+          (errorCode && errorCode !== "VERSION_CONFLICT")
+        ) {
+          throw error;
+        }
+
+        const snapshot = await requestRoomSync();
+
+        if (!snapshot) {
+          throw error;
+        }
+
+        return requestFinish(Number(snapshot.version ?? roomEvents.version));
+      }
+    },
+    onError: () => {
+      toast.error("방 종료에 실패했습니다.");
+    },
+  });
 
   const tryOnMutation = useMutation({
     mutationFn: async () => {
@@ -605,7 +685,7 @@ function TierMakerRoomPage() {
   const handleFinishRoom = () => {
     if (!window.confirm("티어메이킹 방을 종료할까요?")) return;
 
-    roomEvents.finishRoom();
+    finishRoomMutation.mutate();
   };
 
   const handleBoardPointerMove = (event) => {
@@ -682,11 +762,16 @@ function TierMakerRoomPage() {
             <button
               type="button"
               onClick={handleFinishRoom}
-              disabled={roomEvents.connectionState !== "CONNECTED"}
+              disabled={
+                roomEvents.connectionState !== "CONNECTED" ||
+                !roomEvents.hasSnapshot ||
+                roomEvents.status !== "IN_PROGRESS" ||
+                finishRoomMutation.isPending
+              }
               className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <TierMakerIcon name="door" size={16} />
-              보드 종료
+              {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
             </button>
           )}
         </div>
@@ -694,11 +779,17 @@ function TierMakerRoomPage() {
 
       <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8">
         {(roomEvents.connectionError ||
+          roomStatusQuery.isError ||
           candidateQuery.isError ||
           productQueries.some((query) => query.isError)) && (
           <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {roomEvents.connectionError ||
-              (candidateQuery.isError
+              (roomStatusQuery.isError
+                ? getApiErrorMessage(
+                    roomStatusQuery.error,
+                    "방 상태를 불러오지 못했습니다.",
+                  )
+                : candidateQuery.isError
                 ? getApiErrorMessage(
                     candidateQuery.error,
                     "후보 상품을 불러오지 못했습니다.",
@@ -708,6 +799,7 @@ function TierMakerRoomPage() {
         )}
 
         {!roomEvents.hasSnapshot ||
+        roomStatusQuery.isPending ||
         (roomEvents.status === "IN_PROGRESS" && candidateQuery.isPending) ? (
           <section className="flex min-h-96 items-center justify-center rounded-3xl border bg-white">
             <div className="text-center">
