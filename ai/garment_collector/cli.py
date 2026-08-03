@@ -246,6 +246,20 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Required with --apply; JSON backup of targeted existing rows",
     )
+    seed_db.add_argument(
+        "--expected-products",
+        type=int,
+        help=(
+            "Expected product count for the expanded manifest; "
+            "required together with --expected-size-rows "
+            "(defaults to the original 198-product split)"
+        ),
+    )
+    seed_db.add_argument(
+        "--expected-size-rows",
+        type=int,
+        help="Expected total size-row count for the expanded manifest",
+    )
 
     review_images = sub.add_parser(
         "review-images",
@@ -524,9 +538,23 @@ def cmd_seed_db(args: argparse.Namespace) -> int:
             )
         if args.apply and args.backup_output is None:
             raise SeedError("--backup-output is required with --apply")
+        if (args.expected_products is None) != (
+            args.expected_size_rows is None
+        ):
+            raise SeedError(
+                "--expected-products and --expected-size-rows must be "
+                "provided together"
+            )
+        manifest_kwargs = {}
+        if args.expected_products is not None:
+            manifest_kwargs = {
+                "expected_product_count": args.expected_products,
+                "expected_size_row_count": args.expected_size_rows,
+            }
         manifest = load_uploaded_manifest(
             args.manifest,
             image_base_url=image_base_url,
+            **manifest_kwargs,
         )
         connection = connect_database(settings)
         report = seed_database(

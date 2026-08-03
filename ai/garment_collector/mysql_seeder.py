@@ -68,6 +68,11 @@ _CATEGORY_SUBCATEGORIES = {
         BackendSubcategory.SPORTS_TOP,
         BackendSubcategory.OTHER_TOP,
         BackendSubcategory.DRESS,
+        # Team rule (2026-08-01): outerwear stored as TOP.
+        BackendSubcategory.JACKET,
+        BackendSubcategory.COAT,
+        BackendSubcategory.CARDIGAN,
+        BackendSubcategory.PADDING,
     },
     BackendCategory.BOTTOM: {
         BackendSubcategory.DENIM_PANTS,
