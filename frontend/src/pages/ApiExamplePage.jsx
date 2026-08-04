@@ -118,7 +118,7 @@ function ApiExamplePage() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-100 py-10">
+        <main className="min-h-screen bg-gray-50 py-10">
             <PageContainer>
                 <header>
                     <p className="text-sm font-semibold text-brand-600">API TESTER</p>

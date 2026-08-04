@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, startKakaoLogin } from "@/api/auth";
 import { getMyInfo } from "@/api/users";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
 import { useToast } from "@/hooks/useToast";
 // 💡 토큰 저장 함수 불러오기
@@ -10,6 +10,7 @@ import { setAccessToken } from "@/utils/tokenStorage";
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const toast = useToast();
     const [searchParams] = useSearchParams();
     const setUser = useUserStore((state) => state.setUser);
@@ -41,7 +42,7 @@ export default function LoginPage() {
                 toast.success("로그인에 성공했습니다.");
 
                 // 3. 메인(홈) 화면으로 이동
-                navigate("/");
+                navigate(location.state?.from ?? "/", { replace: true });
             } catch (error) {
                 console.error("사용자 정보 조회 실패:", error);
                 toast.error("사용자 정보를 불러오지 못했습니다. 다시 시도해주세요.");
@@ -81,7 +82,7 @@ export default function LoginPage() {
             profileImageUrl: null,
         });
         toast.success("임시 계정으로 로그인했습니다.");
-        navigate("/");
+        navigate(location.state?.from ?? "/", { replace: true });
     };
 
     return (

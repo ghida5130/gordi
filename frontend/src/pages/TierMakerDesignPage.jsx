@@ -172,7 +172,7 @@ function TierMakerDesignPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb]">
+    <main className="min-h-screen bg-gray-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
