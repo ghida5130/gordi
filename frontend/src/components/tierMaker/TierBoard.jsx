@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
 import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
@@ -17,7 +17,7 @@ function TierItem({
   currentParticipantId,
   onDragStart,
   onDragEnd,
-  onDropItem,
+  onUnrank,
 }) {
   const isLockedByOther =
     lock &&
@@ -28,15 +28,6 @@ function TierItem({
       draggable={!isLockedByOther}
       onDragStart={(event) => onDragStart(event, item.id)}
       onDragEnd={(event) => onDragEnd(event, item.id)}
-      onDragOver={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onDrop={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onDropItem(event.dataTransfer.getData('text/plain'))
-      }}
       className={`group relative h-[74px] w-[68px] shrink-0 rounded-xl border bg-white p-1.5 shadow-sm transition ${
         isLockedByOther
           ? 'cursor-not-allowed border-amber-300 opacity-60'
@@ -45,9 +36,23 @@ function TierItem({
       title={item.name}
     >
       <ClothingArtwork item={item} className="h-full w-full rounded-lg" />
-      <span className="absolute right-1 top-1 rounded bg-white/85 p-0.5 text-slate-400 opacity-0 shadow-sm transition group-hover:opacity-100">
+      <span className="absolute left-1 top-1 rounded bg-white/85 p-0.5 text-slate-400 opacity-0 shadow-sm transition group-hover:opacity-100">
         <TierMakerIcon name="grip" size={13} />
       </span>
+      {onUnrank && !isLockedByOther && (
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation()
+            onUnrank(item.id)
+          }}
+          className="absolute right-1 top-1 hidden size-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm hover:bg-red-50 hover:text-red-500 group-hover:flex"
+          aria-label={`${item.name} 티어 배정 취소`}
+        >
+          <TierMakerIcon name="close" size={11} />
+        </button>
+      )}
       {lock && (
         <span className="absolute inset-x-1 bottom-1 truncate rounded bg-slate-900/85 px-1 py-0.5 text-center text-[9px] font-bold text-white">
           {isLockedByOther
@@ -119,6 +124,57 @@ function TierName({ tier, canRename, onRename }) {
   )
 }
 
+function TierDropZone({ isActive, isTierActive, onActivate, onDrop }) {
+  return (
+    <div
+      onDragOver={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onActivate()
+      }}
+      onDrop={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onDrop(event.dataTransfer.getData('text/plain'))
+      }}
+      className={`flex h-[74px] shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-all ${
+        isActive
+          ? 'w-16 border-violet-400 bg-violet-100 text-violet-600'
+          : isTierActive
+            ? 'w-6 border-violet-200 bg-white text-transparent'
+            : 'w-3 border-transparent bg-transparent text-transparent'
+      }`}
+    >
+      <span className="text-[9px] font-black [writing-mode:vertical-rl]">
+        여기에 놓기
+      </span>
+    </div>
+  )
+}
+
+function WaitingItem({
+  item,
+  lock,
+  currentParticipantId,
+  onDragStart,
+  onDragEnd,
+}) {
+  return (
+    <div className="w-[84px] shrink-0">
+      <TierItem
+        item={item}
+        lock={lock}
+        currentParticipantId={currentParticipantId}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      />
+      <p className="mt-1 truncate text-center text-[10px] font-semibold text-slate-600">
+        {item.name}
+      </p>
+    </div>
+  )
+}
+
 function TierBoard({
   tiers,
   clothesById,
@@ -129,17 +185,29 @@ function TierBoard({
   currentParticipantId,
   canRename = false,
   onRenameTier,
+  waitingClothes = [],
+  roomSubcategory,
+  onUnrank,
 }) {
   const [activeTier, setActiveTier] = useState(null)
+  const [activeDropTarget, setActiveDropTarget] = useState(null)
+  const [isWaitingActive, setIsWaitingActive] = useState(false)
+
+  const dropItem = (itemId, tierId, newIndex) => {
+    setActiveTier(null)
+    setActiveDropTarget(null)
+    onDropTier(itemId, tierId, newIndex)
+  }
 
   const handleDrop = (event, tierId, newIndex) => {
     event.preventDefault()
-    setActiveTier(null)
-    onDropTier(
-      event.dataTransfer.getData('text/plain'),
-      tierId,
-      newIndex,
-    )
+    dropItem(event.dataTransfer.getData('text/plain'), tierId, newIndex)
+  }
+
+  const handleWaitingDrop = (event) => {
+    event.preventDefault()
+    setIsWaitingActive(false)
+    onUnrank?.(event.dataTransfer.getData('text/plain'))
   }
 
   return (
@@ -170,6 +238,7 @@ function TierBoard({
               onDragOver={(event) => {
                 event.preventDefault()
                 setActiveTier(tier.id)
+                setActiveDropTarget(null)
               }}
               onDragLeave={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -196,23 +265,55 @@ function TierBoard({
               </div>
               <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto p-3">
                 {tier.itemIds.length > 0 ? (
-                  tier.itemIds.map((itemId, itemIndex) => (
-                    <TierItem
-                      key={itemId}
-                      item={clothesById[itemId]}
-                      lock={itemLocks[itemId]}
-                      currentParticipantId={currentParticipantId}
-                      onDragStart={onDragStart}
-                      onDragEnd={onDragEnd}
-                      onDropItem={(draggedItemId) =>
-                        onDropTier(
+                  <>
+                    {tier.itemIds.map((itemId, itemIndex) => {
+                      const dropTarget = `${tier.id}:${itemIndex}`
+
+                      return (
+                        <Fragment key={itemId}>
+                          <TierDropZone
+                            isActive={activeDropTarget === dropTarget}
+                            isTierActive={activeTier === tier.id}
+                            onActivate={() => {
+                              setActiveTier(tier.id)
+                              setActiveDropTarget(dropTarget)
+                            }}
+                            onDrop={(draggedItemId) =>
+                              dropItem(draggedItemId, tier.id, itemIndex)
+                            }
+                          />
+                          <TierItem
+                            item={clothesById[itemId]}
+                            lock={itemLocks[itemId]}
+                            currentParticipantId={currentParticipantId}
+                            onDragStart={onDragStart}
+                            onDragEnd={onDragEnd}
+                            onUnrank={onUnrank}
+                          />
+                        </Fragment>
+                      )
+                    })}
+                    <TierDropZone
+                      isActive={
+                        activeDropTarget ===
+                        `${tier.id}:${tier.itemIds.length}`
+                      }
+                      isTierActive={activeTier === tier.id}
+                      onActivate={() => {
+                        setActiveTier(tier.id)
+                        setActiveDropTarget(
+                          `${tier.id}:${tier.itemIds.length}`,
+                        )
+                      }}
+                      onDrop={(draggedItemId) =>
+                        dropItem(
                           draggedItemId,
                           tier.id,
-                          itemIndex,
+                          tier.itemIds.length,
                         )
                       }
                     />
-                  ))
+                  </>
                 ) : (
                   <div
                     className={`flex h-[74px] min-w-44 flex-1 items-center justify-center rounded-xl border border-dashed text-xs ${
@@ -228,6 +329,58 @@ function TierBoard({
             </div>
           ))}
         </div>
+
+        {(onUnrank || roomSubcategory || waitingClothes.length > 0) && (
+          <div
+            onDragOver={(event) => {
+              event.preventDefault()
+              setIsWaitingActive(true)
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setIsWaitingActive(false)
+              }
+            }}
+            onDrop={handleWaitingDrop}
+            className={`mt-4 rounded-2xl border p-4 transition ${
+              isWaitingActive
+                ? 'border-violet-400 bg-violet-50 ring-4 ring-violet-100'
+                : 'border-slate-200 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  티어 배정 대기
+                </h3>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {roomSubcategory || '방 상세 카테고리'} 의상만 배정 가능
+                </p>
+              </div>
+              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-600">
+                {waitingClothes.length}개
+              </span>
+            </div>
+            <div className="mt-3 flex min-h-[98px] items-center gap-3 overflow-x-auto rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+              {waitingClothes.length > 0 ? (
+                waitingClothes.map((item) => (
+                  <WaitingItem
+                    key={item.id}
+                    item={item}
+                    lock={itemLocks[item.id]}
+                    currentParticipantId={currentParticipantId}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                  />
+                ))
+              ) : (
+                <p className="w-full text-center text-xs text-slate-400">
+                  티어 배정을 기다리는 의상이 없습니다.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )

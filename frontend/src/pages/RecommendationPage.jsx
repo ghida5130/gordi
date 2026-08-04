@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -8,7 +8,6 @@ import {
   replaceRecommendationItems,
 } from "@/api/recommendations";
 import { createRoom } from "@/api/rooms";
-import { getAuthenticatedProduct } from "@/api/products";
 import { getMyAvatar } from "@/api/users";
 import AvatarSetupPrompt from "@/components/common/AvatarSetupPrompt";
 import { getApiErrorMessage } from "@/utils/apiError";
@@ -28,6 +27,7 @@ const unwrap = (response) => {
   return payload ?? {};
 };
 const toArray = (value) => (Array.isArray(value) ? value : []);
+const RECOMMENDATION_CATEGORY_CODES = new Set(["TOP", "BOTTOM"]);
 const createIdempotencyKey = () => crypto.randomUUID();
 const getReplaceErrorMessage = (error) =>
   error?.response?.status === 409
@@ -70,7 +70,9 @@ function RecommendationPage() {
     enabled: avatarQuery.isSuccess,
   });
   const options = unwrap(optionsQuery.data);
-  const categories = toArray(options.categories);
+  const categories = toArray(options.categories).filter((category) =>
+    RECOMMENDATION_CATEGORY_CODES.has(category?.code),
+  );
   const moods = toArray(options.moods);
   const budgetPolicy = options.budgetPolicy ?? {};
   const selectedFormCategory =
@@ -81,10 +83,8 @@ function RecommendationPage() {
     category: selectedFormCategory?.code ?? form.category,
     subcategory:
       form.subcategory || selectedFormCategory?.subcategories?.[0]?.code || "",
-    minPrice:
-      form.minPrice || String(budgetPolicy.minAllowed ?? ""),
-    maxPrice:
-      form.maxPrice || String(budgetPolicy.maxAllowed ?? ""),
+    minPrice: form.minPrice || String(budgetPolicy.minAllowed ?? ""),
+    maxPrice: form.maxPrice || String(budgetPolicy.maxAllowed ?? ""),
   };
 
   const createMutation = useMutation({
@@ -103,45 +103,9 @@ function RecommendationPage() {
         recommendationResult?.items ??
           recommendationResult?.recommendedItems ??
           recommendationResult?.products,
-      ),
+    ),
     [recommendationResult],
   );
-  const recommendedProductIds = useMemo(
-    () => [
-      ...new Set(
-        recommendedItems
-          .map((item) => item.productId ?? item.id)
-          .filter((productId) => productId != null),
-      ),
-    ],
-    [recommendedItems],
-  );
-  const productQueries = useQueries({
-    queries: recommendedProductIds.map((productId) => ({
-      queryKey: ["products", productId],
-      queryFn: () => getAuthenticatedProduct({ productId }),
-      enabled: step === "results" && Boolean(recommendationResult),
-      staleTime: 5 * 60 * 1000,
-    })),
-  });
-  const productsById = Object.fromEntries(
-    productQueries
-      .map((query, index) => [
-        String(recommendedProductIds[index]),
-        query.data?.data,
-      ])
-      .filter(([, product]) => product),
-  );
-  const detailedItems = recommendedItems.map((item) => {
-    const productId = item.productId ?? item.id;
-    const product = productsById[String(productId)];
-
-    return {
-      ...item,
-      ...product,
-      productId,
-    };
-  });
   const replaceMutation = useMutation({
     mutationFn: replaceRecommendationItems,
     onSuccess: (response) => {
@@ -156,20 +120,26 @@ function RecommendationPage() {
             currentRecommendation.recommendedItems ??
             currentRecommendation.products,
         );
-        const nextItems = currentItems.map((item) => {
-          const productId = item.productId ?? item.id;
-          const replacement = replacements.find(
-            (currentReplacement) =>
-              String(currentReplacement.oldProductId) === String(productId),
-          );
+        const responseItems = toArray(replacementResult.items);
+        const nextItems =
+          responseItems.length > 0
+            ? responseItems
+            : currentItems.map((item) => {
+                const productId = item.productId ?? item.id;
+                const replacement = replacements.find(
+                  (currentReplacement) =>
+                    String(currentReplacement.oldProductId) ===
+                    String(productId),
+                );
 
-          if (!replacement) return item;
+                if (!replacement) return item;
 
-          return {
-            productId: replacement.newProductId,
-            rank: replacement.position ?? item.rank,
-          };
-        });
+                return {
+                  ...replacement,
+                  productId: replacement.newProductId,
+                  rank: replacement.position ?? item.rank,
+                };
+              });
 
         return {
           ...currentRecommendation,
@@ -223,6 +193,9 @@ function RecommendationPage() {
   };
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    if (recommendationForm.moodCodes.length === 0) return;
+
     const selectedCategory = categories.find(
       (category) => category.code === recommendationForm.category,
     );
@@ -231,8 +204,7 @@ function RecommendationPage() {
     );
     setSubmittedConditions({
       category: selectedCategory?.label ?? recommendationForm.category,
-      subcategory:
-        selectedSubcategory?.label ?? recommendationForm.subcategory,
+      subcategory: selectedSubcategory?.label ?? recommendationForm.subcategory,
       moods: moods
         .filter((mood) => recommendationForm.moodCodes.includes(mood.code))
         .map((mood) => mood.label),
@@ -341,7 +313,7 @@ function RecommendationPage() {
   if (step === "results")
     return (
       <RecommendationResults
-        items={detailedItems}
+        items={recommendedItems}
         emptyReason={recommendationResult?.emptyReason}
         isPending={
           createMutation.isPending ||
@@ -362,7 +334,6 @@ function RecommendationPage() {
         }
         replacementNotice={replacementNotice}
         selectedProductIds={selectedProductIds}
-        hasProductError={productQueries.some((query) => query.isError)}
         canRequestActions={Boolean(
           recommendationId && recommendationResult?.version,
         )}
@@ -453,6 +424,12 @@ function RecommendationForm({
         )}
       </p>
     );
+  if (categories.length === 0)
+    return (
+      <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
+        선택할 수 있는 상의 또는 하의 카테고리가 없습니다.
+      </p>
+    );
 
   const selectedCategory = categories.find(
     (category) => category.code === form.category,
@@ -538,7 +515,7 @@ function RecommendationForm({
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-4 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
         aria-expanded={isAdditionalInfoOpen}
       >
-        <span>{isAdditionalInfoOpen ? "⌃" : "⌄"}</span> 추가 정보 입력하기
+        추가 정보 입력하기
       </button>
       {isAdditionalInfoOpen && (
         <section className="rounded-3xl bg-white p-6 shadow-sm">
@@ -584,7 +561,8 @@ function RecommendationForm({
           !form.category ||
           !form.subcategory ||
           !form.minPrice ||
-          !form.maxPrice
+          !form.maxPrice ||
+          form.moodCodes.length === 0
         }
         className="w-full rounded-2xl bg-slate-950 py-4 font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
       >
@@ -662,7 +640,6 @@ function RecommendationResults({
   actionError,
   replacementNotice,
   selectedProductIds,
-  hasProductError,
   canRequestActions,
   onBack,
   onToggleProduct,
@@ -736,9 +713,7 @@ function RecommendationResults({
             <button
               type="button"
               onClick={onReplaceSelected}
-              disabled={
-                !canRequestActions || selectedProductIds.length === 0
-              }
+              disabled={!canRequestActions || selectedProductIds.length === 0}
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold shadow-sm transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-45"
             >
               선택한 항목 다시 추천받기
@@ -767,12 +742,6 @@ function RecommendationResults({
             {replacementNotice}
           </p>
         )}
-        {hasProductError && (
-          <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            일부 상품의 상세 정보를 불러오지 못해 추천 응답의 정보를 표시합니다.
-          </p>
-        )}
-
         <div className="grid grid-cols-5 gap-4">
           {items.map((item, index) => {
             const productId = item.productId ?? item.id;
