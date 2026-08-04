@@ -217,7 +217,7 @@ function RecommendationPage() {
       budgetMin: Number(recommendationForm.minPrice),
       budgetMax: Number(recommendationForm.maxPrice),
       moods: recommendationForm.moodCodes,
-      additionalInfo: recommendationForm.additionalInfo.trim(),
+      tpo: recommendationForm.additionalInfo.trim(),
     });
     setRecommendation(null);
     createMutation.reset();

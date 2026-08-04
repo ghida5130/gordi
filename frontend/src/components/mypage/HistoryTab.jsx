@@ -1,6 +1,5 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import { getAuthenticatedProduct } from "@/api/products";
 import { getMyResults } from "@/api/users";
 import { getApiErrorMessage } from "@/utils/apiError";
 
@@ -11,19 +10,6 @@ function formatDate(createdAt) {
 export default function HistoryTab() {
     const resultsQuery = useQuery({ queryKey: ["myResults"], queryFn: getMyResults, retry: false });
     const results = resultsQuery.data?.data?.items ?? resultsQuery.data?.items ?? [];
-    const productIds = [...new Set(results.flatMap((result) => (result.topItems ?? []).map((item) => item.productId)))];
-    const productQueries = useQueries({
-        queries: productIds.map((productId) => ({
-            queryKey: ["products", "authenticated", productId],
-            queryFn: () => getAuthenticatedProduct(productId),
-            staleTime: 5 * 60 * 1000,
-        })),
-    });
-    const productsById = Object.fromEntries(
-        productQueries
-            .map((query, index) => [productIds[index], query.data?.data ?? query.data])
-            .filter(([, product]) => product),
-    );
 
     if (resultsQuery.isPending) {
         return <div className="space-y-5">{[0, 1].map((item) => <div key={item} className="h-72 animate-pulse rounded-lg bg-slate-100" />)}</div>;
@@ -58,30 +44,27 @@ export default function HistoryTab() {
                             </div>
 
                             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {(result.topItems ?? []).map((topItem) => {
-                                    const product = productsById[topItem.productId];
-                                    const productQuery = productQueries[productIds.indexOf(topItem.productId)];
-
-                                    return (
-                                        <div key={topItem.productId} className="overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
-                                            <div className="relative flex aspect-square items-center justify-center bg-white">
-                                                <span className="absolute left-3 top-3 rounded-full bg-black px-2.5 py-1 text-xs font-bold text-white">{topItem.rank}위</span>
-                                                {product?.imageUrl ? (
-                                                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-contain" />
-                                                ) : productQuery?.isError ? (
-                                                    <span className="text-xs text-red-500">상품 조회 실패</span>
-                                                ) : (
-                                                    <span className="text-xs text-slate-400">상품 정보 불러오는 중</span>
-                                                )}
-                                            </div>
-                                            <div className="p-4">
-                                                <p className="text-xs font-bold text-slate-400">{product?.category ?? "-"}</p>
-                                                <p className="mt-1 font-bold text-slate-900">{product?.name ?? `상품 #${topItem.productId}`}</p>
-                                                <p className="mt-1 text-sm text-slate-500">{product?.brand ?? "브랜드 정보 없음"}</p>
-                                            </div>
+                                {(result.topItems ?? []).map((topItem, index) => (
+                                    <div key={topItem.productId} className="overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
+                                        <div className="relative flex aspect-square items-center justify-center bg-white">
+                                            <span className="absolute left-3 top-3 rounded-full bg-black px-2.5 py-1 text-xs font-bold text-white">{topItem.rank ?? index + 1}위</span>
+                                            {topItem.imageUrl ? (
+                                                <img src={topItem.imageUrl} alt={topItem.name ?? `상품 #${topItem.productId}`} className="h-full w-full object-contain" />
+                                            ) : (
+                                                <span className="text-xs text-slate-400">상품 이미지 없음</span>
+                                            )}
                                         </div>
-                                    );
-                                })}
+                                        <div className="p-4">
+                                            <p className="font-bold text-slate-900">{topItem.name ?? `상품 #${topItem.productId}`}</p>
+                                            <p className="mt-1 text-sm text-slate-500">{topItem.brand ?? "브랜드 정보 없음"}</p>
+                                            <p className="mt-2 text-sm font-bold text-slate-900">
+                                                {topItem.price != null
+                                                    ? `${Number(topItem.price).toLocaleString()}원`
+                                                    : "가격 정보 없음"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </article>
                     ))}

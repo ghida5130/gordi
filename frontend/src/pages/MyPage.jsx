@@ -15,7 +15,6 @@ function MyPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const storedNickname = useUserStore((state) => state.nickname);
-    const storedProfileImageUrl = useUserStore((state) => state.profileImageUrl);
     const [activeTab, setActiveTab] = useState(location.state?.activeTab ?? "profile");
     const [isRoomNoticeOpen, setIsRoomNoticeOpen] = useState(true);
     const { data } = useQuery({ queryKey: ["myInfo"], queryFn: getMyInfo, retry: false });
@@ -29,13 +28,12 @@ function MyPage() {
     const user = data?.data ?? {};
     const activeRoom = activeRoomData?.data?.activeRoom ?? null;
     const nickname = user.nickname ?? storedNickname ?? "사용자";
-    const profileImageUrl = user.avatar?.imageUrl ?? storedProfileImageUrl;
 
     return (
         <main className="min-h-screen bg-white pb-20 text-slate-900">
             <MyPageTabs activeTab={activeTab} onChange={setActiveTab} />
             <PageContainer className="pt-10">
-                {activeTab === "profile" && <ProfileHome nickname={nickname} profileImageUrl={profileImageUrl} onHistory={() => setActiveTab("history")} />}
+                {activeTab === "profile" && <ProfileHome nickname={nickname} onHistory={() => setActiveTab("history")} />}
                 {activeTab === "avatar" && <AvatarTab />}
                 {activeTab === "history" && <HistoryTab />}
             </PageContainer>
