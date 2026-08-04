@@ -54,6 +54,7 @@ pipeline {
             steps {
                 withCredentials([
                     file(credentialsId: 'backend-env-file',  variable: 'BACKEND_ENV_FILE'),
+                    file(credentialsId: 'ai-env-file',  variable: 'AI_ENV_FILE'),
                     file(credentialsId: 'frontend-env-file', variable: 'FRONTEND_ENV_FILE')
                 ]) {
                     sh '''
@@ -61,6 +62,7 @@ pipeline {
                         set +x
                         rm -f .env && cp "$BACKEND_ENV_FILE" .env
                         rm -f ./frontend/.env && cp "$FRONTEND_ENV_FILE" ./frontend/.env
+                        rm -f ./ai/.env && cp "$AI_ENV_FILE" ./ai/.env
                     '''
                 }
             }
