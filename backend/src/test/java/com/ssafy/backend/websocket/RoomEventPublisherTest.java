@@ -3,6 +3,7 @@ package com.ssafy.backend.websocket;
 import com.ssafy.backend.dto.candidate.CandidateItemDTO;
 import com.ssafy.backend.websocket.dto.ItemAddedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
+import com.ssafy.backend.websocket.dto.ItemRemovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
@@ -10,6 +11,7 @@ import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
+import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
 import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
@@ -139,6 +141,32 @@ class RoomEventPublisherTest {
         assertThat(event.data()).isEqualTo(
                 new ItemAddedEventDataDTO(item, domainEvent.placements())
         );
+    }
+
+    @Test
+    void itemRemovedEventIsBroadcastWithRemovedItemIds() {
+        ItemRemovedEvent domainEvent = new ItemRemovedEvent(
+                31L,
+                15L,
+                42L,
+                301L,
+                501L
+        );
+
+        roomEventPublisher.handleItemRemoved(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ITEM_REMOVED);
+        assertThat(event.clientEventId()).isNull();
+        assertThat(event.version()).isEqualTo(15L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new ItemRemovedEventDataDTO(301L, 501L));
     }
 
     @Test

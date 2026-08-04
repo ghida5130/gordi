@@ -10,6 +10,7 @@ public enum RoomEventType {
     PARTICIPANT_LEFT,
     ROOM_STARTED,
     ITEM_ADDED,
+    ITEM_REMOVED,
     ITEM_MOVED,
     ITEM_LOCKED,
     ITEM_LOCK_REJECTED,

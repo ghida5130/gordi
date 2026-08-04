@@ -16,6 +16,7 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
+import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -96,9 +97,26 @@ public class CandidateService {
     public void delete(Long roomId, Long productId, RoomPrincipal principal) {
         roomAccessValidator.requireParticipant(roomId, principal);
 
+        Room room = roomRepository.findByIdForUpdate(roomId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND));
         RoomItem roomItem = roomItemRepository.findByRoomIdAndProductId(roomId, productId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+        Long roomItemId = roomItem.getId();
+
         roomItemRepository.delete(roomItem);
+
+        if (roomRepository.incrementVersion(room.getId()) != 1) {
+            throw new ApiException(ErrorCode.ROOM_NOT_FOUND);
+        }
+        Long roomVersion = roomRepository.findVersionValueById(room.getId());
+
+        eventPublisher.publishEvent(new ItemRemovedEvent(
+                room.getId(),
+                roomVersion,
+                principal.participantId(),
+                roomItemId,
+                productId
+        ));
     }
 
     /** 후보 의상 목록 조회 */

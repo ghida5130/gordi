@@ -13,6 +13,7 @@ import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
+import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -137,6 +138,35 @@ class CandidateServiceTest {
                 new PlacementDTO(202L, 3L, 0),
                 new PlacementDTO(301L, null, 10_000)
         );
+    }
+
+    @Test
+    void deletePublishesItemRemovedWithIncrementedRoomVersion() {
+        RoomItem roomItem = RoomItem.builder()
+                .id(301L)
+                .room(room)
+                .product(product)
+                .position(10_000)
+                .build();
+        when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
+        when(roomItemRepository.findByRoomIdAndProductId(10L, 501L))
+                .thenReturn(Optional.of(roomItem));
+        when(roomRepository.incrementVersion(10L)).thenReturn(1);
+        when(roomRepository.findVersionValueById(10L)).thenReturn(15L);
+
+        candidateService.delete(10L, 501L, principal);
+
+        verify(roomItemRepository).delete(roomItem);
+        verify(roomRepository).incrementVersion(10L);
+
+        ArgumentCaptor<ItemRemovedEvent> captor = ArgumentCaptor.forClass(ItemRemovedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        ItemRemovedEvent event = captor.getValue();
+        assertThat(event.roomId()).isEqualTo(10L);
+        assertThat(event.roomVersion()).isEqualTo(15L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.roomItemId()).isEqualTo(301L);
+        assertThat(event.productId()).isEqualTo(501L);
     }
 
     private void stubAdd(List<RoomItem> existingItems, LocalDateTime updatedAt) {
