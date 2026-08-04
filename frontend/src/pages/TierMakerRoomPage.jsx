@@ -24,7 +24,7 @@ import {
 } from "@/utils/roomSessionStorage";
 import {
   createTierMakerClothing,
-  normalizeTierMakerSubcategory,
+  normalizeTierMakerCategory,
   tierMakerCategoryDetails,
 } from "@/utils/tierMakerClothing";
 
@@ -302,15 +302,15 @@ function TierMakerRoomPage() {
       ? roomEvents.placements
       : candidatePlacements),
   ].sort((left, right) => left.position - right.position);
-  const roomSubcategory =
-    roomEvents.subcategory ?? roomStatusQuery.data?.data?.subcategory ?? "";
-  const normalizedRoomSubcategory =
-    normalizeTierMakerSubcategory(roomSubcategory);
+  const roomCategory =
+    roomEvents.category ?? roomStatusQuery.data?.data?.category ?? "";
+  const normalizedRoomCategory = normalizeTierMakerCategory(roomCategory);
+  const roomCategoryLabel =
+    tierMakerCategoryDetails[normalizedRoomCategory]?.categoryLabel ??
+    roomCategory;
   const tierEligibleClothes = clothes.filter(
     (item) =>
-      !normalizedRoomSubcategory ||
-      normalizeTierMakerSubcategory(item.subcategory) ===
-        normalizedRoomSubcategory,
+      !normalizedRoomCategory || item.slot === normalizedRoomCategory,
   );
   const tierEligibleItemIds = new Set(
     tierEligibleClothes.map((item) => item.id),
@@ -648,7 +648,7 @@ function TierMakerRoomPage() {
 
     if (!tierEligibleItemIds.has(itemId)) {
       toast.warning(
-        `${roomSubcategory || "방"} 상세 카테고리 의상만 티어에 배정할 수 있습니다.`,
+        `${roomCategoryLabel || "방"} 카테고리 의상만 티어에 배정할 수 있습니다.`,
       );
       return;
     }
@@ -979,7 +979,7 @@ function TierMakerRoomPage() {
                   canRename={isHost}
                   onRenameTier={handleRenameTier}
                   waitingClothes={waitingClothes}
-                  roomSubcategory={roomSubcategory}
+                  roomCategory={roomCategoryLabel}
                   onUnrank={handleUnrank}
                 />
                 <ClothingCatalog

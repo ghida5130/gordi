@@ -29,7 +29,7 @@ function createInitialState(roomSession) {
     return {
         participants: roomSession ? [getInitialParticipant(roomSession)] : [],
         status: roomSession?.status ?? "WAITING",
-        subcategory: roomSession?.subcategory ?? null,
+        category: roomSession?.category ?? null,
         version: Number(roomSession?.version ?? 0),
         tiers: [],
         roomItems: [],
@@ -125,7 +125,7 @@ function roomEventReducer(state, event) {
         let nextState = {
             ...state,
             ...normalizeSnapshot(data),
-            subcategory: data.subcategory ?? state.subcategory,
+            category: data.category ?? state.category,
             version: snapshotVersion,
             hasSnapshot: true,
             pendingEvents: [],
@@ -152,7 +152,7 @@ function roomEventReducer(state, event) {
         return {
             ...state,
             status,
-            subcategory: data.subcategory ?? state.subcategory,
+            category: data.category ?? state.category,
             terminalEvent: status === "FINISHED" ? "ROOM_FINISHED" : status === "EXPIRED" ? "ROOM_EXPIRED" : state.terminalEvent,
             participants: Array.isArray(data.participants) ? data.participants : state.participants,
             tiers: Array.isArray(data.tiers)
