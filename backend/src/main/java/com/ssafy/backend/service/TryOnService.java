@@ -39,10 +39,10 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -60,6 +60,9 @@ import java.util.Set;
 
 /**
  * 착장 이미지 생성 Job 등록·조회·재시도와 방 확정 스냅샷 지정.
+ * <p>
+ * 모든 진입점은 accessToken 회원 전용이다(SecurityConfig 의 hasRole("USER") 매처가 보증).
+ * 착장 생성에는 회원 전용 아바타가 필요하므로 게스트 참가자는 지원하지 않는다.
  * <p>
  * 생성 결과를 되돌려 받는 경로가 아직 확정되지 않아, 이 Service 는 Job 을 QUEUED 로 남기고
  * {@link TryOnGenerationClient} 로 접수만 시킨다. 완료 처리(SUCCEEDED/FAILED 전이)는
@@ -94,7 +97,8 @@ public class TryOnService {
     private final ProductTopSizeRepository productTopSizeRepository;
     private final ProductBottomSizeRepository productBottomSizeRepository;
     private final AvatarRepository avatarRepository;
-    private final RoomAuthResolver roomAuthResolver;
+    private final UserRepository userRepository;
+    private final RoomAccessValidator roomAccessValidator;
     private final IdempotencyService idempotencyService;
     private final TryOnGenerationClient tryOnGenerationClient;
     private final TryOnPolicy tryOnPolicy;
@@ -104,9 +108,9 @@ public class TryOnService {
 
     /** 실패한 Job 도 예외가 아니라 status=FAILED 로 반환한다. */
     @Transactional(readOnly = true)
-    public TryOnJobDetailResponseDTO read(Long jobId, Authentication authentication) {
+    public TryOnJobDetailResponseDTO read(Long jobId, String email) {
         TryOnJob job = requireJob(jobId);
-        requireJobAccess(job, authentication);
+        requireJobAccess(job, email);
         return toDetail(job);
     }
 
@@ -115,22 +119,17 @@ public class TryOnService {
     public TryOnJobCreateResponseDTO create(
             TryOnJobCreateRequestDTO request,
             String idempotencyKey,
-            Authentication authentication
+            String email
     ) {
         TryOnContextType contextType = parseContextType(request.context().type());
+        User member = requireMember(email);
 
         Room room = null;
         RoomParticipant participant = null;
-        User member;
         if (contextType.isRoom()) {
             room = requireOpenRoom(request.context().roomCode());
-            participant = roomAuthResolver.requireParticipant(authentication, room);
+            participant = roomAccessValidator.requireParticipant(room.getId(), email);
             requireBoardVersion(room, request.context().boardVersion());
-            // 방에서는 비회원 게스트도 착장을 만들 수 있다.
-            member = roomAuthResolver.findMember(authentication).orElse(null);
-        } else {
-            // SOLO 는 방이 없어 소유자를 회원으로만 특정할 수 있다.
-            member = roomAuthResolver.requireMember(authentication);
         }
 
         Avatar avatar = avatarRepository.findById(request.avatarId())
@@ -200,14 +199,11 @@ public class TryOnService {
     public TryOnJobRetryResponseDTO retry(
             Long jobId,
             String idempotencyKey,
-            Authentication authentication
+            String email
     ) {
         TryOnJob source = requireJob(jobId);
-        RoomParticipant participant = requireJobAccess(source, authentication);
-        // ROOM Job 은 게스트도 재시도할 수 있으므로 회원 여부는 선택이다.
-        User member = participant == null
-                ? roomAuthResolver.requireMember(authentication)
-                : roomAuthResolver.findMember(authentication).orElse(null);
+        RoomParticipant participant = requireJobAccess(source, email);
+        User member = requireMember(email);
 
         if (!source.isRetryable()) {
             throw new ApiException(
@@ -281,14 +277,14 @@ public class TryOnService {
     public OutfitSnapshotResponseDTO confirmSnapshot(
             String roomCode,
             OutfitSnapshotConfirmRequestDTO request,
-            Authentication authentication
+            String email
     ) {
         Room room = roomRepository.findByRoomCodeForUpdate(roomCode)
                 .orElseThrow(() -> new ApiException(ErrorCode.ROOM_NOT_FOUND, Map.of("roomCode", roomCode)));
         requireRoomOpen(room);
 
-        RoomParticipant participant = roomAuthResolver.requireParticipant(authentication, room);
-        roomAuthResolver.requireHost(participant);
+        RoomParticipant participant = roomAccessValidator.requireParticipant(room.getId(), email);
+        roomAccessValidator.requireHost(participant);
 
         requireBoardVersion(room, request.boardVersion());
 
@@ -326,23 +322,32 @@ public class TryOnService {
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, Map.of("jobId", jobId)));
     }
 
+    /** accessToken 으로 인증된 회원. 회원이 아니면 UNAUTHORIZED. */
+    private User requireMember(String email) {
+        if (!StringUtils.hasText(email)) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+    }
+
     /**
      * Job 접근 권한 검증.
      * ROOM Job 은 해당 방의 참가자만, SOLO Job 은 소유 회원만 접근할 수 있다.
      *
      * @return ROOM Job 이면 요청자의 참가 정보, SOLO Job 이면 null
      */
-    private RoomParticipant requireJobAccess(TryOnJob job, Authentication authentication) {
+    private RoomParticipant requireJobAccess(TryOnJob job, String email) {
         if (job.resolveContextType().isRoom()) {
             Room room = job.getRoom();
             if (room == null) {
                 // ROOM Job 인데 방 참조가 없으면 소유자를 판정할 수 없다.
                 throw new ApiException(ErrorCode.FORBIDDEN, Map.of("jobId", job.getId()));
             }
-            return roomAuthResolver.requireParticipant(authentication, room);
+            return roomAccessValidator.requireParticipant(room.getId(), email);
         }
 
-        User member = roomAuthResolver.requireMember(authentication);
+        User member = requireMember(email);
         User owner = job.getOwnerUser();
         if (owner == null || !owner.getId().equals(member.getId())) {
             throw new ApiException(ErrorCode.FORBIDDEN, Map.of("jobId", job.getId()));

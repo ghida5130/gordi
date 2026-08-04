@@ -33,7 +33,7 @@ public class OutfitSnapshotController {
             Authentication authentication
     ) {
         OutfitSnapshotResponseDTO response =
-                tryOnService.confirmSnapshot(roomCode, request, authentication);
+                tryOnService.confirmSnapshot(roomCode, request, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

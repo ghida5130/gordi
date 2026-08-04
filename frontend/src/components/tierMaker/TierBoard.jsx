@@ -186,7 +186,7 @@ function TierBoard({
   canRename = false,
   onRenameTier,
   waitingClothes = [],
-  roomSubcategory,
+  roomCategory,
   onUnrank,
 }) {
   const [activeTier, setActiveTier] = useState(null)
@@ -330,7 +330,7 @@ function TierBoard({
           ))}
         </div>
 
-        {(onUnrank || roomSubcategory || waitingClothes.length > 0) && (
+        {(onUnrank || roomCategory || waitingClothes.length > 0) && (
           <div
             onDragOver={(event) => {
               event.preventDefault()
@@ -354,7 +354,7 @@ function TierBoard({
                   티어 배정 대기
                 </h3>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  {roomSubcategory || '방 상세 카테고리'} 의상만 배정 가능
+                  {roomCategory || '방 카테고리'} 의상만 배정 가능
                 </p>
               </div>
               <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-600">

@@ -74,8 +74,8 @@ public class TryOnJob {
     private Long boardVersion;
 
     /**
-     * 요청한 회원. 게스트 참가자가 요청한 ROOM Job 은 null 이므로
-     * 소유자 판정에는 {@link #ownerParticipant} 를 함께 확인해야 한다.
+     * 요청한 회원. 착장 API 는 회원 전용이므로 항상 설정된다.
+     * (착장 생성에 필요한 아바타가 회원 전용이라 게스트 참가자는 지원하지 않는다.)
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")

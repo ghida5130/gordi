@@ -108,6 +108,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/products/**").authenticated()
                         .requestMatchers("/api/v1/candidates/**").authenticated()
                         .requestMatchers("/api/v1/avatars/**").hasRole("USER")
+                        // 착장 생성은 아바타가 필요한 회원 전용 기능 — roomToken(권한 없음)은 여기서 차단된다
+                        .requestMatchers("/api/v1/try-on-jobs/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/rooms/*/outfit-snapshot").hasRole("USER")
                         .requestMatchers(
                                 "/api/swagger-ui.html",
                                 "/api/swagger-ui/**",

@@ -24,7 +24,7 @@ import {
 } from "@/utils/roomSessionStorage";
 import {
   createTierMakerClothing,
-  normalizeTierMakerSubcategory,
+  normalizeTierMakerCategory,
   tierMakerCategoryDetails,
 } from "@/utils/tierMakerClothing";
 
@@ -155,6 +155,7 @@ const emptyTryOn = {
 };
 const BOARD_WIDTH = 1530;
 const BOARD_MIN_HEIGHT = 720;
+const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 
 const compareRoomItemId = (left, right) =>
   Number(left.roomItemId) - Number(right.roomItemId);
@@ -301,15 +302,15 @@ function TierMakerRoomPage() {
       ? roomEvents.placements
       : candidatePlacements),
   ].sort((left, right) => left.position - right.position);
-  const roomSubcategory =
-    roomEvents.subcategory ?? roomStatusQuery.data?.data?.subcategory ?? "";
-  const normalizedRoomSubcategory =
-    normalizeTierMakerSubcategory(roomSubcategory);
+  const roomCategory =
+    roomEvents.category ?? roomStatusQuery.data?.data?.category ?? "";
+  const normalizedRoomCategory = normalizeTierMakerCategory(roomCategory);
+  const roomCategoryLabel =
+    tierMakerCategoryDetails[normalizedRoomCategory]?.categoryLabel ??
+    roomCategory;
   const tierEligibleClothes = clothes.filter(
     (item) =>
-      !normalizedRoomSubcategory ||
-      normalizeTierMakerSubcategory(item.subcategory) ===
-        normalizedRoomSubcategory,
+      !normalizedRoomCategory || item.slot === normalizedRoomCategory,
   );
   const tierEligibleItemIds = new Set(
     tierEligibleClothes.map((item) => item.id),
@@ -381,6 +382,13 @@ function TierMakerRoomPage() {
 
     return () => resizeObserver.disconnect();
   }, [isBoardReady]);
+
+  useEffect(
+    () => () => {
+      document.documentElement.classList.remove(DRAGGING_CURSOR_CLASS);
+    },
+    [],
+  );
 
   useEffect(() => {
     const roomStatus = roomStatusQuery.data?.data;
@@ -588,6 +596,14 @@ function TierMakerRoomPage() {
       roomItemId: item.roomItemId,
     };
     cancelledDragItemIdsRef.current.delete(itemId);
+    document.documentElement.classList.add(DRAGGING_CURSOR_CLASS);
+
+    const dragImage = document.createElement("div");
+    dragImage.className = "fixed -left-[9999px] top-0 size-px opacity-0";
+    document.body.append(dragImage);
+    event.dataTransfer.setDragImage(dragImage, 0, 0);
+    window.requestAnimationFrame(() => dragImage.remove());
+
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", itemId);
   };
@@ -596,6 +612,7 @@ function TierMakerRoomPage() {
     const item = clothesById[itemId];
     const wasCancelled = cancelledDragItemIdsRef.current.delete(itemId);
     activeDragRef.current = null;
+    document.documentElement.classList.remove(DRAGGING_CURSOR_CLASS);
 
     if (wasCancelled) {
       event.dataTransfer.dropEffect = "none";
@@ -631,7 +648,7 @@ function TierMakerRoomPage() {
 
     if (!tierEligibleItemIds.has(itemId)) {
       toast.warning(
-        `${roomSubcategory || "방"} 상세 카테고리 의상만 티어에 배정할 수 있습니다.`,
+        `${roomCategoryLabel || "방"} 카테고리 의상만 티어에 배정할 수 있습니다.`,
       );
       return;
     }
@@ -962,7 +979,7 @@ function TierMakerRoomPage() {
                   canRename={isHost}
                   onRenameTier={handleRenameTier}
                   waitingClothes={waitingClothes}
-                  roomSubcategory={roomSubcategory}
+                  roomCategory={roomCategoryLabel}
                   onUnrank={handleUnrank}
                 />
                 <ClothingCatalog
