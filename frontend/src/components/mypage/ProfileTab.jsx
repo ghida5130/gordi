@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getMyResults, updateNickname } from "@/api/users";
 import MyPageIcon from "@/components/mypage/MyPageIcon";
+import { useToast } from "@/hooks/useToast";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { useUserStore } from "@/stores/useUserStore";
 
@@ -32,6 +33,7 @@ function RecentResultCard({ result }) {
 
 export default function ProfileHome({ nickname, profileImageUrl, onHistory }) {
     const queryClient = useQueryClient();
+    const toast = useToast();
     const storeUser = useUserStore((state) => state);
     const setUser = useUserStore((state) => state.setUser);
 
@@ -45,7 +47,7 @@ export default function ProfileHome({ nickname, profileImageUrl, onHistory }) {
     const { mutate: updateName, isPending } = useMutation({
         mutationFn: updateNickname,
         onSuccess: () => {
-            alert("닉네임이 성공적으로 변경되었습니다.");
+            toast.success("닉네임이 성공적으로 변경되었습니다.");
             queryClient.invalidateQueries({ queryKey: ["myInfo"] });
             setUser({
                 ...storeUser,

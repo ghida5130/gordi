@@ -252,6 +252,8 @@ function TierMakerDesignPage() {
             />
             <ClothingCatalog
               clothes={clothes}
+              title="의상 보관함"
+              description={`총 ${clothes.length}개의 아이템`}
               tierByItem={tierByItem}
               itemLocks={emptyItemLocks}
               currentParticipantId={1}

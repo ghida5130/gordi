@@ -28,25 +28,3 @@ export function getAuthenticatedProduct(productOrOptions) {
       : productOrOptions;
   return authApi.get(`v1/products/${encodeURIComponent(productId)}`);
 }
-
-export function addCandidate({ roomToken, roomId, productId }) {
-  return publicApi.post(
-    "v1/candidates",
-    { roomId, productId },
-    roomTokenConfig(roomToken),
-  );
-}
-
-export function deleteCandidate({ roomToken, roomId, productId }) {
-  return publicApi.delete(
-    `v1/candidates/${encodeURIComponent(productId)}`,
-    roomTokenConfig(roomToken, { params: { roomId } }),
-  );
-}
-
-export function getCandidates({ roomToken, roomId }) {
-  return publicApi.get(
-    "v1/candidates",
-    roomTokenConfig(roomToken, { params: { roomId } }),
-  );
-}
