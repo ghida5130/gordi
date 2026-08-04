@@ -44,6 +44,7 @@ services:
       RECOMMENDATION_IMAGE_ALLOWED_HOSTS: ${RECOMMENDATION_IMAGE_ALLOWED_HOSTS:-["localhost","gordi-nginx"]}
       # 파트 간 공유 값은 루트 .env 에서 관리
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-}
       # 데모는 명시적으로 켤 때만
       ENABLE_RECOMMENDATION_DEMO: ${ENABLE_RECOMMENDATION_DEMO:-false}
     # AI 파트 환경변수 (모델·키·플래그)는 ai/.env 에서 관리한다
