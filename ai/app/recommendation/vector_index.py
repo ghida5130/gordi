@@ -184,6 +184,18 @@ class CatalogVectorIndex:
             self._embeddings_by_product_id = by_id
         return by_id.get(int(product_id))
 
+    def product_by_id(self, product_id: int) -> dict[str, Any] | None:
+        """Snapshot metadata (incl. image_url) for a backend DB id."""
+        by_id = getattr(self, "_products_by_id", None)
+        if by_id is None:
+            by_id = {
+                int(item.product["product_id"]): item.product
+                for item in self._items
+            }
+            self._products_by_id = by_id
+        product = by_id.get(int(product_id))
+        return None if product is None else dict(product)
+
     def search(
         self,
         query_embedding: list[float],

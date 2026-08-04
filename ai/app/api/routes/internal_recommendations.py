@@ -28,6 +28,7 @@ from app.services.recommendation_pipeline import (
     RecommendationRuntimeError,
     get_catalog_index,
     get_embedding_provider,
+    get_pairwise_reranker,
 )
 from app.services.recommendation_ranker import (
     SCHEMA_VERSION,
@@ -52,10 +53,27 @@ def get_vector_ranker(
     """Vector ranker when the runtime allows it; None → keyword baseline."""
     if not settings.recommendation_rank_vector_enabled:
         return None
+    reranker = None
+    if settings.recommendation_vlm_rerank_enabled:
+        try:
+            reranker = get_pairwise_reranker()
+        except RecommendationRuntimeError as exc:
+            # 품질 레이어는 랭킹 가용성을 깎지 않는다 — VLM 런타임이
+            # 없으면 벡터 랭킹만으로 진행한다.
+            logger.warning(
+                "vlm rerank runtime unavailable (%s); "
+                "ranking without it",
+                exc,
+            )
     try:
         return VectorRecommendationRanker(
             get_catalog_index(),
             get_embedding_provider(),
+            reranker=reranker,
+            rerank_top_k=settings.recommendation_vlm_rerank_top_k,
+            rerank_concurrency=(
+                settings.recommendation_vlm_rerank_concurrency
+            ),
         )
     except RecommendationRuntimeError as exc:
         logger.warning(

@@ -14,15 +14,19 @@ caller's concern, quality is this module's.
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from app.recommendation.catalog_embeddings import CatalogEmbeddingError
 from app.recommendation.pipeline import (
     COMPATIBILITY_WEIGHT,
+    DEFAULT_RERANK_CONCURRENCY,
+    DEFAULT_RERANK_TOP_K,
     RETRIEVAL_WEIGHT,
     GarmentTags,
     RecommendationIntent,
     RuleBasedCompatibilityModel,
 )
+from app.recommendation.vlm_reranker import PairwiseCompatibilityModel
 from app.recommendation.vector_index import (
     CatalogVectorIndex,
     QueryEmbeddingProvider,
@@ -68,10 +72,19 @@ class VectorRecommendationRanker:
         self,
         index: CatalogVectorIndex,
         provider: QueryEmbeddingProvider,
+        *,
+        reranker: PairwiseCompatibilityModel | None = None,
+        rerank_top_k: int = DEFAULT_RERANK_TOP_K,
+        rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
     ) -> None:
         self._index = index
         self._provider = provider
         self._compatibility = RuleBasedCompatibilityModel()
+        # /search 와 동일한 opt-in VLM pairwise rerank. 실패한 판정은
+        # 규칙 점수를 유지하므로 랭킹 가용성에는 영향을 주지 않는다.
+        self._reranker = reranker
+        self._rerank_top_k = rerank_top_k
+        self._rerank_concurrency = rerank_concurrency
 
     def rank(
         self,
@@ -110,7 +123,7 @@ class VectorRecommendationRanker:
         )
 
         matched = 0
-        scored: list[tuple[float, RankCandidate]] = []
+        scored: list[tuple[float, float, RankCandidate]] = []
         for candidate in eligible:
             vector = self._index.embedding_by_product_id(
                 candidate.product_id
@@ -137,7 +150,9 @@ class VectorRecommendationRanker:
                 RETRIEVAL_WEIGHT * retrieval
                 + COMPATIBILITY_WEIGHT * compatibility.total
             )
-            scored.append((round(min(max(final, 0.0), 1.0), 6), candidate))
+            scored.append(
+                (min(max(final, 0.0), 1.0), retrieval, candidate)
+            )
 
         if matched == 0:
             # 스냅샷과 DB 가 서로 다른 세대(id 불일치)라는 신호다.
@@ -156,21 +171,91 @@ class VectorRecommendationRanker:
         scored.sort(
             key=lambda item: (
                 -item[0],
-                item[1].price,
-                item[1].product_id,
+                item[2].price,
+                item[2].product_id,
             )
         )
+        if self._reranker is not None:
+            scored = self._rerank_pairwise(scored, intent)
         return [
             RankedProduct(
                 product_id=candidate.product_id,
                 rank=position,
-                score=score,
+                score=round(score, 6),
             )
-            for position, (score, candidate) in enumerate(
+            for position, (score, _retrieval, candidate) in enumerate(
                 scored[:limit],
                 start=1,
             )
         ]
+
+    def _rerank_pairwise(
+        self,
+        scored: list[tuple[float, float, RankCandidate]],
+        intent: RecommendationIntent,
+    ) -> list[tuple[float, float, RankCandidate]]:
+        """Re-judge the top-K compatibility with the VLM, in parallel.
+
+        Mirrors the `/search` pipeline semantics: only the top-K window
+        is judged, a successful judgment replaces the rule-based
+        compatibility inside the final blend, and any failure keeps the
+        original score so the reranker never degrades availability.
+        """
+        assert self._reranker is not None
+        top_k = min(self._rerank_top_k, len(scored))
+
+        def judge(
+            entry: tuple[float, float, RankCandidate],
+        ) -> tuple[float, float, RankCandidate]:
+            final, retrieval, candidate = entry
+            product = self._index.product_by_id(candidate.product_id)
+            if product is None:
+                # 인덱스 밖 후보는 이미지 없이 메타데이터로만 판정한다.
+                product = {
+                    "product_id": candidate.product_id,
+                    "name": candidate.name,
+                    "brand": candidate.brand,
+                    "category": candidate.category,
+                    "subcategory": candidate.subcategory,
+                    "description": candidate.description,
+                }
+            try:
+                judgment = self._reranker.score_pair(
+                    intent=intent,
+                    query_image=None,
+                    query_mime_type=None,
+                    product=product,
+                )
+            except Exception:
+                logger.warning(
+                    "pairwise rerank failed for product %s; "
+                    "keeping rule-based score",
+                    candidate.product_id,
+                    exc_info=True,
+                )
+                return entry
+            compatibility = min(
+                max(float(judgment.compatibility), 0.0),
+                1.0,
+            )
+            final = (
+                RETRIEVAL_WEIGHT * retrieval
+                + COMPATIBILITY_WEIGHT * compatibility
+            )
+            return (min(max(final, 0.0), 1.0), retrieval, candidate)
+
+        workers = max(1, min(self._rerank_concurrency, top_k))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            reranked = list(executor.map(judge, scored[:top_k]))
+        reranked.extend(scored[top_k:])
+        reranked.sort(
+            key=lambda item: (
+                -item[0],
+                item[2].price,
+                item[2].product_id,
+            )
+        )
+        return reranked
 
 
 def _is_eligible(
