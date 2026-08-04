@@ -28,9 +28,9 @@ const MainPage = () => {
           </p>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-black transition-colors flex items-center gap-2"
+            className="group flex items-center gap-2 rounded-full bg-[#1a1a1a] px-8 py-4 text-lg font-medium text-white transition-all duration-300 hover:-translate-y-1 hover:bg-black hover:shadow-xl hover:shadow-black/20"
           >
-            지금 시작하기 <span>→</span>
+            지금 시작하기 <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span>
           </button>
         </div>
       </section>
@@ -42,25 +42,25 @@ const MainPage = () => {
           <p className="text-gray-500 mb-12">혼자 고르기 어려웠던 옷 선택, 이제 AI와 친구들과 함께 해결하세요.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-gray-50 p-8 rounded-2xl">
+            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#BFE7D2] hover:shadow-xl hover:shadow-emerald-200/40">
               <div className="mb-4 text-2xl"></div>
-              <h3 className="font-bold text-lg mb-3">내 체형 맞춤 아바타</h3>
-              <p className="text-sm text-gray-600">키, 체중, 어깨 너비 등 간단한 체형 정보를 입력하면 나를 꼭 닮은 아바타가 만들어져요.</p>
+              <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">내 체형 맞춤 아바타</h3>
+              <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">키, 체중, 어깨 너비 등 간단한 체형 정보를 입력하면 나를 꼭 닮은 아바타가 만들어져요.</p>
             </div>
-            <div className="bg-gray-50 p-8 rounded-2xl">
+            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#CDBEF9] hover:shadow-xl hover:shadow-violet-200/40">
               <div className="mb-4 text-2xl"></div>
-              <h3 className="font-bold text-lg mb-3">AI가 골라주는 옷</h3>
-              <p className="text-sm text-gray-600">내 체형과 스타일 취향을 AI가 분석해 딱 맞는 옷 리스트를 큐레이션해줘요.</p>
+              <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">AI가 골라주는 옷</h3>
+              <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">내 체형과 스타일 취향을 AI가 분석해 딱 맞는 옷 리스트를 큐레이션해줘요.</p>
             </div>
-            <div className="bg-gray-50 p-8 rounded-2xl">
+            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#C8D9E6] hover:shadow-xl hover:shadow-sky-200/40">
               <div className="mb-4 text-2xl"></div>
-              <h3 className="font-bold text-lg mb-3">친구들과 티어 매기기</h3>
-              <p className="text-sm text-gray-600">친구를 초대해 AI 추천 옷들을 함께 S/A/B/C 티어로 평가해보세요.</p>
+              <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">친구들과 티어 매기기</h3>
+              <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">친구를 초대해 AI 추천 옷들을 함께 S/A/B/C 티어로 평가해보세요.</p>
             </div>
-            <div className="bg-gray-50 p-8 rounded-2xl">
+            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#FFD9C6] hover:shadow-xl hover:shadow-orange-200/40">
               <div className="mb-4 text-2xl"></div>
-              <h3 className="font-bold text-lg mb-3">아바타에 직접 입혀보기</h3>
-              <p className="text-sm text-gray-600">티어를 정한 옷을 내 아바타에 실제로 입혀보며 전체 코디를 완성해보세요.</p>
+              <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">아바타에 직접 입혀보기</h3>
+              <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">티어를 정한 옷을 내 아바타에 실제로 입혀보며 전체 코디를 완성해보세요.</p>
             </div>
           </div>
         </div>
@@ -75,26 +75,26 @@ const MainPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-4xl font-light text-blue-500 mb-4">01</h3>
+            <div className="group border-t border-gray-700 pt-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500">
+              <h3 className="mb-4 text-4xl font-light text-blue-500 transition-transform duration-300 group-hover:translate-x-2">01</h3>
               <span className="text-xs border border-gray-600 rounded-full px-3 py-1 mb-4 inline-block">체형 분석 알고리즘</span>
               <h4 className="font-bold text-lg mb-2">체형 정보 입력</h4>
               <p className="text-sm text-gray-400">키, 체중, 어깨 너비 등 간단한 체형 정보를 입력하세요. 3분이면 충분해요.</p>
             </div>
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-4xl font-light text-blue-500 mb-4">02</h3>
+            <div className="group border-t border-gray-700 pt-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500">
+              <h3 className="mb-4 text-4xl font-light text-blue-500 transition-transform duration-300 group-hover:translate-x-2">02</h3>
               <span className="text-xs border border-gray-600 rounded-full px-3 py-1 mb-4 inline-block">실시간 렌더링</span>
               <h4 className="font-bold text-lg mb-2">아바타 생성</h4>
               <p className="text-sm text-gray-400">입력된 정보를 기반으로 나를 닮은 아바타가 자동으로 만들어져요.</p>
             </div>
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-4xl font-light text-blue-500 mb-4">03</h3>
+            <div className="group border-t border-gray-700 pt-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500">
+              <h3 className="mb-4 text-4xl font-light text-blue-500 transition-transform duration-300 group-hover:translate-x-2">03</h3>
               <span className="text-xs border border-gray-600 rounded-full px-3 py-1 mb-4 inline-block">매일 업데이트</span>
               <h4 className="font-bold text-lg mb-2">AI 옷 추천</h4>
               <p className="text-sm text-gray-400">AI가 내 체형과 트렌드를 분석해 딱 맞는 옷 리스트를 큐레이션해줘요.</p>
             </div>
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-4xl font-light text-blue-500 mb-4">04</h3>
+            <div className="group border-t border-gray-700 pt-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500">
+              <h3 className="mb-4 text-4xl font-light text-blue-500 transition-transform duration-300 group-hover:translate-x-2">04</h3>
               <span className="text-xs border border-gray-600 rounded-full px-3 py-1 mb-4 inline-block">실시간 협업</span>
               <h4 className="font-bold text-lg mb-2">친구와 코디 완성</h4>
               <p className="text-sm text-gray-400">친구를 초대해 함께 티어를 정하고 아바타에 입혀보며 최종 코디를 완성하세요.</p>
