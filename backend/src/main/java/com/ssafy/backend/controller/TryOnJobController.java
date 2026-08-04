@@ -32,7 +32,8 @@ public class TryOnJobController {
             @PathVariable Long jobId,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(ApiResponse.success(tryOnService.read(jobId, authentication)));
+        return ResponseEntity.ok(ApiResponse.success(
+                tryOnService.read(jobId, authentication.getName())));
     }
 
     /** 착장 이미지 생성 Job 등록. 접수만 하고 결과는 조회 API 로 폴링한다. */
@@ -43,7 +44,7 @@ public class TryOnJobController {
             Authentication authentication
     ) {
         TryOnJobCreateResponseDTO response =
-                tryOnService.create(request, idempotencyKey, authentication);
+                tryOnService.create(request, idempotencyKey, authentication.getName());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response));
     }
 
@@ -55,7 +56,7 @@ public class TryOnJobController {
             Authentication authentication
     ) {
         TryOnJobRetryResponseDTO response =
-                tryOnService.retry(jobId, idempotencyKey, authentication);
+                tryOnService.retry(jobId, idempotencyKey, authentication.getName());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response));
     }
 }

@@ -33,6 +33,7 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.ImageUrlResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -41,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -63,6 +63,8 @@ class TryOnServiceTest {
 
     private static final Long MEMBER_ID = 1L;
     private static final Long OTHER_MEMBER_ID = 2L;
+    // member(MEMBER_ID) 픽스처의 이메일과 일치해야 한다.
+    private static final String EMAIL = "member1@example.com";
     private static final Long AVATAR_ID = 38L;
     private static final Long ROOM_ID = 10L;
     private static final String ROOM_CODE = "A7K9Q2";
@@ -88,13 +90,13 @@ class TryOnServiceTest {
     @Mock
     private AvatarRepository avatarRepository;
     @Mock
-    private RoomAuthResolver roomAuthResolver;
+    private UserRepository userRepository;
+    @Mock
+    private RoomAccessValidator roomAccessValidator;
     @Mock
     private IdempotencyRecordRepository idempotencyRecordRepository;
     @Mock
     private TryOnGenerationClient tryOnGenerationClient;
-    @Mock
-    private Authentication authentication;
 
     private TryOnService tryOnService;
 
@@ -109,7 +111,8 @@ class TryOnServiceTest {
                 productTopSizeRepository,
                 productBottomSizeRepository,
                 avatarRepository,
-                roomAuthResolver,
+                userRepository,
+                roomAccessValidator,
                 // 해시 계산은 실제 구현을 사용하고 저장소만 대체한다.
                 new IdempotencyService(idempotencyRecordRepository, new ObjectMapper()),
                 tryOnGenerationClient,
@@ -140,9 +143,9 @@ class TryOnServiceTest {
             );
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, authentication);
+            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, EMAIL);
 
             assertThat(response.jobId()).isEqualTo(GENERATED_JOB_ID);
             assertThat(response.status()).isEqualTo(TryOnJobStatus.SUCCEEDED.name());
@@ -165,9 +168,9 @@ class TryOnServiceTest {
             job.markFailed("GENERATION_TIMEOUT", "생성이 시간 내에 끝나지 않았습니다.", true, CREATED_AT.plusSeconds(30));
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, authentication);
+            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, EMAIL);
 
             assertThat(response.status()).isEqualTo(TryOnJobStatus.FAILED.name());
             assertThat(response.result()).isNull();
@@ -183,9 +186,9 @@ class TryOnServiceTest {
             job.markSucceeded("url", 1, 1, List.of(), null, null, null, CREATED_AT);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, authentication);
+            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, EMAIL);
 
             assertThat(response.result().fitSummary()).isEmpty();
         }
@@ -194,7 +197,7 @@ class TryOnServiceTest {
         void 존재하지_않는_Job은_RESOURCE_NOT_FOUND() {
             when(tryOnJobRepository.findDetailById(999L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> tryOnService.read(999L, authentication))
+            assertThatThrownBy(() -> tryOnService.read(999L, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
@@ -206,9 +209,9 @@ class TryOnServiceTest {
             job.setId(GENERATED_JOB_ID);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            assertThatThrownBy(() -> tryOnService.read(GENERATED_JOB_ID, authentication))
+            assertThatThrownBy(() -> tryOnService.read(GENERATED_JOB_ID, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.FORBIDDEN);
@@ -227,13 +230,13 @@ class TryOnServiceTest {
             job.setId(GENERATED_JOB_ID);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.PARTICIPANTS));
 
-            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, authentication);
+            TryOnJobDetailResponseDTO response = tryOnService.read(GENERATED_JOB_ID, EMAIL);
 
             assertThat(response.status()).isEqualTo(TryOnJobStatus.QUEUED.name());
-            verify(roomAuthResolver).requireParticipant(authentication, room);
+            verify(roomAccessValidator).requireParticipant(ROOM_ID, EMAIL);
         }
     }
 
@@ -244,7 +247,7 @@ class TryOnServiceTest {
 
         @Test
         void SOLO_등록은_QUEUED로_저장하고_생성을_접수시킨다() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -254,7 +257,7 @@ class TryOnServiceTest {
             stubJobSave();
 
             TryOnJobCreateResponseDTO response = tryOnService.create(
-                    soloRequest(500L, "TOP"), null, authentication);
+                    soloRequest(500L, "TOP"), null, EMAIL);
 
             assertThat(response.jobId()).isEqualTo(GENERATED_JOB_ID);
             assertThat(response.status()).isEqualTo(TryOnJobStatus.QUEUED.name());
@@ -271,7 +274,7 @@ class TryOnServiceTest {
 
         @Test
         void 상의는_선택한_사이즈의_실측을_보낸다() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -279,7 +282,7 @@ class TryOnServiceTest {
                     .thenReturn(0L);
             stubJobSave();
 
-            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+            tryOnService.create(soloRequest(500L, "TOP"), null, EMAIL);
 
             TryOnGenerationRequest.SizeProfile sent = capturedItem().sizeProfile();
             assertThat(sent.sizeName()).isEqualTo(SIZE_NAME);
@@ -294,7 +297,7 @@ class TryOnServiceTest {
 
         @Test
         void 하의는_하의_실측_항목을_보낸다() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(600L)).thenReturn(Optional.of(product(600L)));
             when(productBottomSizeRepository.findByProductIdAndSizeName(600L, SIZE_NAME))
@@ -303,7 +306,7 @@ class TryOnServiceTest {
                     .thenReturn(0L);
             stubJobSave();
 
-            tryOnService.create(soloRequest(600L, "BOTTOM"), null, authentication);
+            tryOnService.create(soloRequest(600L, "BOTTOM"), null, EMAIL);
 
             TryOnGenerationRequest.SizeProfile sent = capturedItem().sizeProfile();
             assertThat(sent.sizeName()).isEqualTo(SIZE_NAME);
@@ -319,7 +322,7 @@ class TryOnServiceTest {
 
         @Test
         void 없는_사이즈는_선택_가능한_사이즈를_알려주며_BAD_REQUEST() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             when(productTopSizeRepository.findByProductIdAndSizeName(500L, SIZE_NAME))
@@ -329,7 +332,7 @@ class TryOnServiceTest {
 
             TryOnJobCreateRequestDTO request = soloRequest(500L, "TOP");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .satisfies(thrown -> {
                         ApiException exception = (ApiException) thrown;
@@ -342,7 +345,7 @@ class TryOnServiceTest {
 
         @Test
         void 아바타_구간이_실제_cm_kg_범위로_전달된다() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -350,7 +353,7 @@ class TryOnServiceTest {
                     .thenReturn(0L);
             stubJobSave();
 
-            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+            tryOnService.create(soloRequest(500L, "TOP"), null, EMAIL);
 
             TryOnGenerationRequest.Avatar sent = capturedRequest().avatar();
             assertThat(sent.gender()).isEqualTo("FEMALE");
@@ -364,7 +367,7 @@ class TryOnServiceTest {
 
         @Test
         void SOLO_컨텍스트는_roomId와_boardVersion이_비어_전달된다() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -372,7 +375,7 @@ class TryOnServiceTest {
                     .thenReturn(0L);
             stubJobSave();
 
-            tryOnService.create(soloRequest(500L, "TOP"), null, authentication);
+            tryOnService.create(soloRequest(500L, "TOP"), null, EMAIL);
 
             TryOnGenerationRequest.Context sent = capturedRequest().context();
             assertThat(sent.type()).isEqualTo(TryOnContextType.SOLO.name());
@@ -386,7 +389,7 @@ class TryOnServiceTest {
             cached.markSucceeded("https://cdn/cached.webp", 1024, 1536, List.of("핏"),
                     "안내", "model-1", "v1", CREATED_AT);
 
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -397,7 +400,7 @@ class TryOnServiceTest {
             stubJobSave();
 
             TryOnJobCreateResponseDTO response = tryOnService.create(
-                    soloRequest(500L, "TOP"), null, authentication);
+                    soloRequest(500L, "TOP"), null, EMAIL);
 
             assertThat(response.cacheHit()).isTrue();
             assertThat(response.status()).isEqualTo(TryOnJobStatus.SUCCEEDED.name());
@@ -407,14 +410,14 @@ class TryOnServiceTest {
         @Test
         void ROOM_등록은_보드_버전이_다르면_VERSION_CONFLICT() {
             Room room = room(ROOM_VERSION);
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.PARTICIPANTS));
 
             TryOnJobCreateRequestDTO request = roomRequest(ROOM_VERSION + 1, 91L, "TOP");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.VERSION_CONFLICT);
@@ -428,16 +431,16 @@ class TryOnServiceTest {
             Room otherRoom = room(ROOM_VERSION);
             otherRoom.setId(ROOM_ID + 1);
 
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(roomRepository.findByRoomCode(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.PARTICIPANTS));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(roomItemRepository.findById(91L)).thenReturn(Optional.of(roomItem(91L, otherRoom)));
 
             TryOnJobCreateRequestDTO request = roomRequest(ROOM_VERSION, 91L, "TOP");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.FORBIDDEN);
@@ -445,7 +448,7 @@ class TryOnServiceTest {
 
         @Test
         void 일일_한도를_넘으면_GENERATION_QUOTA_EXCEEDED() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
             stubTopSize(500L);
@@ -454,7 +457,7 @@ class TryOnServiceTest {
 
             TryOnJobCreateRequestDTO request = soloRequest(500L, "TOP");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.GENERATION_QUOTA_EXCEEDED);
@@ -464,12 +467,12 @@ class TryOnServiceTest {
 
         @Test
         void 허용되지_않은_slot은_BAD_REQUEST() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
 
             TryOnJobCreateRequestDTO request = soloRequest(500L, "HAT");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
@@ -477,7 +480,7 @@ class TryOnServiceTest {
 
         @Test
         void 같은_slot이_중복되면_BAD_REQUEST() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.of(avatar()));
             when(productRepository.findById(500L)).thenReturn(Optional.of(product(500L)));
 
@@ -492,7 +495,7 @@ class TryOnServiceTest {
                     null
             );
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
@@ -508,7 +511,7 @@ class TryOnServiceTest {
                     null
             );
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
@@ -516,12 +519,12 @@ class TryOnServiceTest {
 
         @Test
         void 존재하지_않는_아바타는_AVATAR_NOT_FOUND() {
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(avatarRepository.findById(AVATAR_ID)).thenReturn(Optional.empty());
 
             TryOnJobCreateRequestDTO request = soloRequest(500L, "TOP");
 
-            assertThatThrownBy(() -> tryOnService.create(request, null, authentication))
+            assertThatThrownBy(() -> tryOnService.create(request, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.AVATAR_NOT_FOUND);
@@ -541,7 +544,7 @@ class TryOnServiceTest {
             source.markFailed("GENERATION_TIMEOUT", "타임아웃", true, CREATED_AT);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(source));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
             when(tryOnJobRepository.countByOwnerUserIdAndCreatedAtGreaterThanEqual(anyLong(), any()))
                     .thenReturn(0L);
             when(tryOnJobItemRepository.findAllByTryOnJobIdWithProduct(GENERATED_JOB_ID))
@@ -549,7 +552,7 @@ class TryOnServiceTest {
             stubTopSize(500L);
             stubJobSave(GENERATED_JOB_ID + 1);
 
-            TryOnJobRetryResponseDTO response = tryOnService.retry(GENERATED_JOB_ID, null, authentication);
+            TryOnJobRetryResponseDTO response = tryOnService.retry(GENERATED_JOB_ID, null, EMAIL);
 
             assertThat(response.jobId()).isEqualTo(GENERATED_JOB_ID + 1);
             assertThat(response.retryOfJobId()).isEqualTo(GENERATED_JOB_ID);
@@ -565,9 +568,9 @@ class TryOnServiceTest {
             source.markFailed("INVALID_INPUT", "잘못된 입력", false, CREATED_AT);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(source));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            assertThatThrownBy(() -> tryOnService.retry(GENERATED_JOB_ID, null, authentication))
+            assertThatThrownBy(() -> tryOnService.retry(GENERATED_JOB_ID, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.JOB_NOT_RETRYABLE);
@@ -581,9 +584,9 @@ class TryOnServiceTest {
             source.setId(GENERATED_JOB_ID);
 
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(source));
-            when(roomAuthResolver.requireMember(authentication)).thenReturn(member(MEMBER_ID));
+            when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(member(MEMBER_ID)));
 
-            assertThatThrownBy(() -> tryOnService.retry(GENERATED_JOB_ID, null, authentication))
+            assertThatThrownBy(() -> tryOnService.retry(GENERATED_JOB_ID, null, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.JOB_NOT_RETRYABLE);
@@ -602,7 +605,7 @@ class TryOnServiceTest {
             job.markSucceeded("https://cdn/71.webp", 1024, 1536, List.of(), null, "m", "v1", CREATED_AT);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.HOST));
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
             when(roomRepository.saveAndFlush(room)).thenAnswer(invocation -> {
@@ -615,14 +618,14 @@ class TryOnServiceTest {
             OutfitSnapshotResponseDTO response = tryOnService.confirmSnapshot(
                     ROOM_CODE,
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION),
-                    authentication
+                    EMAIL
             );
 
             assertThat(response.roomCode()).isEqualTo(ROOM_CODE);
             assertThat(response.confirmedTryOnJobId()).isEqualTo(GENERATED_JOB_ID);
             assertThat(response.version()).isEqualTo(ROOM_VERSION + 1);
             assertThat(room.getConfirmedTryOnJob()).isSameAs(job);
-            verify(roomAuthResolver).requireHost(any(RoomParticipant.class));
+            verify(roomAccessValidator).requireHost(any(RoomParticipant.class));
         }
 
         @Test
@@ -630,13 +633,13 @@ class TryOnServiceTest {
             Room room = room(ROOM_VERSION);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.HOST));
 
             OutfitSnapshotConfirmRequestDTO request =
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION - 1);
 
-            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, authentication))
+            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.VERSION_CONFLICT);
@@ -650,14 +653,14 @@ class TryOnServiceTest {
             TryOnJob job = roomJob(room);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.HOST));
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
 
             OutfitSnapshotConfirmRequestDTO request =
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION);
 
-            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, authentication))
+            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.CONFLICT);
@@ -673,14 +676,14 @@ class TryOnServiceTest {
             job.markSucceeded("url", 1, 1, List.of(), null, "m", "v1", CREATED_AT);
 
             when(roomRepository.findByRoomCodeForUpdate(ROOM_CODE)).thenReturn(Optional.of(room));
-            when(roomAuthResolver.requireParticipant(authentication, room))
+            when(roomAccessValidator.requireParticipant(ROOM_ID, EMAIL))
                     .thenReturn(participant(RoomRole.HOST));
             when(tryOnJobRepository.findDetailById(GENERATED_JOB_ID)).thenReturn(Optional.of(job));
 
             OutfitSnapshotConfirmRequestDTO request =
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION);
 
-            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, authentication))
+            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.FORBIDDEN);
@@ -696,7 +699,7 @@ class TryOnServiceTest {
             OutfitSnapshotConfirmRequestDTO request =
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION);
 
-            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, authentication))
+            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.ROOM_CLOSED);
@@ -709,7 +712,7 @@ class TryOnServiceTest {
             OutfitSnapshotConfirmRequestDTO request =
                     new OutfitSnapshotConfirmRequestDTO(GENERATED_JOB_ID, ROOM_VERSION);
 
-            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, authentication))
+            assertThatThrownBy(() -> tryOnService.confirmSnapshot(ROOM_CODE, request, EMAIL))
                     .isInstanceOf(ApiException.class)
                     .extracting(exception -> ((ApiException) exception).getErrorCode())
                     .isEqualTo(ErrorCode.ROOM_NOT_FOUND);

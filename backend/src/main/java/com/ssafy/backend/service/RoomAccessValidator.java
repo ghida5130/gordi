@@ -2,6 +2,7 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.config.enums.RoomRole;
 import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.websocket.RoomPrincipal;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -49,5 +51,15 @@ public class RoomAccessValidator {
         return roomParticipantRepository
                 .findByRoomIdAndUserEmailAndLeftAtIsNull(requestedRoomId, email)
                 .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+    }
+
+    /** HOST 전용 동작 검증 */
+    public void requireHost(RoomParticipant participant) {
+        if (!RoomRole.HOST.matches(participant.getRole())) {
+            throw new ApiException(
+                    ErrorCode.FORBIDDEN,
+                    Map.of("requiredRole", RoomRole.HOST.name())
+            );
+        }
     }
 }
