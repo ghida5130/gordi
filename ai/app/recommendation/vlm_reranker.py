@@ -87,15 +87,20 @@ class VLMPairwiseCompatibilityModel:
         product_image_fetcher: ProductImageFetcher | None = None,
         reasoning_effort: str | None = None,
         image_base_url: str | None = None,
+        judgment_max_tokens: int = _JUDGMENT_MAX_TOKENS,
     ) -> None:
         # Reasoning control is per-model: OpenAI reasoning models need
         # a bounded effort or hidden reasoning eats the token cap, but
         # some providers (e.g. Gemma) reject the field outright, so it
-        # must stay configurable instead of hardcoded.
+        # must stay configurable instead of hardcoded. The token cap
+        # scales with effort for the same reason: hidden reasoning
+        # draws from the same cap, so higher effort needs more room
+        # or the judgment truncates before the JSON answer.
         self._client = client
         self._product_image_fetcher = product_image_fetcher
         self._reasoning_effort = reasoning_effort
         self._image_base_url = (image_base_url or "").strip() or None
+        self._judgment_max_tokens = judgment_max_tokens
 
     def score_pair(
         self,
@@ -128,7 +133,7 @@ class VLMPairwiseCompatibilityModel:
         payload = self._client.complete_json(
             system=_SYSTEM_PROMPT,
             user_parts=user_parts,
-            max_tokens=_JUDGMENT_MAX_TOKENS,
+            max_tokens=self._judgment_max_tokens,
             reasoning_effort=self._reasoning_effort,
         )
         return _judgment_from_payload(payload)

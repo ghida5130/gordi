@@ -76,26 +76,26 @@ public class AvatarService {
                     List.of(AvatarResponseDTO.from(avatar, imageUrlResolver::resolve)));
         }
 
-        // 키만 입력 → 해당 키 구간의 기본 프리셋
-        if (weightId == 0L) {
-            Avatar fallback = avatarRepository
-                    .findFirstByGenderAndHeightIdAndDefaultAvatarTrue(gender, heightId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.AVATAR_NOT_FOUND,
-                            Map.of("gender", gender, "heightId", heightId)));
-            return new AvatarTemplateListResponseDTO(
-                    List.of(AvatarResponseDTO.from(fallback, imageUrlResolver::resolve)));
-        }
-
         // 몸무게만 입력 → 정의되지 않은 조합
         if (heightId == 0L) {
             throw new ApiException(ErrorCode.BAD_REQUEST,
                     "키 없이 몸무게만 지정할 수 없습니다.", Map.of("weightId", weightId));
         }
 
-        // 둘 다 입력 → 해당 구간의 체형별 아바타
+        // 키만 입력 → 해당 키 구간의 기본 프리셋
+        if (weightId == 0L) {
+            Avatar defaultAvatar = avatarRepository
+                    .findFirstByGenderAndHeightIdAndDefaultAvatarTrue(gender, heightId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.AVATAR_NOT_FOUND,
+                            Map.of("gender", gender, "heightId", heightId)));
+            weightId = defaultAvatar.getWeightId();
+        }
+
+        // 중심 몸무게 구간 ±1 범위의 체형별 아바타 조회 (경계 구간은 존재하는 것만 반환)
         List<Avatar> candidates = avatarRepository
-                .findByGenderAndHeightIdAndWeightIdOrderByBodyTypeAsc(
-                        gender, heightId, weightId);
+                .findByGenderAndHeightIdAndWeightIdBetweenOrderByWeightIdAscBodyTypeAsc(
+                        gender, heightId,
+                        weightId - NEIGHBOR_RANGE, weightId + NEIGHBOR_RANGE);
 
         if (candidates.isEmpty()) {
             throw new ApiException(ErrorCode.AVATAR_NOT_FOUND,

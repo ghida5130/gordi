@@ -10,6 +10,7 @@ import RoomInvitePage from "@/pages/RoomInvitePage";
 import RoomPage from "@/pages/RoomPage";
 import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
+import SignupSelectPage from "@/pages/SignupSelectPage";
 import LoginPage from "@/pages/LoginPage";
 import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import SignupCompletePage from "@/pages/SignupCompletePage";
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       },
       {
         path: "signup",
+        element: <SignupSelectPage />,
+      },
+      {
+        path: "signup/email",
         element: <SignupPage />,
       },
       {
