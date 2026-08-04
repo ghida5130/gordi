@@ -3,6 +3,7 @@ package com.ssafy.backend.service;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Recommendation;
 import com.ssafy.backend.domain.RecommendationItem;
@@ -23,6 +24,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -84,8 +86,26 @@ class RoomServiceTest {
                 userRepository,
                 roomTokenProvider,
                 eventPublisher,
+                new ImageUrlResolver("https://cdn.example.com/"),
                 7_200_000L
         );
+    }
+
+    @Test
+    void createRequiresHostAvatar() {
+        User host = user(1L, "host@example.com", "방장");
+        host.setAvatar(null);
+        when(userRepository.findByEmail(host.getEmail())).thenReturn(Optional.of(host));
+
+        assertThatThrownBy(() -> roomService.create(
+                host.getEmail(),
+                new RoomCreateRequestDTO(21L, 2L, 4),
+                UUID.randomUUID().toString()
+        ))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST));
+
+        verify(recommendationRepository, never()).findByIdAndUserId(anyLong(), anyLong());
     }
 
     @Test
@@ -375,6 +395,14 @@ class RoomServiceTest {
         Room room = waitingRoom(31L, 4);
         room.setStatus("IN_PROGRESS");
         room.setVersion(12L);
+        room.getHostUser().setAvatar(Avatar.builder()
+                .id(7L)
+                .gender("MALE")
+                .bodyType("NORMAL")
+                .heightId(3L)
+                .weightId(3L)
+                .imageUrl("/images/avatars/host.png")
+                .build());
         RoomParticipant requester = RoomParticipant.builder()
                 .id(42L)
                 .room(room)
@@ -409,6 +437,8 @@ class RoomServiceTest {
         assertThat(response.expiresAt())
                 .isEqualTo(room.getExpiresAt().atZone(AppZone.KST).toInstant());
         assertThat(response.subcategory()).isEqualTo("SHIRT");
+        assertThat(response.hostAvatarImageUrl())
+                .isEqualTo("https://cdn.example.com/images/avatars/host.png");
         assertThat(response.participants())
                 .extracting(RoomStatusResponseDTO.Participant::participantId)
                 .containsExactly(42L, 43L);
@@ -441,8 +471,35 @@ class RoomServiceTest {
         );
 
         assertThat(response.participants()).hasSize(1);
+        assertThat(response.hostAvatarImageUrl())
+                .isEqualTo("https://cdn.example.com/images/avatars/default.png");
         verify(roomParticipantRepository)
                 .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
+    }
+
+    @Test
+    void readStatusRejectsMissingHostAvatarAsInvalidRoomState() {
+        Room room = waitingRoom(31L, 4);
+        room.getHostUser().setAvatar(null);
+        RoomParticipant requester = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("host")
+                .role("HOST")
+                .build();
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(requester));
+        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(requester));
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> roomService.readStatus("A7K9Q2", principal))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     @Test
@@ -465,6 +522,14 @@ class RoomServiceTest {
                 .email(email)
                 .password("encoded-password")
                 .nickname(nickname)
+                .avatar(Avatar.builder()
+                        .id(7L)
+                        .gender("MALE")
+                        .bodyType("NORMAL")
+                        .heightId(3L)
+                        .weightId(3L)
+                        .imageUrl("/images/avatars/default.png")
+                        .build())
                 .build();
     }
 

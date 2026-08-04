@@ -10,6 +10,7 @@ public record RoomStatusResponseDTO(
         Long version,
         Instant expiresAt,
         String subcategory,
+        String hostAvatarImageUrl,
         List<Participant> participants,
         List<Tier> tiers
 ) {

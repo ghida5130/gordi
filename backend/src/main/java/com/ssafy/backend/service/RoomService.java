@@ -3,6 +3,7 @@ package com.ssafy.backend.service;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Recommendation;
 import com.ssafy.backend.domain.RecommendationItem;
 import com.ssafy.backend.domain.Room;
@@ -18,6 +19,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -58,6 +60,7 @@ public class RoomService {
     private final UserRepository userRepository;
     private final RoomTokenProvider roomTokenProvider;
     private final ApplicationEventPublisher eventPublisher;
+    private final ImageUrlResolver imageUrlResolver;
     private final long roomExpirationMillis;
 
     public RoomService(
@@ -70,6 +73,7 @@ public class RoomService {
             UserRepository userRepository,
             RoomTokenProvider roomTokenProvider,
             ApplicationEventPublisher eventPublisher,
+            ImageUrlResolver imageUrlResolver,
             @Value("${room.expiration:7200000}") long roomExpirationMillis
     ) {
         this.roomRepository = roomRepository;
@@ -81,6 +85,7 @@ public class RoomService {
         this.userRepository = userRepository;
         this.roomTokenProvider = roomTokenProvider;
         this.eventPublisher = eventPublisher;
+        this.imageUrlResolver = imageUrlResolver;
         if (roomExpirationMillis <= 0) {
             throw new IllegalArgumentException("room.expiration은 0보다 커야 합니다.");
         }
@@ -95,6 +100,7 @@ public class RoomService {
     ) {
         String idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
         User host = findUser(email);
+        requireHostAvatar(host);
 
         Room existingRoom = roomRepository
                 .findByHostUserIdAndIdempotencyKey(host.getId(), idempotencyKey)
@@ -254,9 +260,37 @@ public class RoomService {
                 room.getVersion(),
                 room.getExpiresAt().atZone(AppZone.KST).toInstant(),
                 room.getRecommendation().getSubcategory(),
+                resolveHostAvatarImageUrl(room),
                 participants,
                 tiers
         );
+    }
+
+    private String resolveHostAvatarImageUrl(Room room) {
+        User host = room.getHostUser();
+        Avatar avatar = host.getAvatar();
+        if (avatar == null
+                || avatar.getImageUrl() == null
+                || avatar.getImageUrl().isBlank()) {
+            throw new ApiException(
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    "방 호스트의 아바타 정보가 없습니다.",
+                    Map.of("roomId", room.getId())
+            );
+        }
+        return imageUrlResolver.resolve(avatar.getImageUrl());
+    }
+
+    private void requireHostAvatar(User host) {
+        Avatar avatar = host.getAvatar();
+        if (avatar == null
+                || avatar.getImageUrl() == null
+                || avatar.getImageUrl().isBlank()) {
+            throw new ApiException(
+                    ErrorCode.BAD_REQUEST,
+                    "방 생성 전에 아바타를 선택해야 합니다."
+            );
+        }
     }
 
     private RoomJoinResponseDTO rejoin(
