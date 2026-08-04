@@ -755,7 +755,7 @@ public class TryOnService {
                         .map(item -> new TryOnGenerationRequest.Item(
                                 item.product().getId(),
                                 item.slot().name(),
-                                item.product().getImageUrl(),
+                                imageUrlResolver.resolve(item.product().getImageUrl()),
                                 item.product().getSource(),
                                 item.product().getDescription(),
                                 item.sizeProfile()
@@ -787,7 +787,7 @@ public class TryOnService {
 
         return new TryOnGenerationRequest.Avatar(
                 avatar.getId(),
-                avatar.getImageUrl(),
+                imageUrlResolver.resolve(avatar.getImageUrl()),
                 avatar.getGender(),
                 avatar.getBodyType(),
                 height.map(HeightRange::getMinHeight).orElse(null),
