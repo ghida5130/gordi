@@ -20,7 +20,16 @@ _MAX_REDIRECTS = 3
 
 
 class QueryImageError(RuntimeError):
-    """Raised when a query image URL or response is unsafe or invalid."""
+    """Raised when a query image URL or response is unsafe or invalid.
+
+    ``retryable`` separates transient failures (network errors that may
+    pass on retry) from permanent ones — URL/host validation and content
+    rules fail identically every retry, so they default to ``False``.
+    """
+
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 @dataclass(frozen=True)
@@ -94,7 +103,8 @@ class QueryImageFetcher:
                 raise
             except (httpx.HTTPError, ValueError) as exc:
                 raise QueryImageError(
-                    f"query image fetch failed: {exc}"
+                    f"query image fetch failed: {exc}",
+                    retryable=True,
                 ) from exc
             image = bytes(content)
             if not image:

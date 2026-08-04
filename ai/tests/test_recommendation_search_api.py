@@ -193,8 +193,10 @@ def test_image_fetcher_rejects_redirect_to_disallowed_host() -> None:
         client=http_client,
     )
 
-    with pytest.raises(QueryImageError, match="not allowed"):
+    with pytest.raises(QueryImageError, match="not allowed") as captured:
         fetcher.fetch("https://images.internal/avatar.jpg")
+
+    assert captured.value.retryable is False
 
 
 def test_image_fetcher_rejects_disallowed_host_before_request() -> None:
@@ -213,10 +215,29 @@ def test_image_fetcher_rejects_disallowed_host_before_request() -> None:
         client=http_client,
     )
 
-    with pytest.raises(QueryImageError, match="not allowed"):
+    with pytest.raises(QueryImageError, match="not allowed") as captured:
         fetcher.fetch("http://localhost/private.jpg")
 
     assert not requested
+    assert captured.value.retryable is False
+
+
+def test_image_fetcher_marks_network_failure_retryable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    http_client = httpx.Client(
+        transport=httpx.MockTransport(handler)
+    )
+    fetcher = QueryImageFetcher.create(
+        ["images.internal"],
+        client=http_client,
+    )
+
+    with pytest.raises(QueryImageError, match="fetch failed") as captured:
+        fetcher.fetch("https://images.internal/avatar.jpg")
+
+    assert captured.value.retryable is True
 
 
 def test_runtime_dependency_maps_unavailable_pipeline_to_503(

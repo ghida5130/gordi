@@ -12,6 +12,7 @@ from app.api.routes.internal_tryon import get_tryon_processor
 from app.core.config import Settings, get_settings
 from app.main import app
 from app.recommendation.catalog_embeddings import ResolvedImage
+from app.recommendation.image_fetcher import QueryImageError
 from app.schemas.tryon import TryOnGenerationRequest
 from app.services.tryon_jobs import (
     PROMPT_VERSION,
@@ -91,6 +92,15 @@ class FakeFetcher:
             content=png_bytes((8, 8)),
             mime_type="image/png",
             sha256="0" * 64,
+        )
+
+
+class RejectingFetcher:
+    """비허용 호스트 거부처럼 재시도해도 똑같이 실패하는 fetcher."""
+
+    def fetch(self, url: str) -> ResolvedImage:
+        raise QueryImageError(
+            "query image host is not allowed: evil.example"
         )
 
 
@@ -203,6 +213,28 @@ def test_processor_failure_emits_failed_event(
     record = job_registry.get(8)
     assert record is not None and record.status == "FAILED"
     assert record.error["code"] == "GENERATION_FAILED"
+
+
+def test_processor_marks_config_errors_not_retryable(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
+    processor, _, sender, _ = make_processor(tmp_path)
+    processor.image_fetcher = RejectingFetcher()
+    request = TryOnGenerationRequest.model_validate(java_payload(9))
+
+    processor.process(request)
+
+    assert [event["eventType"] for event in sender.events] == [
+        "PROCESSING",
+        "FAILED",
+    ]
+    error = sender.events[1]["error"]
+    assert error["retryable"] is False
+    assert "not allowed" in error["message"]
+    record = job_registry.get(9)
+    assert record is not None and record.status == "FAILED"
+    assert record.error["retryable"] is False
 
 
 @pytest.fixture
