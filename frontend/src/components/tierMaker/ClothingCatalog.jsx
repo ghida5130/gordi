@@ -13,12 +13,15 @@ const categories = [
 
 function ClothingCatalog({
   clothes,
-  tierByItem,
+  tierByItem = {},
   itemLocks,
   currentParticipantId,
   onDragStart,
   onDragEnd,
   onUnrank,
+  onAddClothing,
+  title = '피팅 전용 보관함',
+  description = `티어 배정 불가 · 총 ${clothes.length}개`,
 }) {
   const [activeCategory, setActiveCategory] = useState('all')
   const [keyword, setKeyword] = useState('')
@@ -38,13 +41,13 @@ function ClothingCatalog({
       <div className="border-b border-slate-100 px-4 pb-3 pt-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-bold text-slate-900">의상 보관함</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              총 {clothes.length}개의 아이템
-            </p>
+            <h2 className="font-bold text-slate-900">{title}</h2>
+            <p className="mt-1 text-xs text-slate-500">{description}</p>
           </div>
           <button
             type="button"
+            onClick={onAddClothing}
+            disabled={!onAddClothing}
             className="flex size-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
             aria-label="의상 추가"
           >
@@ -109,7 +112,7 @@ function ClothingCatalog({
                 <p className="truncate text-xs font-bold text-slate-800">
                   {item.name}
                 </p>
-                {tierByItem[item.id] && (
+                {tierByItem[item.id] && onUnrank && (
                   <button
                     type="button"
                     onClick={() => onUnrank(item.id)}

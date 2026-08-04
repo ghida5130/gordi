@@ -29,6 +29,7 @@ function createInitialState(roomSession) {
     return {
         participants: roomSession ? [getInitialParticipant(roomSession)] : [],
         status: roomSession?.status ?? "WAITING",
+        subcategory: roomSession?.subcategory ?? null,
         version: Number(roomSession?.version ?? 0),
         tiers: [],
         roomItems: [],
@@ -57,6 +58,15 @@ function updateParticipants(currentParticipants, eventType, data) {
     }
 
     return currentParticipants;
+}
+
+function upsertRoomItem(currentRoomItems, item) {
+    if (item?.roomItemId == null) return currentRoomItems;
+
+    return [
+        ...currentRoomItems.filter((currentItem) => String(currentItem.roomItemId) !== String(item.roomItemId)),
+        item,
+    ];
 }
 
 function normalizeSnapshot(data) {
@@ -115,6 +125,7 @@ function roomEventReducer(state, event) {
         let nextState = {
             ...state,
             ...normalizeSnapshot(data),
+            subcategory: data.subcategory ?? state.subcategory,
             version: snapshotVersion,
             hasSnapshot: true,
             pendingEvents: [],
@@ -141,6 +152,7 @@ function roomEventReducer(state, event) {
         return {
             ...state,
             status,
+            subcategory: data.subcategory ?? state.subcategory,
             terminalEvent: status === "FINISHED" ? "ROOM_FINISHED" : status === "EXPIRED" ? "ROOM_EXPIRED" : state.terminalEvent,
             participants: Array.isArray(data.participants) ? data.participants : state.participants,
             tiers: Array.isArray(data.tiers)
@@ -216,6 +228,16 @@ function roomEventReducer(state, event) {
             };
         }
 
+        if (eventType === "ITEM_ADDED") {
+            return {
+                ...state,
+                roomItems: upsertRoomItem(state.roomItems, data.item),
+                placements: Array.isArray(data.placements) ? data.placements : state.placements,
+                version: nextVersion,
+                pendingEvents,
+            };
+        }
+
         if (eventType === "ROOM_FINISHED" || eventType === "ROOM_EXPIRED") {
             return {
                 ...state,
@@ -256,6 +278,15 @@ function roomEventReducer(state, event) {
     if (eventType === "ITEM_MOVED") {
         return {
             ...state,
+            placements: Array.isArray(data.placements) ? data.placements : state.placements,
+            version: nextVersion,
+        };
+    }
+
+    if (eventType === "ITEM_ADDED") {
+        return {
+            ...state,
+            roomItems: upsertRoomItem(state.roomItems, data.item),
             placements: Array.isArray(data.placements) ? data.placements : state.placements,
             version: nextVersion,
         };

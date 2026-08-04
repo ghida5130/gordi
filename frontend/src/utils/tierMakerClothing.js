@@ -40,6 +40,17 @@ const categoryAliases = {
   신발: "SHOES",
 };
 
+const subcategoryAliases = {
+  SHIRTS: "SHIRT",
+  JEAN: "DENIM_PANTS",
+  JEANS: "DENIM_PANTS",
+};
+
+export function normalizeTierMakerSubcategory(subcategory) {
+  const normalized = String(subcategory ?? "").trim().toUpperCase();
+  return subcategoryAliases[normalized] ?? normalized;
+}
+
 function normalizeCategory(category) {
   const normalized = String(category ?? "").toUpperCase();
   return tierMakerCategoryDetails[normalized]
@@ -61,8 +72,9 @@ function resolveArtwork(subcategory, category) {
 }
 
 export function createTierMakerClothing(roomItem, product) {
-  const category = normalizeCategory(product?.category);
+  const category = normalizeCategory(roomItem.category ?? product?.category);
   const details = tierMakerCategoryDetails[category];
+  const subcategory = roomItem.subcategory ?? product?.subcategory ?? "";
 
   return {
     id: String(roomItem.roomItemId),
@@ -72,8 +84,9 @@ export function createTierMakerClothing(roomItem, product) {
     brand: roomItem.brand ?? product?.brand ?? "",
     price: roomItem.price ?? product?.price ?? null,
     imageUrl: roomItem.imageUrl ?? product?.imageUrl ?? "",
+    subcategory,
     slot: category,
     ...details,
-    artwork: resolveArtwork(product?.subcategory, category),
+    artwork: resolveArtwork(subcategory, category),
   };
 }
