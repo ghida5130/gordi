@@ -920,7 +920,7 @@ function TierMakerRoomPage() {
                   ref={sharedBoardRef}
                   onPointerMove={handleBoardPointerMove}
                   onDragOverCapture={handleBoardPointerMove}
-                  className="relative grid min-h-[720px] w-[1530px] grid-cols-[280px_900px_310px] items-start gap-5"
+                  className="relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
                   style={{
                     transform: `scale(${boardScale})`,
                     transformOrigin: "top left",
