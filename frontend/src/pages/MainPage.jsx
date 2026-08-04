@@ -47,7 +47,7 @@ const MainPage = () => {
               <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">내 체형 맞춤 아바타</h3>
               <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">키, 체중, 어깨 너비 등 간단한 체형 정보를 입력하면 나를 꼭 닮은 아바타가 만들어져요.</p>
             </div>
-            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#E2E4F6] hover:shadow-xl hover:shadow-indigo-200/40">
+            <div className="group min-h-64 rounded-2xl bg-gray-50 p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:bg-[#CDBEF9] hover:shadow-xl hover:shadow-violet-200/40">
               <div className="mb-4 text-2xl"></div>
               <h3 className="mb-3 text-lg font-bold transition-colors duration-300 group-hover:text-slate-900">AI가 골라주는 옷</h3>
               <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-slate-600">내 체형과 스타일 취향을 AI가 분석해 딱 맞는 옷 리스트를 큐레이션해줘요.</p>
