@@ -1,6 +1,8 @@
 package com.ssafy.backend.websocket;
 
 import com.ssafy.backend.dto.candidate.CandidateItemDTO;
+import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
+import com.ssafy.backend.websocket.dto.FittingCandidatesUpdatedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemAddedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemRemovedEventDataDTO;
@@ -10,6 +12,7 @@ import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
+import com.ssafy.backend.websocket.event.FittingCandidatesUpdatedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -236,6 +239,34 @@ class RoomEventPublisherTest {
         assertThat(event.version()).isEqualTo(13L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.data()).isEqualTo(new TierRenamedEventDataDTO(3L, "S급"));
+    }
+
+    @Test
+    void 피팅_후보_전체_배열을_브로드캐스트한다() {
+        FittingCandidatesUpdatedEvent domainEvent = new FittingCandidatesUpdatedEvent(
+                31L,
+                17L,
+                42L,
+                "request-uuid",
+                List.of(new FittingCandidateDTO(301L), new FittingCandidateDTO(305L))
+        );
+
+        roomEventPublisher.handleFittingCandidatesUpdated(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.FITTING_CANDIDATES_UPDATED);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.version()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new FittingCandidatesUpdatedEventDataDTO(
+                domainEvent.fittingCandidates()
+        ));
     }
 
     @Test

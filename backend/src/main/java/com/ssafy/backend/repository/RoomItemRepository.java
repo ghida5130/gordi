@@ -14,6 +14,9 @@ public interface RoomItemRepository extends JpaRepository<RoomItem, Long> {
     boolean existsByRoomIdAndProductId(Long roomId, Long productId);
     boolean existsByIdAndRoomId(Long id, Long roomId);
     Optional<RoomItem> findByRoomIdAndProductId(Long roomId, Long productId);
+    Optional<RoomItem> findByIdAndRoomId(Long id, Long roomId);
+
+    List<RoomItem> findAllByRoomIdAndFittingCandidateTrueOrderByPositionAsc(Long roomId);
 
     @Query("select ri from RoomItem ri join fetch ri.product where ri.room.id = :roomId order by ri.position asc")
     List<RoomItem> findAllByRoomIdWithProduct(Long roomId);

@@ -12,6 +12,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.websocket.dto.BoardSnapshotDataDTO;
+import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
 import com.ssafy.backend.websocket.dto.ItemSnapshotDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
@@ -91,6 +92,7 @@ class RoomSyncServiceTest {
 
         RoomItem item1 = item(30L, 100L, tierS, 0);
         RoomItem item2 = item(40L, 200L, null, 1);
+        when(item1.isFittingCandidate()).thenReturn(true);
 
         // 2. 생성된 Mock 객체로 Repository 스터빙
         when(roomRepository.findById(31L))
@@ -126,6 +128,9 @@ class RoomSyncServiceTest {
         );
         assertThat(data.unclassifiedItems()).containsExactly(
                 new ItemSnapshotDTO(40L, 200L, 1)
+        );
+        assertThat(data.fittingCandidates()).containsExactly(
+                new FittingCandidateDTO(30L)
         );
     }
 
