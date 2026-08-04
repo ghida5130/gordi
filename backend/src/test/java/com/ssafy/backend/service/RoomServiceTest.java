@@ -3,6 +3,7 @@ package com.ssafy.backend.service;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Product;
 import com.ssafy.backend.domain.Recommendation;
 import com.ssafy.backend.domain.RecommendationItem;
@@ -23,6 +24,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -84,6 +86,7 @@ class RoomServiceTest {
                 userRepository,
                 roomTokenProvider,
                 eventPublisher,
+                new ImageUrlResolver("https://cdn.example.com/"),
                 7_200_000L
         );
     }
@@ -375,6 +378,14 @@ class RoomServiceTest {
         Room room = waitingRoom(31L, 4);
         room.setStatus("IN_PROGRESS");
         room.setVersion(12L);
+        room.getHostUser().setAvatar(Avatar.builder()
+                .id(7L)
+                .gender("MALE")
+                .bodyType("NORMAL")
+                .heightId(3L)
+                .weightId(3L)
+                .imageUrl("/images/avatars/host.png")
+                .build());
         RoomParticipant requester = RoomParticipant.builder()
                 .id(42L)
                 .room(room)
@@ -409,6 +420,8 @@ class RoomServiceTest {
         assertThat(response.expiresAt())
                 .isEqualTo(room.getExpiresAt().atZone(AppZone.KST).toInstant());
         assertThat(response.subcategory()).isEqualTo("SHIRT");
+        assertThat(response.hostAvatarImageUrl())
+                .isEqualTo("https://cdn.example.com/images/avatars/host.png");
         assertThat(response.participants())
                 .extracting(RoomStatusResponseDTO.Participant::participantId)
                 .containsExactly(42L, 43L);
@@ -441,6 +454,7 @@ class RoomServiceTest {
         );
 
         assertThat(response.participants()).hasSize(1);
+        assertThat(response.hostAvatarImageUrl()).isNull();
         verify(roomParticipantRepository)
                 .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
     }

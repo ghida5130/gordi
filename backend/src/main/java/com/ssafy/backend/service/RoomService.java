@@ -18,6 +18,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -58,6 +59,7 @@ public class RoomService {
     private final UserRepository userRepository;
     private final RoomTokenProvider roomTokenProvider;
     private final ApplicationEventPublisher eventPublisher;
+    private final ImageUrlResolver imageUrlResolver;
     private final long roomExpirationMillis;
 
     public RoomService(
@@ -70,6 +72,7 @@ public class RoomService {
             UserRepository userRepository,
             RoomTokenProvider roomTokenProvider,
             ApplicationEventPublisher eventPublisher,
+            ImageUrlResolver imageUrlResolver,
             @Value("${room.expiration:7200000}") long roomExpirationMillis
     ) {
         this.roomRepository = roomRepository;
@@ -81,6 +84,7 @@ public class RoomService {
         this.userRepository = userRepository;
         this.roomTokenProvider = roomTokenProvider;
         this.eventPublisher = eventPublisher;
+        this.imageUrlResolver = imageUrlResolver;
         if (roomExpirationMillis <= 0) {
             throw new IllegalArgumentException("room.expiration은 0보다 커야 합니다.");
         }
@@ -254,9 +258,18 @@ public class RoomService {
                 room.getVersion(),
                 room.getExpiresAt().atZone(AppZone.KST).toInstant(),
                 room.getRecommendation().getSubcategory(),
+                resolveHostAvatarImageUrl(room),
                 participants,
                 tiers
         );
+    }
+
+    private String resolveHostAvatarImageUrl(Room room) {
+        User host = room.getHostUser();
+        if (host.getAvatar() == null) {
+            return null;
+        }
+        return imageUrlResolver.resolve(host.getAvatar().getImageUrl());
     }
 
     private RoomJoinResponseDTO rejoin(

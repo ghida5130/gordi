@@ -53,6 +53,7 @@ class RoomControllerTest {
                 12L,
                 Instant.parse("2026-07-23T03:00:00Z"),
                 "SHIRT",
+                "https://cdn.example.com/images/avatars/host.png",
                 List.of(new RoomStatusResponseDTO.Participant(
                         42L,
                         "홍길동",
@@ -87,6 +88,7 @@ class RoomControllerTest {
                 0L,
                 Instant.parse("2026-07-23T03:00:00Z"),
                 "SHIRT",
+                null,
                 List.of(),
                 List.of()
         );
