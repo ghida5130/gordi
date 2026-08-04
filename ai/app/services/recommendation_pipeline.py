@@ -89,6 +89,9 @@ def get_pairwise_reranker() -> VLMPairwiseCompatibilityModel:
             or None
         ),
         image_base_url=settings.product_image_base_url,
+        judgment_max_tokens=(
+            settings.recommendation_vlm_judgment_max_tokens
+        ),
     )
 
 

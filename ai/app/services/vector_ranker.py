@@ -14,6 +14,8 @@ caller's concern, quality is this module's.
 from __future__ import annotations
 
 import logging
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from app.recommendation.catalog_embeddings import CatalogEmbeddingError
@@ -203,6 +205,8 @@ class VectorRecommendationRanker:
         """
         assert self._reranker is not None
         top_k = min(self._rerank_top_k, len(scored))
+        failures = 0
+        failure_lock = threading.Lock()
 
         def judge(
             entry: tuple[float, float, RankCandidate],
@@ -227,6 +231,9 @@ class VectorRecommendationRanker:
                     product=product,
                 )
             except Exception:
+                nonlocal failures
+                with failure_lock:
+                    failures += 1
                 logger.warning(
                     "pairwise rerank failed for product %s; "
                     "keeping rule-based score",
@@ -245,8 +252,17 @@ class VectorRecommendationRanker:
             return (min(max(final, 0.0), 1.0), retrieval, candidate)
 
         workers = max(1, min(self._rerank_concurrency, top_k))
+        started = time.perf_counter()
         with ThreadPoolExecutor(max_workers=workers) as executor:
             reranked = list(executor.map(judge, scored[:top_k]))
+        logger.info(
+            "pairwise rerank (/rank): top_k=%d workers=%d "
+            "failed=%d elapsed=%.2fs",
+            top_k,
+            workers,
+            failures,
+            time.perf_counter() - started,
+        )
         reranked.extend(scored[top_k:])
         reranked.sort(
             key=lambda item: (
