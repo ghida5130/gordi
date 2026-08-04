@@ -10,6 +10,7 @@ public record BoardSnapshotDataDTO(
         String status,
         List<ParticipantEventDataDTO> participants,
         List<TierSnapshotDTO> tiers,
-        List<ItemSnapshotDTO> unclassifiedItems
+        List<ItemSnapshotDTO> unclassifiedItems,
+        List<FittingCandidateDTO> fittingCandidates
 ) {
 }

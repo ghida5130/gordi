@@ -56,7 +56,6 @@ function RecommendationPage() {
     maxPrice: "",
     moodCodes: [],
     additionalInfo: "",
-    referenceImages: [],
   });
   const avatarQuery = useQuery({
     queryKey: ["myAvatar"],
@@ -210,6 +209,7 @@ function RecommendationPage() {
         .map((mood) => mood.label),
       budgetMin: Number(recommendationForm.minPrice),
       budgetMax: Number(recommendationForm.maxPrice),
+      additionalInfo: recommendationForm.additionalInfo.trim(),
     });
     setSubmittedRecommendation({
       category: recommendationForm.category,
@@ -217,6 +217,7 @@ function RecommendationPage() {
       budgetMin: Number(recommendationForm.minPrice),
       budgetMax: Number(recommendationForm.maxPrice),
       moods: recommendationForm.moodCodes,
+      additionalInfo: recommendationForm.additionalInfo.trim(),
     });
     setRecommendation(null);
     createMutation.reset();
@@ -404,11 +405,6 @@ function RecommendationForm({
   const [isAdditionalInfoOpen, setIsAdditionalInfoOpen] = useState(false);
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white";
-  const changeImages = (event) =>
-    onChange({
-      ...form,
-      referenceImages: Array.from(event.target.files ?? []).slice(0, 3),
-    });
   if (optionsQuery.isPending)
     return (
       <div className="rounded-3xl bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
@@ -519,27 +515,7 @@ function RecommendationForm({
       </button>
       {isAdditionalInfoOpen && (
         <section className="rounded-3xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold">참고 이미지 첨부</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {[0, 1, 2].map((index) => (
-              <label
-                key={index}
-                className="flex size-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-400 hover:border-slate-400"
-              >
-                <span className="text-xl leading-none">+</span>
-                <span className="mt-2 break-all px-1">
-                  {form.referenceImages[index]?.name ?? "이미지 추가"}
-                </span>
-                <input
-                  className="sr-only"
-                  type="file"
-                  accept="image/*"
-                  onChange={changeImages}
-                />
-              </label>
-            ))}
-          </div>
-          <label className="mt-5 block text-sm font-semibold">
+          <label className="block text-sm font-semibold">
             TPO 입력
             <textarea
               value={form.additionalInfo}
@@ -591,6 +567,14 @@ function AnalysisCard({ fallbackConditions, onRetry, onResults }) {
           </dd>
           <dt className="text-slate-400">가격대</dt>
           <dd className="font-semibold">{`${Number(conditions.budgetMin ?? 0).toLocaleString()}원 ~ ${Number(conditions.budgetMax ?? 0).toLocaleString()}원`}</dd>
+          {conditions.additionalInfo && (
+            <>
+              <dt className="text-slate-400">TPO</dt>
+              <dd className="whitespace-pre-wrap font-semibold">
+                {conditions.additionalInfo}
+              </dd>
+            </>
+          )}
         </dl>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3">

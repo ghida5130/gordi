@@ -64,7 +64,16 @@ _BOTTOM_FIT_FIELDS = (
 
 
 class TryOnJobError(RuntimeError):
-    """Raised when a try-on job cannot be processed."""
+    """Raised when a try-on job cannot be processed.
+
+    ``retryable`` defaults to ``True`` because most generation failures
+    (network, upstream 5xx, model nondeterminism) may pass on retry;
+    configuration errors must pass ``retryable=False`` explicitly.
+    """
+
+    def __init__(self, message: str, *, retryable: bool = True) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 class ImageGenerator(Protocol):
@@ -93,7 +102,10 @@ class OpenRouterImageGenerator:
         client: httpx.Client | None = None,
     ) -> None:
         if not api_key.strip():
-            raise TryOnJobError("try-on generation needs an API key")
+            raise TryOnJobError(
+                "try-on generation needs an API key",
+                retryable=False,
+            )
         self._model = model
         self._endpoint = endpoint
         self._headers = {"Authorization": f"Bearer {api_key}"}
@@ -239,7 +251,9 @@ class TryOnJobProcessor:
             error = {
                 "code": "GENERATION_FAILED",
                 "message": str(exc)[:255],
-                "retryable": True,
+                # 검증·설정 오류(비허용 호스트 등)는 재시도해도 같은 실패라
+                # 예외가 스스로 밝힌 retryable 을 그대로 전달한다.
+                "retryable": bool(getattr(exc, "retryable", True)),
             }
             job_registry.mark_failed(
                 job_id,

@@ -48,6 +48,10 @@ public class RoomItem {
     @Column(name = "position", nullable = false)
     private Integer position;
 
+    @Builder.Default
+    @Column(name = "fitting_candidate", nullable = false)
+    private boolean fittingCandidate = false; // true: 피팅 후보로 선택됨 / false: 선택되지 않음
+
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
