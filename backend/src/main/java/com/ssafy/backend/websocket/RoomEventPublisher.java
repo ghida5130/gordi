@@ -1,10 +1,12 @@
 package com.ssafy.backend.websocket;
 
+import com.ssafy.backend.websocket.dto.ItemAddedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
@@ -63,6 +65,18 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.participantId(),
                 new ParticipantLeftEventDataDTO(event.participantId(), event.reason())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleItemAdded(ItemAddedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ITEM_ADDED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new ItemAddedEventDataDTO(event.item(), event.placements())
         ));
     }
 

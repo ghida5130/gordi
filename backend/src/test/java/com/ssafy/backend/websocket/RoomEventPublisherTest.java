@@ -1,11 +1,14 @@
 package com.ssafy.backend.websocket;
 
+import com.ssafy.backend.dto.candidate.CandidateItemDTO;
+import com.ssafy.backend.websocket.dto.ItemAddedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
@@ -95,6 +98,47 @@ class RoomEventPublisherTest {
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.data()).isEqualTo(new ParticipantLeftEventDataDTO(
                 42L, ParticipantLeaveReason.USER_REQUEST));
+    }
+
+    @Test
+    void 아이템_추가시_위치_브로드캐스트() {
+        CandidateItemDTO item = new CandidateItemDTO(
+                301L,
+                501L,
+                "오버핏 시어커튼 셔츠",
+                "MUSINSA STANDARD",
+                39_900,
+                "https://cdn.example.com/products/501.jpg",
+                10_000,
+                null
+        );
+        ItemAddedEvent domainEvent = new ItemAddedEvent(
+                31L,
+                13L,
+                42L,
+                item,
+                List.of(
+                        new PlacementDTO(301L, null, 10_000),
+                        new PlacementDTO(201L, null, 20_000)
+                )
+        );
+
+        roomEventPublisher.handleItemAdded(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ITEM_ADDED);
+        assertThat(event.clientEventId()).isNull();
+        assertThat(event.version()).isEqualTo(13L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(
+                new ItemAddedEventDataDTO(item, domainEvent.placements())
+        );
     }
 
     @Test

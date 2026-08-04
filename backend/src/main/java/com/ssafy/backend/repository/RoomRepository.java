@@ -30,6 +30,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("select room from Room room where room.roomCode = :roomCode")
     Optional<Room> findByRoomCodeForUpdate(@Param("roomCode") String roomCode);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select room from Room room where room.id = :roomId")
+    Optional<Room> findByIdForUpdate(@Param("roomId") Long roomId);
+
     // - 인자: 방 ID, 클라이언트가 알고 있는 baseVersion
     // - 동작: 버전이 일치할 때만 +1 (조건부 UPDATE로 검증과 증가를 원자적으로 수행).
     //         반환값 0이면 버전 불일치(VERSION_CONFLICT). 행 잠금으로 동시 요청도 직렬화된다.
@@ -37,6 +41,17 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("update Room room set room.version = room.version + 1 "
             + "where room.id = :roomId and room.version = :baseVersion")
     int bumpVersionIfMatches(@Param("roomId") Long roomId, @Param("baseVersion") Long baseVersion);
+
+    /**
+     * baseVersion이 없는 REST 기반 방 상태 변경에서 버전을 원자적으로 한 번 증가시킨다.
+     * flush 후 영속성 컨텍스트를 비워 bulk update 이전 Room 버전이 남지 않게 한다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update Room room set room.version = room.version + 1 where room.id = :roomId")
+    int incrementVersion(@Param("roomId") Long roomId);
+
+    @Query("select room.version from Room room where room.id = :roomId")
+    Long findVersionValueById(@Param("roomId") Long roomId);
 
     // - 인자: 방 ID, 클라이언트가 알고 있는 baseVersion, 변경할 상태
     // - 동작: 버전이 일치할 때만 상태 변경 + 버전 +1을 한 문장으로 원자적으로 수행.
