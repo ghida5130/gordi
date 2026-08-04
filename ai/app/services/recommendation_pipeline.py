@@ -88,6 +88,7 @@ def get_pairwise_reranker() -> VLMPairwiseCompatibilityModel:
             settings.recommendation_vlm_reasoning_effort.strip()
             or None
         ),
+        image_base_url=settings.product_image_base_url,
     )
 
 

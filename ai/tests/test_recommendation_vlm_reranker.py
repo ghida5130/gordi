@@ -93,6 +93,49 @@ def test_score_pair_sends_query_and_candidate_evidence() -> None:
     assert "블랙 슬랙스" in texts
 
 
+def test_resolve_product_image_url_rules() -> None:
+    from app.recommendation.vlm_reranker import (
+        resolve_product_image_url,
+    )
+
+    base = "https://cdn.example.net"
+    # 절대 S3 URL → 키만 추출해 base 와 조합
+    assert resolve_product_image_url(
+        "https://bucket.s3.amazonaws.com/garments/musinsa/1/p.jpg",
+        base,
+    ) == "https://cdn.example.net/garments/musinsa/1/p.jpg"
+    # 객체 키 → base 와 조합
+    assert resolve_product_image_url(
+        "garments/musinsa/1/p.jpg",
+        base,
+    ) == "https://cdn.example.net/garments/musinsa/1/p.jpg"
+    # base 미설정 → 저장 값 그대로
+    assert resolve_product_image_url(
+        "http://gordi-nginx/garments/1.jpg",
+        None,
+    ) == "http://gordi-nginx/garments/1.jpg"
+
+
+def test_score_pair_fetches_candidate_image_via_base_url() -> None:
+    client = RecordingVLMClient({"compatibility": 0.9})
+    fetcher = StaticFetcher()
+    model = VLMPairwiseCompatibilityModel(
+        client,
+        product_image_fetcher=fetcher,
+        image_base_url="https://cdn.example.net",
+    )
+    intent = parse_recommendation_intent("캐주얼 코디")
+
+    model.score_pair(
+        intent=intent,
+        query_image=None,
+        query_mime_type=None,
+        product=product(1, name="캐주얼 반팔", description="데일리"),
+    )
+
+    assert fetcher.urls == ["https://cdn.example.net/1.jpg"]
+
+
 def test_score_pair_omits_reasoning_effort_by_default() -> None:
     client = RecordingVLMClient({"compatibility": 0.5})
     model = VLMPairwiseCompatibilityModel(client)

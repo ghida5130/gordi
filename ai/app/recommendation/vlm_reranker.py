@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from app.recommendation.pipeline import (
     DEFAULT_RERANK_TOP_K,
@@ -85,6 +86,7 @@ class VLMPairwiseCompatibilityModel:
         *,
         product_image_fetcher: ProductImageFetcher | None = None,
         reasoning_effort: str | None = None,
+        image_base_url: str | None = None,
     ) -> None:
         # Reasoning control is per-model: OpenAI reasoning models need
         # a bounded effort or hidden reasoning eats the token cap, but
@@ -93,6 +95,7 @@ class VLMPairwiseCompatibilityModel:
         self._client = client
         self._product_image_fetcher = product_image_fetcher
         self._reasoning_effort = reasoning_effort
+        self._image_base_url = (image_base_url or "").strip() or None
 
     def score_pair(
         self,
@@ -133,9 +136,15 @@ class VLMPairwiseCompatibilityModel:
     def _fetch_candidate_image(self, product: dict[str, Any]) -> Any:
         if self._product_image_fetcher is None:
             return None
+        raw = product.get("image_url")
+        if not raw:
+            return None
         try:
             return self._product_image_fetcher.fetch(
-                str(product["image_url"])
+                resolve_product_image_url(
+                    str(raw),
+                    self._image_base_url,
+                )
             )
         except Exception:
             _logger.warning(
@@ -145,6 +154,27 @@ class VLMPairwiseCompatibilityModel:
                 exc_info=True,
             )
             return None
+
+
+def resolve_product_image_url(
+    stored: str,
+    base_url: str | None,
+) -> str:
+    """Map a stored product image value to a fetchable public URL.
+
+    The DB/snapshot stores either a bare object key ("garments/...")
+    or a legacy absolute S3 URL. When a public base (e.g. CloudFront)
+    is configured, the object key is extracted from either form and
+    joined to the base — mirroring the backend's base+key resolution.
+    Without a base the stored value is used unchanged.
+    """
+    if not base_url:
+        return stored
+    if stored.startswith(("http://", "https://")):
+        key = urlsplit(stored).path
+    else:
+        key = stored
+    return f"{base_url.rstrip('/')}/{key.lstrip('/')}"
 
 
 def _candidate_summary(product: dict[str, Any]) -> str:
@@ -186,4 +216,5 @@ __all__ = [
     "PairwiseCompatibilityModel",
     "PairwiseJudgment",
     "VLMPairwiseCompatibilityModel",
+    "resolve_product_image_url",
 ]
