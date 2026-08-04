@@ -15,19 +15,22 @@ public class TryOnPolicy {
     private final int maxItems;
     private final long reconcileStaleAfterMs;
     private final int reconcileBatchSize;
+    private final long reconcileOrphanAfterMs;
 
     public TryOnPolicy(
             @Value("${gordi.try-on.daily-limit:20}") int dailyLimit,
             @Value("${gordi.try-on.poll-after-ms:1500}") long pollAfterMs,
             @Value("${gordi.try-on.max-items:5}") int maxItems,
             @Value("${gordi.try-on.reconcile.stale-after-ms:120000}") long reconcileStaleAfterMs,
-            @Value("${gordi.try-on.reconcile.batch-size:20}") int reconcileBatchSize
+            @Value("${gordi.try-on.reconcile.batch-size:20}") int reconcileBatchSize,
+            @Value("${gordi.try-on.reconcile.orphan-after-ms:600000}") long reconcileOrphanAfterMs
     ) {
         this.dailyLimit = dailyLimit;
         this.pollAfterMs = pollAfterMs;
         this.maxItems = maxItems;
         this.reconcileStaleAfterMs = reconcileStaleAfterMs;
         this.reconcileBatchSize = reconcileBatchSize;
+        this.reconcileOrphanAfterMs = reconcileOrphanAfterMs;
     }
 
     // 요청자 1인당 1일 생성 한도 (초과 시 GENERATION_QUOTA_EXCEEDED)
@@ -53,5 +56,15 @@ public class TryOnPolicy {
     // 정합 복구 1회 실행에서 처리할 Job 상한
     public int getReconcileBatchSize() {
         return reconcileBatchSize;
+    }
+
+    /**
+     * 생성 서비스가 Job 을 모른다고 답한 채 이 시간이 지나면 실패로 마감한다.
+     * <p>
+     * 접수 직후에는 생성 서비스가 아직 Job 을 등록하지 않아 잠깐 모른다고 답할 수 있으므로,
+     * 그 찰나와 구분되도록 stale-after 보다 넉넉하게 둔다.
+     */
+    public long getReconcileOrphanAfterMs() {
+        return reconcileOrphanAfterMs;
     }
 }

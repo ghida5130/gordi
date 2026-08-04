@@ -18,15 +18,16 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 내부 호출 전용 경로(`/internal/**`)의 서비스 토큰 검증.
+ * 내부 호출 전용 경로(`/internal/**`)의 서비스 키 검증.
  * <p>
- * FastAPI 가 착장 Job 이벤트 콜백을 호출할 때 `X-Internal-Token` 헤더로 자신을 증명한다.
+ * FastAPI 가 착장 Job 이벤트 콜백을 호출할 때 `X-Internal-Api-Key` 헤더로 자신을 증명한다.
  * 이 경로는 SecurityConfig 에서 permitAll 로 열려 있으므로 접근 통제를 이 필터가 전담한다.
  * <p>
- * 토큰이 설정되지 않으면(빈 값) 검증하지 않는다. 이는 아웃바운드 키
- * (`gordi.ai.internal-api-key`, `.env.example` 의 "비워두면 검증하지 않음")와 동일한 규칙으로,
- * 로컬에서 FastAPI 를 붙일 때 설정 없이 동작시키기 위한 것이다.
- * 다만 인바운드는 열어두면 외부에서 호출할 수 있으므로 기동 시 경고를 남긴다.
+ * 헤더 이름과 키는 Spring → FastAPI 아웃바운드 호출과 같은 것을 쓴다.
+ * FastAPI 쪽 검증기(`app/core/security.py`)가 `X-Internal-Api-Key` 를 보므로 양방향을 한 규약으로 맞춘다.
+ * <p>
+ * 키가 설정되지 않으면(빈 값) 검증하지 않는다. 로컬에서 설정 없이 붙일 수 있게 한 것이며,
+ * 인바운드는 열어두면 외부에서 호출할 수 있으므로 기동 시 경고를 남긴다.
  */
 @Component
 public class InternalTokenFilter extends OncePerRequestFilter {
@@ -34,21 +35,21 @@ public class InternalTokenFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(InternalTokenFilter.class);
 
     public static final String INTERNAL_PATH_PREFIX = "/internal/";
-    public static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
+    public static final String INTERNAL_API_KEY_HEADER = "X-Internal-Api-Key";
 
-    private final String internalToken;
+    private final String internalApiKey;
     private final ApiErrorResponseWriter errorResponseWriter;
 
     public InternalTokenFilter(
-            @Value("${gordi.internal.token:}") String internalToken,
+            @Value("${gordi.ai.internal-api-key:}") String internalApiKey,
             ApiErrorResponseWriter errorResponseWriter
     ) {
-        this.internalToken = internalToken;
+        this.internalApiKey = internalApiKey;
         this.errorResponseWriter = errorResponseWriter;
 
-        if (!StringUtils.hasText(internalToken)) {
+        if (!StringUtils.hasText(internalApiKey)) {
             log.warn(
-                    "gordi.internal.token 이 비어 있어 {}** 경로의 서비스 토큰을 검증하지 않습니다.",
+                    "gordi.ai.internal-api-key 가 비어 있어 {}** 경로의 서비스 키를 검증하지 않습니다.",
                     INTERNAL_PATH_PREFIX
             );
         }
@@ -67,15 +68,15 @@ public class InternalTokenFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        if (!StringUtils.hasText(internalToken)) {
+        if (!StringUtils.hasText(internalApiKey)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String presented = request.getHeader(INTERNAL_TOKEN_HEADER);
+        String presented = request.getHeader(INTERNAL_API_KEY_HEADER);
         if (!matches(presented)) {
-            // 어떤 토큰이 왔는지는 남기지 않는다.
-            log.warn("Internal token rejected. path={}, presented={}",
+            // 어떤 값이 왔는지는 남기지 않는다.
+            log.warn("Internal API key rejected. path={}, presented={}",
                     request.getRequestURI(), presented == null ? "absent" : "mismatch");
             errorResponseWriter.write(request, response, ErrorCode.UNAUTHORIZED);
             return;
@@ -91,7 +92,7 @@ public class InternalTokenFilter extends OncePerRequestFilter {
         }
         return MessageDigest.isEqual(
                 presented.getBytes(StandardCharsets.UTF_8),
-                internalToken.getBytes(StandardCharsets.UTF_8)
+                internalApiKey.getBytes(StandardCharsets.UTF_8)
         );
     }
 }

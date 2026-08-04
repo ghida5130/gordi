@@ -37,7 +37,7 @@ function ClothingCatalog({
   }, [activeCategory, clothes, keyword])
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+    <aside className="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
       <div className="border-b border-slate-100 px-4 pb-3 pt-4">
         <div className="flex items-center justify-between">
           <div>
@@ -83,7 +83,7 @@ function ClothingCatalog({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 overflow-y-auto p-4">
+      <div className="grid grid-cols-2 gap-3 p-4">
         {filteredClothes.map((item) => {
           const lock = itemLocks[item.id]
           const isLockedByOther =

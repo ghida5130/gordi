@@ -31,7 +31,7 @@ function RecentResultCard({ result }) {
     );
 }
 
-export default function ProfileHome({ nickname, profileImageUrl, onHistory }) {
+export default function ProfileHome({ nickname, onHistory }) {
     const queryClient = useQueryClient();
     const toast = useToast();
     const storeUser = useUserStore((state) => state);
@@ -82,13 +82,9 @@ export default function ProfileHome({ nickname, profileImageUrl, onHistory }) {
     return (
         <>
             <section className="flex items-center gap-5 border-b border-slate-100 pb-10">
-                {profileImageUrl ? (
-                    <img src={profileImageUrl} alt="프로필" className="size-20 rounded-full object-cover" />
-                ) : (
-                    <div className="flex size-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <MyPageIcon name="user" className="size-10" />
-                    </div>
-                )}
+                <div className="flex size-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                    <MyPageIcon name="user" className="size-10" />
+                </div>
                 <div>
                     {isEditing ? (
                         <div className="flex items-center gap-2">

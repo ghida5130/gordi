@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { joinRoom } from "@/api/rooms";
 import PageContainer from "@/components/common/PageContainer";
+import { useJoinRoom } from "@/hooks/useJoinRoom";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { setRoomSession } from "@/utils/roomSessionStorage";
 
 function RoomLobbyPage() {
   const navigate = useNavigate();
@@ -16,20 +14,7 @@ function RoomLobbyPage() {
     nickname: "",
   });
 
-  const joinRoomMutation = useMutation({
-    mutationFn: joinRoom,
-    onSuccess: (response, variables) => {
-      // 입장 응답과 입력 정보를 방 범위 세션으로 저장
-      setRoomSession({
-        ...response.data,
-        roomCode: variables.roomCode.toUpperCase(),
-        nickname: variables.nickname,
-        maxParticipants: 4,
-        webSocketUrl: "/ws/v1",
-      });
-      navigate(`/rooms/${response.data.roomId}`);
-    },
-  });
+  const joinRoomMutation = useJoinRoom();
 
   const handleChange = (event) => {
     const { name, value } = event.target;

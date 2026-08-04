@@ -36,6 +36,7 @@ public enum ErrorCode {
     GENERATION_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이미지 생성 한도를 초과했습니다.", true),
 
     DEPENDENCY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "외부 의존 서비스를 사용할 수 없습니다.", true),
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.", false),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", false);
 
     private final HttpStatus status;

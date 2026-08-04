@@ -214,7 +214,7 @@ function TierMakerDesignPage() {
         </p>
 
         <div className="overflow-x-auto pb-2">
-          <div className="relative grid h-[720px] w-[1530px] grid-cols-[280px_900px_310px] gap-5">
+          <div className="relative grid min-h-[720px] w-[1530px] grid-cols-[280px_900px_310px] items-start gap-5">
             <SharedCursorLayer
               cursors={designCursors}
               participants={roomStatus.participants}

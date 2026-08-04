@@ -10,6 +10,7 @@ import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.websocket.dto.BoardSnapshotDataDTO;
+import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
 import com.ssafy.backend.websocket.dto.ItemSnapshotDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
@@ -75,13 +76,24 @@ public class RoomSyncService {
                 .map(this::toItemSnapshot)
                 .toList();
 
+        List<FittingCandidateDTO> fittingCandidates = items.stream()
+                .filter(RoomItem::isFittingCandidate)
+                .map(item -> new FittingCandidateDTO(item.getId()))
+                .toList();
+
         return RoomEventDTO.of(
                 RoomEventType.BOARD_SNAPSHOT,
                 clientEventId,
                 roomId,
                 room.getVersion(),
                 requesterParticipantId,
-                new BoardSnapshotDataDTO(room.getStatus(), participants, tiers, unclassifiedItems)
+                new BoardSnapshotDataDTO(
+                        room.getStatus(),
+                        participants,
+                        tiers,
+                        unclassifiedItems,
+                        fittingCandidates
+                )
         );
     }
 

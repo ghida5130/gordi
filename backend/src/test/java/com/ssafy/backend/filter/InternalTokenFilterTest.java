@@ -32,7 +32,7 @@ class InternalTokenFilterTest {
     void 올바른_토큰이면_통과한다() throws Exception {
         InternalTokenFilter filter = new InternalTokenFilter(TOKEN, errorResponseWriter);
         MockHttpServletRequest request = internalRequest();
-        request.addHeader(InternalTokenFilter.INTERNAL_TOKEN_HEADER, TOKEN);
+        request.addHeader(InternalTokenFilter.INTERNAL_API_KEY_HEADER, TOKEN);
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, filterChain);
@@ -58,7 +58,7 @@ class InternalTokenFilterTest {
     void 토큰이_다르면_401이다() throws Exception {
         InternalTokenFilter filter = new InternalTokenFilter(TOKEN, errorResponseWriter);
         MockHttpServletRequest request = internalRequest();
-        request.addHeader(InternalTokenFilter.INTERNAL_TOKEN_HEADER, "wrong-token");
+        request.addHeader(InternalTokenFilter.INTERNAL_API_KEY_HEADER, "wrong-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, filterChain);

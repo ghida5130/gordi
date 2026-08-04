@@ -37,8 +37,11 @@ public interface TryOnJobRepository extends JpaRepository<TryOnJob, Long> {
             """)
     Optional<TryOnJob> findLatestSucceededByRequestHash(@Param("requestHash") String requestHash);
 
-    /** 요청자별 생성 한도 집계 */
+    /** 회원 기준 생성 한도 집계 */
     long countByOwnerUserIdAndCreatedAtGreaterThanEqual(Long ownerUserId, LocalDateTime from);
+
+    /** 비회원 게스트 기준 생성 한도 집계 (방 참가자 단위) */
+    long countByOwnerParticipantIdAndCreatedAtGreaterThanEqual(Long ownerParticipantId, LocalDateTime from);
 
     /**
      * 콜백이 오지 않아 아직 끝나지 않은 Job (정합 복구 대상).
