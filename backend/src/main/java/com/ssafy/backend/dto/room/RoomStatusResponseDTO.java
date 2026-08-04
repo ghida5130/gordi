@@ -9,6 +9,7 @@ public record RoomStatusResponseDTO(
         String status,
         Long version,
         Instant expiresAt,
+        String subcategory,
         List<Participant> participants,
         List<Tier> tiers
 ) {

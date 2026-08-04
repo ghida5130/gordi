@@ -16,6 +16,10 @@ export function updateMyAvatar({ avatarId }) {
     return authApi.put("/v1/users/me/avatar", { avatarId });
 }
 
+export function updateNickname({ nickname }) {
+    return authApi.patch("/v1/users/me", { nickname });
+}
+
 export function getMyResults() {
     return authApi.get("/v1/users/me/results");
 }

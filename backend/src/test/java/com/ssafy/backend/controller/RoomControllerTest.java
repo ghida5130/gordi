@@ -52,6 +52,7 @@ class RoomControllerTest {
                 "IN_PROGRESS",
                 12L,
                 Instant.parse("2026-07-23T03:00:00Z"),
+                "SHIRT",
                 List.of(new RoomStatusResponseDTO.Participant(
                         42L,
                         "홍길동",
@@ -85,6 +86,7 @@ class RoomControllerTest {
                 "WAITING",
                 0L,
                 Instant.parse("2026-07-23T03:00:00Z"),
+                "SHIRT",
                 List.of(),
                 List.of()
         );
