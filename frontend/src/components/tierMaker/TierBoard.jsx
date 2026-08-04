@@ -211,7 +211,7 @@ function TierBoard({
   }
 
   return (
-    <section className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div>
           <div className="flex items-center gap-2">
@@ -230,7 +230,7 @@ function TierBoard({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="p-4">
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           {tiers.map((tier, tierIndex) => (
             <div
@@ -263,7 +263,7 @@ function TierBoard({
                   onRename={onRenameTier}
                 />
               </div>
-              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto p-3">
+              <div className="flex min-w-0 flex-1 flex-wrap content-center items-center gap-2 p-3">
                 {tier.itemIds.length > 0 ? (
                   <>
                     {tier.itemIds.map((itemId, itemIndex) => {
@@ -361,7 +361,7 @@ function TierBoard({
                 {waitingClothes.length}개
               </span>
             </div>
-            <div className="mt-3 flex min-h-[98px] items-center gap-3 overflow-x-auto rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+            <div className="mt-3 flex min-h-[98px] flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
               {waitingClothes.length > 0 ? (
                 waitingClothes.map((item) => (
                   <WaitingItem

@@ -22,7 +22,7 @@ function RoomPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [roomSession] = useState(getRoomSession);
-  const [isCopied, setIsCopied] = useState(false);
+  const [copiedTarget, setCopiedTarget] = useState(null);
   const [isStartRequested, setIsStartRequested] = useState(false);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
@@ -110,7 +110,19 @@ function RoomPage() {
     if (!roomSession?.roomCode) return;
 
     await navigator.clipboard.writeText(roomSession.roomCode);
-    setIsCopied(true);
+    setCopiedTarget("code");
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!roomSession?.roomCode) return;
+
+    const inviteLink = new URL(
+      `/rooms/join/${encodeURIComponent(roomSession.roomCode)}`,
+      window.location.origin,
+    ).toString();
+
+    await navigator.clipboard.writeText(inviteLink);
+    setCopiedTarget("link");
   };
 
   const handleStartRoom = () => {
@@ -157,20 +169,29 @@ function RoomPage() {
             </h1>
           </div>
 
-          <div className="rounded-2xl bg-slate-950 px-5 py-4 text-white">
+          <div className="min-w-72 rounded-2xl bg-slate-950 px-5 py-4 text-white">
             <p className="text-xs text-slate-400">방 코드</p>
-            <div className="mt-1 flex items-center gap-4">
+            <div className="mt-1">
               <strong className="text-xl tracking-[0.2em]">
                 {roomSession.roomCode ?? "코드 없음"}
               </strong>
               {roomSession.roomCode && (
-                <button
-                  type="button"
-                  onClick={handleCopyRoomCode}
-                  className="text-xs font-semibold text-violet-300 hover:text-white"
-                >
-                  {isCopied ? "복사됨" : "복사"}
-                </button>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyRoomCode}
+                    className="flex-1 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-white/20 hover:text-white"
+                  >
+                    {copiedTarget === "code" ? "코드 복사됨" : "방 코드 복사"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyInviteLink}
+                    className="flex-1 rounded-lg bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400"
+                  >
+                    {copiedTarget === "link" ? "링크 복사됨" : "초대 링크 복사"}
+                  </button>
+                </div>
               )}
             </div>
           </div>
