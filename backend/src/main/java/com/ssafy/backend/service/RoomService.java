@@ -3,6 +3,7 @@ package com.ssafy.backend.service;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
+import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.Recommendation;
 import com.ssafy.backend.domain.RecommendationItem;
 import com.ssafy.backend.domain.Room;
@@ -99,6 +100,7 @@ public class RoomService {
     ) {
         String idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
         User host = findUser(email);
+        requireHostAvatar(host);
 
         Room existingRoom = roomRepository
                 .findByHostUserIdAndIdempotencyKey(host.getId(), idempotencyKey)
@@ -266,10 +268,29 @@ public class RoomService {
 
     private String resolveHostAvatarImageUrl(Room room) {
         User host = room.getHostUser();
-        if (host.getAvatar() == null) {
-            return null;
+        Avatar avatar = host.getAvatar();
+        if (avatar == null
+                || avatar.getImageUrl() == null
+                || avatar.getImageUrl().isBlank()) {
+            throw new ApiException(
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    "방 호스트의 아바타 정보가 없습니다.",
+                    Map.of("roomId", room.getId())
+            );
         }
-        return imageUrlResolver.resolve(host.getAvatar().getImageUrl());
+        return imageUrlResolver.resolve(avatar.getImageUrl());
+    }
+
+    private void requireHostAvatar(User host) {
+        Avatar avatar = host.getAvatar();
+        if (avatar == null
+                || avatar.getImageUrl() == null
+                || avatar.getImageUrl().isBlank()) {
+            throw new ApiException(
+                    ErrorCode.BAD_REQUEST,
+                    "방 생성 전에 아바타를 선택해야 합니다."
+            );
+        }
     }
 
     private RoomJoinResponseDTO rejoin(

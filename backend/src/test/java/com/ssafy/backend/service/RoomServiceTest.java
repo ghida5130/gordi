@@ -92,6 +92,23 @@ class RoomServiceTest {
     }
 
     @Test
+    void createRequiresHostAvatar() {
+        User host = user(1L, "host@example.com", "방장");
+        host.setAvatar(null);
+        when(userRepository.findByEmail(host.getEmail())).thenReturn(Optional.of(host));
+
+        assertThatThrownBy(() -> roomService.create(
+                host.getEmail(),
+                new RoomCreateRequestDTO(21L, 2L, 4),
+                UUID.randomUUID().toString()
+        ))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST));
+
+        verify(recommendationRepository, never()).findByIdAndUserId(anyLong(), anyLong());
+    }
+
+    @Test
     void 방_생성_성공_테스트() {
         User host = user(1L, "host@example.com", "방장");
         Recommendation recommendation = Recommendation.builder()
@@ -454,9 +471,35 @@ class RoomServiceTest {
         );
 
         assertThat(response.participants()).hasSize(1);
-        assertThat(response.hostAvatarImageUrl()).isNull();
+        assertThat(response.hostAvatarImageUrl())
+                .isEqualTo("https://cdn.example.com/images/avatars/default.png");
         verify(roomParticipantRepository)
                 .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
+    }
+
+    @Test
+    void readStatusRejectsMissingHostAvatarAsInvalidRoomState() {
+        Room room = waitingRoom(31L, 4);
+        room.getHostUser().setAvatar(null);
+        RoomParticipant requester = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("host")
+                .role("HOST")
+                .build();
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(requester));
+        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(requester));
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> roomService.readStatus("A7K9Q2", principal))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     @Test
@@ -479,6 +522,14 @@ class RoomServiceTest {
                 .email(email)
                 .password("encoded-password")
                 .nickname(nickname)
+                .avatar(Avatar.builder()
+                        .id(7L)
+                        .gender("MALE")
+                        .bodyType("NORMAL")
+                        .heightId(3L)
+                        .weightId(3L)
+                        .imageUrl("/images/avatars/default.png")
+                        .build())
                 .build();
     }
 
