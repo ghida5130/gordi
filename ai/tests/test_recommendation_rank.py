@@ -3,6 +3,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.routes.internal_recommendations import get_vector_ranker
 from app.core.config import get_settings
 from app.main import app
 
@@ -15,7 +16,12 @@ def reset_internal_api_key(
 ) -> Iterator[None]:
     monkeypatch.setenv("INTERNAL_API_KEY", "")
     get_settings.cache_clear()
+    # 이 파일은 keyword baseline 계약을 검증한다. 개발 머신에 실제
+    # 인덱스/API 키가 있으면 벡터 경로(라이브 임베딩 호출)로 새기
+    # 때문에 vector ranker 를 명시적으로 비활성화한다.
+    app.dependency_overrides[get_vector_ranker] = lambda: None
     yield
+    app.dependency_overrides.pop(get_vector_ranker, None)
     get_settings.cache_clear()
 
 

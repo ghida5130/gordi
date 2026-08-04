@@ -72,6 +72,27 @@ def get_vlm_client() -> OpenAICompatibleVLMClient:
 
 
 @lru_cache
+def get_pairwise_reranker() -> VLMPairwiseCompatibilityModel:
+    """Shared VLM pairwise reranker for `/search` and `/rank`.
+
+    Long-lived by design: the underlying image fetcher keeps its HTTP
+    session for the process lifetime, same as the pipeline runtime.
+    """
+    settings = get_settings()
+    return VLMPairwiseCompatibilityModel(
+        get_vlm_client(),
+        product_image_fetcher=QueryImageFetcher.create(
+            settings.recommendation_image_allowed_hosts
+        ),
+        reasoning_effort=(
+            settings.recommendation_vlm_reasoning_effort.strip()
+            or None
+        ),
+        image_base_url=settings.product_image_base_url,
+    )
+
+
+@lru_cache
 def get_catalog_index() -> CatalogVectorIndex:
     settings = get_settings()
     try:
@@ -133,16 +154,7 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
         )
     pairwise_reranker = None
     if settings.recommendation_vlm_rerank_enabled:
-        pairwise_reranker = VLMPairwiseCompatibilityModel(
-            get_vlm_client(),
-            product_image_fetcher=QueryImageFetcher.create(
-                settings.recommendation_image_allowed_hosts
-            ),
-            reasoning_effort=(
-                settings.recommendation_vlm_reasoning_effort.strip()
-                or None
-            ),
-        )
+        pairwise_reranker = get_pairwise_reranker()
     reason_generator = None
     if settings.recommendation_llm_reasons_enabled:
         reason_generator = LLMGroundedReasonGenerator(

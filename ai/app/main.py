@@ -27,6 +27,10 @@ def create_app() -> FastAPI:
     application.include_router(internal_api_router)
     application.include_router(page_router)
     application.include_router(results_router)
+    # 운영 nginx 가 /ai/ 경로만 프록시하므로 try-on 결과 이미지는
+    # API prefix 아래로도 노출한다 (예: /ai/v1/try-on-results/{filename}).
+    # 루트 mount 는 로컬·기존 TRYON_RESULT_BASE_URL 호환용으로 유지.
+    application.include_router(results_router, prefix=settings.api_prefix)
     return application
 
 

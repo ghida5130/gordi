@@ -144,6 +144,87 @@ def test_vector_ranker_embedding_failure_raises(tmp_path: Path) -> None:
         ranker.rank(condition(), [candidate(1)], limit=1)
 
 
+class ScriptedReranker:
+    """Deterministic PairwiseCompatibilityModel double."""
+
+    def __init__(self, scores: dict[int, float]) -> None:
+        self.scores = scores
+        self.judged: list[dict] = []
+
+    def score_pair(self, *, intent, query_image, query_mime_type, product):
+        from app.recommendation.vlm_reranker import PairwiseJudgment
+
+        self.judged.append(product)
+        product_id = int(product["product_id"])
+        if product_id not in self.scores:
+            raise RuntimeError("vlm judgment failed")
+        return PairwiseJudgment(compatibility=self.scores[product_id])
+
+
+def make_reranked_ranker(
+    tmp_path: Path,
+    reranker: ScriptedReranker,
+    **kwargs,
+) -> VectorRecommendationRanker:
+    products = [product(1), product(2), product(3)]
+    vectors = {
+        1: vector(1.0, 0.0),
+        2: vector(0.7, 0.7),
+        3: vector(0.0, 1.0),
+    }
+    _, index = build_index(tmp_path, products, vectors)
+    return VectorRecommendationRanker(
+        index,
+        QueryProvider(vector(1.0, 0.0)),
+        reranker=reranker,
+        **kwargs,
+    )
+
+
+def test_vlm_rerank_overrides_rule_compatibility(tmp_path: Path) -> None:
+    # 벡터 순서는 1 > 2 > 3 이지만 VLM 이 3 을 최고 궁합으로 판정한다.
+    reranker = ScriptedReranker({1: 0.0, 2: 0.1, 3: 1.0})
+    ranker = make_reranked_ranker(tmp_path, reranker)
+
+    ranked = ranker.rank(
+        condition(),
+        [candidate(1), candidate(2), candidate(3)],
+        limit=3,
+    )
+
+    assert [item.product_id for item in ranked] == [3, 1, 2]
+    # 판정에는 인덱스 스냅샷 메타데이터(이미지 URL 포함)가 전달된다.
+    assert all("image_url" in judged for judged in reranker.judged)
+
+
+def test_vlm_rerank_failure_keeps_vector_order(tmp_path: Path) -> None:
+    reranker = ScriptedReranker({})  # 모든 판정 실패
+    ranker = make_reranked_ranker(tmp_path, reranker)
+
+    ranked = ranker.rank(
+        condition(),
+        [candidate(1), candidate(2), candidate(3)],
+        limit=3,
+    )
+
+    assert [item.product_id for item in ranked] == [1, 2, 3]
+    assert len(reranker.judged) == 3
+
+
+def test_vlm_rerank_judges_only_top_k(tmp_path: Path) -> None:
+    reranker = ScriptedReranker({1: 0.5, 2: 0.5, 3: 0.5})
+    ranker = make_reranked_ranker(tmp_path, reranker, rerank_top_k=2)
+
+    ranker.rank(
+        condition(),
+        [candidate(1), candidate(2), candidate(3)],
+        limit=3,
+    )
+
+    judged_ids = {int(item["product_id"]) for item in reranker.judged}
+    assert judged_ids == {1, 2}
+
+
 def rank_payload() -> dict:
     return {
         "recommendationId": 1,
