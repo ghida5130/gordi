@@ -36,6 +36,7 @@ class TryOnJobReconciliationServiceTest {
     private static final Long JOB_ID = 71L;
     private static final long STALE_AFTER_MS = 120_000L;
     private static final int BATCH_SIZE = 20;
+    private static final long ORPHAN_AFTER_MS = 600_000L;
     private static final Instant COMPLETED_AT = Instant.parse("2026-07-23T01:20:09Z");
 
     @Mock
@@ -50,7 +51,7 @@ class TryOnJobReconciliationServiceTest {
         reconciliationService = new TryOnJobReconciliationService(
                 tryOnJobRepository,
                 tryOnGenerationClient,
-                new TryOnPolicy(20, 1500L, 5, STALE_AFTER_MS, BATCH_SIZE)
+                new TryOnPolicy(20, 1500L, 5, STALE_AFTER_MS, BATCH_SIZE, ORPHAN_AFTER_MS)
         );
     }
 
@@ -131,15 +132,60 @@ class TryOnJobReconciliationServiceTest {
         verify(tryOnGenerationClient, never()).fetchStatus(any());
     }
 
+    /* ==================== 고아 Job 마감 ==================== */
+
     @Test
-    void 생성_서비스가_Job을_모르면_상태를_바꾸지_않는다() {
+    void 생성_서비스가_Job을_모르지만_유예_안이면_상태를_바꾸지_않는다() {
+        // 접수 직후에는 생성 서비스가 아직 등록하지 않아 모른다고 답할 수 있다.
         TryOnJob job = queuedJob();
+        job.setCreatedAt(LocalDateTime.now().minusMinutes(3));
         when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
         when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.empty());
 
         boolean recovered = reconciliationService.reconcile(JOB_ID);
 
         assertThat(recovered).isFalse();
+        assertThat(job.getStatus()).isEqualTo(TryOnJobStatus.QUEUED.name());
+    }
+
+    @Test
+    void 생성_서비스가_Job을_모르고_유예가_지났으면_재시도_가능한_실패로_마감한다() {
+        TryOnJob job = queuedJob();
+        job.setCreatedAt(LocalDateTime.now().minusMinutes(11));
+        when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
+        when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.empty());
+
+        boolean recovered = reconciliationService.reconcile(JOB_ID);
+
+        assertThat(recovered).isTrue();
+        assertThat(job.getStatus()).isEqualTo(TryOnJobStatus.FAILED.name());
+        assertThat(job.getErrorCode()).isEqualTo(TryOnJobReconciliationService.ORPHAN_ERROR_CODE);
+        // 원인이 생성 서비스 유실이므로 다시 요청하면 성공할 수 있다.
+        assertThat(job.isRetryable()).isTrue();
+        assertThat(job.getCompletedAt()).isNotNull();
+    }
+
+    @Test
+    void RUNNING_이던_Job도_유예가_지나면_마감한다() {
+        // PROCESSING 콜백까지 받은 뒤 생성 서비스가 재시작된 경우.
+        TryOnJob job = queuedJob();
+        job.markRunning();
+        job.setCreatedAt(LocalDateTime.now().minusMinutes(11));
+        when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
+        when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.empty());
+
+        assertThat(reconciliationService.reconcile(JOB_ID)).isTrue();
+        assertThat(job.getStatus()).isEqualTo(TryOnJobStatus.FAILED.name());
+    }
+
+    @Test
+    void 생성_시각을_모르는_Job은_마감하지_않는다() {
+        // 유예 경과를 판단할 근거가 없으므로 남겨 둔다.
+        TryOnJob job = queuedJob();
+        when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
+        when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.empty());
+
+        assertThat(reconciliationService.reconcile(JOB_ID)).isFalse();
         assertThat(job.getStatus()).isEqualTo(TryOnJobStatus.QUEUED.name());
     }
 

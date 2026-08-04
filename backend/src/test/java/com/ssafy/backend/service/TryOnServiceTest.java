@@ -113,7 +113,7 @@ class TryOnServiceTest {
                 // 해시 계산은 실제 구현을 사용하고 저장소만 대체한다.
                 new IdempotencyService(idempotencyRecordRepository, new ObjectMapper()),
                 tryOnGenerationClient,
-                new TryOnPolicy(20, 1500L, 5, 120_000L, 20)
+                new TryOnPolicy(20, 1500L, 5, 120_000L, 20, 600_000L)
         );
     }
 
