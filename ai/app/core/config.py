@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     # 기본 모델(gpt-5.6-luna 등 OpenAI reasoning 계열)은 low가 필요하고,
     # Gemma처럼 reasoning 필드를 거부하는 모델은 빈 값으로 둔다.
     recommendation_vlm_reasoning_effort: str = "low"
+    # 상품 이미지 공개 base URL (예: CloudFront). 설정하면 스냅샷의
+    # image_url 값(절대 S3 URL 또는 "garments/..." 객체 키)에서 키를
+    # 추출해 이 base 와 조합한다. 비우면 저장된 값을 그대로 쓴다.
+    # 백엔드도 같은 방식(base + key)으로 프론트에 조합해 내려준다.
+    product_image_base_url: str = ""
     catalog_embedding_index_path: Path = (
         AI_ROOT / "catalog_index" / "catalog-embeddings.json"
     )
