@@ -90,7 +90,8 @@ public class JwtService {
         refreshRepository.deleteByRefresh(refreshToken);
     }
 
-    // 특정 유저의 모든 Refresh 토큰 삭제 (로그아웃 / 탈퇴 시 사용)
+    // 특정 유저의 모든 Refresh 토큰 삭제
+    // (로그아웃 / 탈퇴 시 사용)
     @Transactional
     public void removeRefreshUser(String email) {
         refreshRepository.deleteByLoginId(email);

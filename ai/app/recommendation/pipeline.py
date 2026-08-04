@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Protocol
@@ -621,9 +622,18 @@ class RecommendationPipeline:
             return outcome
 
         workers = max(1, min(self._rerank_concurrency, top_k))
+        started = time.perf_counter()
         with ThreadPoolExecutor(max_workers=workers) as executor:
             judged = list(executor.map(judge, scored[:top_k]))
         failed = sum(1 for item in judged if item[4])
+        _logger.info(
+            "pairwise rerank (/search): top_k=%d workers=%d "
+            "failed=%d elapsed=%.2fs",
+            top_k,
+            workers,
+            failed,
+            time.perf_counter() - started,
+        )
         reranked = [item[:4] for item in judged]
         reranked.extend(scored[top_k:])
         reranked.sort(key=lambda item: (-item[0], item[2].product_id))

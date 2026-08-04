@@ -11,8 +11,8 @@ import java.util.Optional;
 public interface AvatarRepository extends JpaRepository<Avatar, Long> {
 
     /** 키·몸무게 둘 다 입력: 요청 구간 ±1 범위의 후보 프리셋 */
-    List<Avatar> findByGenderAndHeightIdAndWeightIdOrderByBodyTypeAsc(
-            String gender, Long heightId, Long weightId);
+    List<Avatar> findByGenderAndHeightIdAndWeightIdBetweenOrderByWeightIdAscBodyTypeAsc(
+            String gender, Long heightId, Long weightIdFrom, Long weightIdTo);
 
     /** 몸무게 미입력(0): 해당 성별·키 구간의 기본 프리셋 */
     Optional<Avatar> findFirstByGenderAndHeightIdAndDefaultAvatarTrue(

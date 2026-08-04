@@ -18,6 +18,29 @@ const BODY_TYPE_LABELS = {
 
 const getAvatarId = (avatar) => avatar?.avatarId ?? avatar?.id;
 
+function prioritizeAvatarTemplates(avatarList, weightId) {
+    if (!weightId || avatarList.length <= 3) {
+        return { orderedAvatars: avatarList, initialAvatarCount: avatarList.length };
+    }
+
+    let requestedRangeStart = 3;
+
+    if (weightId === 1) requestedRangeStart = 0;
+    if (weightId === 5) requestedRangeStart = Math.max(avatarList.length - 3, 0);
+
+    const requestedRangeEnd = Math.min(requestedRangeStart + 3, avatarList.length);
+    const requestedRangeAvatars = avatarList.slice(requestedRangeStart, requestedRangeEnd);
+    const otherRangeAvatars = [
+        ...avatarList.slice(0, requestedRangeStart),
+        ...avatarList.slice(requestedRangeEnd),
+    ];
+
+    return {
+        orderedAvatars: [...requestedRangeAvatars, ...otherRangeAvatars],
+        initialAvatarCount: requestedRangeAvatars.length,
+    };
+}
+
 function mapHeightToId(height) {
     if (!height) return 0;
 
@@ -82,31 +105,14 @@ export default function AvatarSetupPage() {
         return savedWeight ? String(savedWeight) : "";
     });
     const [avatars, setAvatars] = useState([]);
+    const [initialAvatarCount, setInitialAvatarCount] = useState(0);
+    const [showAdditionalAvatars, setShowAdditionalAvatars] = useState(false);
     const [selectedAvatar, setSelectedAvatar] = useState(null);
-
-    const templateMutation = useMutation({
-        mutationFn: getAvatarTemplates,
-        onSuccess: (response) => {
-            const avatarList = response.data?.avatars ?? response.avatars ?? [];
-
-            if (avatarList.length === 0) {
-                toast.error("선택할 수 있는 체형을 찾지 못했습니다.");
-                return;
-            }
-
-            setAvatars(avatarList);
-            setSelectedAvatar(null);
-            setStep("selection");
-        },
-        onError: () => {
-            toast.error("체형 템플릿을 불러오지 못했습니다. 다시 시도해 주세요.");
-        },
-    });
 
     const avatarMutation = useMutation({
         mutationFn: updateMyAvatar,
-        onSuccess: (_response, { avatarId }) => {
-            const savedAvatar = avatars.find((avatar) => String(getAvatarId(avatar)) === String(avatarId));
+        onSuccess: (_response, { avatarId, avatar: requestedAvatar }) => {
+            const savedAvatar = requestedAvatar ?? avatars.find((avatar) => String(getAvatarId(avatar)) === String(avatarId));
 
             setBodyInformation({
                 gender,
@@ -127,6 +133,44 @@ export default function AvatarSetupPage() {
             }
 
             toast.error(getApiErrorMessage(error, "체형 설정을 저장하지 못했습니다. 다시 시도해 주세요."));
+        },
+    });
+
+    const templateMutation = useMutation({
+        mutationFn: getAvatarTemplates,
+        onSuccess: (response, request) => {
+            const avatarList = Array.isArray(response.data)
+                ? response.data
+                : response.data?.avatars ?? response.avatars ?? [];
+
+            if (avatarList.length === 0) {
+                toast.error("선택할 수 있는 체형을 찾지 못했습니다.");
+                return;
+            }
+
+            if (!request.heightId && !request.weightId && avatarList.length === 1) {
+                const avatarId = getAvatarId(avatarList[0]);
+
+                if (avatarId == null) {
+                    toast.error("아바타 정보를 확인하지 못했습니다. 다시 시도해 주세요.");
+                    return;
+                }
+
+                setAvatars(avatarList);
+                avatarMutation.mutate({ avatarId, avatar: avatarList[0] });
+                return;
+            }
+
+            const prioritizedTemplates = prioritizeAvatarTemplates(avatarList, request.weightId);
+
+            setAvatars(prioritizedTemplates.orderedAvatars);
+            setInitialAvatarCount(prioritizedTemplates.initialAvatarCount);
+            setShowAdditionalAvatars(false);
+            setSelectedAvatar(null);
+            setStep("selection");
+        },
+        onError: () => {
+            toast.error("체형 템플릿을 불러오지 못했습니다. 다시 시도해 주세요.");
         },
     });
 
@@ -172,8 +216,11 @@ export default function AvatarSetupPage() {
             return;
         }
 
-        avatarMutation.mutate({ avatarId });
+        avatarMutation.mutate({ avatarId, avatar: selectedAvatar });
     };
+
+    const visibleAvatars = showAdditionalAvatars ? avatars : avatars.slice(0, initialAvatarCount);
+    const hasAdditionalAvatars = avatars.length > initialAvatarCount;
 
     return (
         <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
@@ -241,10 +288,10 @@ export default function AvatarSetupPage() {
 
                         <button
                             type="submit"
-                            disabled={templateMutation.isPending}
+                            disabled={templateMutation.isPending || avatarMutation.isPending}
                             className="w-full rounded-lg bg-black px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300"
                         >
-                            {templateMutation.isPending ? "템플릿 생성 중..." : "체형 템플릿 생성하기"}
+                            {avatarMutation.isPending ? "아바타 저장 중..." : templateMutation.isPending ? "템플릿 생성 중..." : "체형 템플릿 생성하기"}
                         </button>
                     </form>
                 ) : (
@@ -254,10 +301,19 @@ export default function AvatarSetupPage() {
                             <p className="mt-1 text-sm text-gray-500">생성된 체형 중 하나를 선택해 주세요.</p>
                         </div>
                         <div className="mt-5 grid grid-cols-3 gap-3">
-                            {avatars.map((avatar) => (
-                                <AvatarOption key={getAvatarId(avatar) ?? avatar.bodyType} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
+                            {visibleAvatars.map((avatar, index) => (
+                                <AvatarOption key={`${getAvatarId(avatar) ?? avatar.bodyType}-${index}`} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
                             ))}
                         </div>
+                        {hasAdditionalAvatars && !showAdditionalAvatars && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAdditionalAvatars(true)}
+                                className="mt-4 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:border-gray-500 hover:bg-gray-50"
+                            >
+                                체형 더 불러오기
+                            </button>
+                        )}
                         <div className="mt-7 flex gap-3">
                             <button type="button" onClick={() => setStep("information")} className="w-1/3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50">이전</button>
                             <button type="button" onClick={handleNext} disabled={!selectedAvatar || avatarMutation.isPending} className="flex-1 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300">

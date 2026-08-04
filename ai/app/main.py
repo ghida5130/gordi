@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,6 +11,12 @@ from app.core.config import get_settings
 
 
 def create_app() -> FastAPI:
+    # uvicorn 은 자기 로거만 핸들러를 달아 주므로, 앱 로거의 INFO
+    # (rerank 지연 관측 등)가 stdout 에 실리도록 루트를 구성한다.
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
     settings = get_settings()
     application = FastAPI(
         title=settings.app_name,

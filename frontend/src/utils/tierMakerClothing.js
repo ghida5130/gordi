@@ -51,11 +51,12 @@ export function normalizeTierMakerSubcategory(subcategory) {
   return subcategoryAliases[normalized] ?? normalized;
 }
 
-function normalizeCategory(category) {
-  const normalized = String(category ?? "").toUpperCase();
+export function normalizeTierMakerCategory(category) {
+  const categoryValue = String(category ?? "").trim();
+  const normalized = categoryValue.toUpperCase();
   return tierMakerCategoryDetails[normalized]
     ? normalized
-    : categoryAliases[category] ?? "TOP";
+    : categoryAliases[categoryValue] ?? normalized;
 }
 
 function resolveArtwork(subcategory, category) {
@@ -72,7 +73,12 @@ function resolveArtwork(subcategory, category) {
 }
 
 export function createTierMakerClothing(roomItem, product) {
-  const category = normalizeCategory(roomItem.category ?? product?.category);
+  const normalizedCategory = normalizeTierMakerCategory(
+    roomItem.category ?? product?.category,
+  );
+  const category = tierMakerCategoryDetails[normalizedCategory]
+    ? normalizedCategory
+    : "TOP";
   const details = tierMakerCategoryDetails[category];
   const subcategory = roomItem.subcategory ?? product?.subcategory ?? "";
 

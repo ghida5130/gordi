@@ -6,9 +6,11 @@ import HomePage from "@/pages/HomePage";
 import MainPage from "@/pages/MainPage"; // ⭐️ 새로 만든 MainPage 불러오기
 import NotFoundPage from "@/pages/NotFoundPage";
 import RoomLobbyPage from "@/pages/RoomLobbyPage";
+import RoomInvitePage from "@/pages/RoomInvitePage";
 import RoomPage from "@/pages/RoomPage";
 import RouteErrorPage from "@/pages/RouteErrorPage";
 import SignupPage from "@/pages/SignupPage";
+import SignupSelectPage from "@/pages/SignupSelectPage";
 import LoginPage from "@/pages/LoginPage";
 import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import SignupCompletePage from "@/pages/SignupCompletePage";
@@ -39,6 +41,10 @@ export const router = createBrowserRouter([
       },
       {
         path: "signup",
+        element: <SignupSelectPage />,
+      },
+      {
+        path: "signup/email",
         element: <SignupPage />,
       },
       {
@@ -48,6 +54,10 @@ export const router = createBrowserRouter([
       {
         path: "rooms/create",
         element: <CreateRoomPage />,
+      },
+      {
+        path: "rooms/join/:roomCode",
+        element: <RoomInvitePage />,
       },
       {
         path: "rooms/:roomId",
