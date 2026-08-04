@@ -45,6 +45,7 @@ public class RoomService {
     private static final String ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int ROOM_CODE_LENGTH = 6;
     private static final int ROOM_CODE_GENERATION_ATTEMPTS = 20;
+    private static final int ROOM_ITEM_POSITION_STEP = 10_000;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final List<String> DEFAULT_TIER_NAMES = List.of("S", "A", "B", "C");
 
@@ -366,7 +367,7 @@ public class RoomService {
                 .map(item -> RoomItem.builder()
                         .room(room)
                         .product(item.getProduct())
-                        .position(Math.max(0, item.getRank() - 1))
+                        .position(item.getRank() * ROOM_ITEM_POSITION_STEP)
                         .build())
                 .toList();
         roomItemRepository.saveAll(roomItems);

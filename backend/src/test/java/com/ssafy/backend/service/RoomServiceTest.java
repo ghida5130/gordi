@@ -160,6 +160,9 @@ class RoomServiceTest {
         assertThat(roomItemsCaptor.getValue())
                 .extracting(RoomItem::getProduct)
                 .containsExactly(firstProduct, secondProduct);
+        assertThat(roomItemsCaptor.getValue())
+                .extracting(RoomItem::getPosition)
+                .containsExactly(10_000, 20_000);
         verify(tierRepository).saveAll(any());
     }
 
