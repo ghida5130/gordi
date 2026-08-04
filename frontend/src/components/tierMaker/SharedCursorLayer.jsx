@@ -37,76 +37,72 @@ function SharedCursorLayer({
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden rounded-3xl">
-      {Object.values(cursors)
-        .filter(
-          (cursor) =>
-            String(cursor.participantId) !==
-            String(currentParticipantId),
-        )
-        .map((cursor) => {
-          const participant = participants.find(
-            (currentParticipant) =>
-              String(currentParticipant.participantId) ===
-              String(cursor.participantId),
-          );
-          const color =
-            cursorColors[
-              getParticipantIndex(
-                participants,
-                cursor.participantId,
-              ) % cursorColors.length
-            ];
-          const activeLock = Object.values(itemLocks).find(
-            (lock) =>
-              String(lock.ownerParticipantId) ===
-              String(cursor.participantId),
-          );
-          const draggedItem = activeLock
-            ? clothesById[String(activeLock.roomItemId)]
-            : null;
+      {Object.values(cursors).map((cursor) => {
+        const isCurrentParticipant =
+          String(cursor.participantId) === String(currentParticipantId);
+        const participant = participants.find(
+          (currentParticipant) =>
+            String(currentParticipant.participantId) ===
+            String(cursor.participantId),
+        );
+        const color =
+          cursorColors[
+            getParticipantIndex(participants, cursor.participantId) %
+              cursorColors.length
+          ];
+        const activeLock = Object.values(itemLocks).find(
+          (lock) =>
+            String(lock.ownerParticipantId) ===
+            String(cursor.participantId),
+        );
+        const draggedItem = activeLock
+          ? clothesById[String(activeLock.roomItemId)]
+          : null;
 
-          return (
-            <div
-              key={cursor.participantId}
-              className="absolute"
-              style={{
-                left: `${cursor.x * 100}%`,
-                top: `${cursor.y * 100}%`,
-              }}
+        return (
+          <div
+            key={cursor.participantId}
+            className="absolute"
+            style={{
+              left: `${cursor.x * 100}%`,
+              top: `${cursor.y * 100}%`,
+            }}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className={`block size-7 overflow-visible drop-shadow-[0_3px_4px_rgba(15,23,42,0.22)] ${color.text}`}
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className={`block size-6 overflow-visible drop-shadow-sm ${color.text}`}
-              >
-                <path
-                  d="M0 0 19.5 13.2l-7.7 1.3-4.2 8L0 0Z"
-                  fill="currentColor"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
+              <path
+                d="M2.35 2.72c-.32-1.04.77-1.88 1.7-1.3l15.5 9.55c.95.58.67 2.02-.43 2.2l-5.6.9a2 2 0 0 0-1.5 1.12l-2.4 5.1c-.47 1-1.93.9-2.26-.15L2.35 2.72Z"
+                fill="currentColor"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span
+              className={`ml-4 -mt-0.5 block max-w-28 truncate rounded-full px-2.5 py-1 text-[10px] tracking-tight text-white shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-2 ring-white/90 ${isCurrentParticipant ? "font-bold" : "font-normal"} ${color.background}`}
+            >
+              {isCurrentParticipant
+                ? "나"
+                : participant?.nickname ?? `참여자 ${cursor.participantId}`}
+            </span>
+            {draggedItem && (
+              <div className="ml-4 mt-2 w-16 rounded-xl border-2 border-white bg-white p-1 shadow-xl">
+                <ClothingArtwork
+                  item={draggedItem}
+                  className="aspect-square w-full rounded-lg"
                 />
-              </svg>
-              <span
-                className={`ml-3 -mt-1 block max-w-28 truncate rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm ${color.background}`}
-              >
-                {participant?.nickname ??
-                  `참여자 ${cursor.participantId}`}
-              </span>
-              {draggedItem && (
-                <div className="ml-4 mt-1 w-16 rounded-xl border-2 border-white bg-white p-1 shadow-xl">
-                  <ClothingArtwork
-                    item={draggedItem}
-                    className="aspect-square w-full rounded-lg"
-                  />
-                  <p className="mt-1 truncate px-1 text-[9px] font-bold text-slate-700">
-                    {draggedItem.name}
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                <p className="mt-1 truncate px-1 text-[9px] font-bold text-slate-700">
+                  {draggedItem.name}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -840,15 +840,27 @@ export function useRoomEvents(roomSession) {
         ({ x, y }) => {
             const client = clientRef.current;
             const now = performance.now();
+            const participantId = roomSession?.participantId;
 
-            if (!client?.connected || !Number.isFinite(x) || !Number.isFinite(y)) {
+            if (!client?.connected || participantId == null || !Number.isFinite(x) || !Number.isFinite(y)) {
                 return false;
             }
 
-            pendingCursorRef.current = {
+            const normalizedCursor = {
                 x: Math.max(0, Math.min(1, x)),
                 y: Math.max(0, Math.min(1, y)),
             };
+
+            setCursors((currentCursors) => ({
+                ...currentCursors,
+                [String(participantId)]: {
+                    participantId,
+                    ...normalizedCursor,
+                    updatedAt: Date.now(),
+                },
+            }));
+
+            pendingCursorRef.current = normalizedCursor;
 
             const elapsed = now - lastCursorPublishAtRef.current;
 
@@ -867,7 +879,7 @@ export function useRoomEvents(roomSession) {
 
             return true;
         },
-        [publishPendingCursor],
+        [publishPendingCursor, roomSession?.participantId],
     );
 
     const shareDemoPlacements = useCallback(
