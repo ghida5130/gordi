@@ -27,3 +27,9 @@
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500;
   }
 }
+
+/* - 티어메이커 드래그 중 브라우저 기본 커서 숨김 */
+html.tier-maker-dragging,
+html.tier-maker-dragging * {
+  cursor: none !important;
+}

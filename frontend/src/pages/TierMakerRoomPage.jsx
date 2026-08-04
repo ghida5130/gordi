@@ -155,6 +155,7 @@ const emptyTryOn = {
 };
 const BOARD_WIDTH = 1530;
 const BOARD_MIN_HEIGHT = 720;
+const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 
 const compareRoomItemId = (left, right) =>
   Number(left.roomItemId) - Number(right.roomItemId);
@@ -382,6 +383,13 @@ function TierMakerRoomPage() {
     return () => resizeObserver.disconnect();
   }, [isBoardReady]);
 
+  useEffect(
+    () => () => {
+      document.documentElement.classList.remove(DRAGGING_CURSOR_CLASS);
+    },
+    [],
+  );
+
   useEffect(() => {
     const roomStatus = roomStatusQuery.data?.data;
 
@@ -588,6 +596,14 @@ function TierMakerRoomPage() {
       roomItemId: item.roomItemId,
     };
     cancelledDragItemIdsRef.current.delete(itemId);
+    document.documentElement.classList.add(DRAGGING_CURSOR_CLASS);
+
+    const dragImage = document.createElement("div");
+    dragImage.className = "fixed -left-[9999px] top-0 size-px opacity-0";
+    document.body.append(dragImage);
+    event.dataTransfer.setDragImage(dragImage, 0, 0);
+    window.requestAnimationFrame(() => dragImage.remove());
+
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", itemId);
   };
@@ -596,6 +612,7 @@ function TierMakerRoomPage() {
     const item = clothesById[itemId];
     const wasCancelled = cancelledDragItemIdsRef.current.delete(itemId);
     activeDragRef.current = null;
+    document.documentElement.classList.remove(DRAGGING_CURSOR_CLASS);
 
     if (wasCancelled) {
       event.dataTransfer.dropEffect = "none";
