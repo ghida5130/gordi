@@ -42,6 +42,7 @@ services:
       SPRING_INTERNAL_BASE_URL: http://gordi-backend:8080
       RECOMMENDATION_IMAGE_ALLOWED_HOSTS: ${RECOMMENDATION_IMAGE_ALLOWED_HOSTS:-["localhost","gordi-nginx"]}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-}
       ENABLE_RECOMMENDATION_DEMO: ${ENABLE_RECOMMENDATION_DEMO:-false}
     env_file:
       - path: ./ai/.env

@@ -317,3 +317,19 @@ def test_result_route_serves_saved_images(tmp_path: Path) -> None:
     assert found.content == (tmp_path / "job-9.png").read_bytes()
     assert traversal.status_code in {400, 404}
     assert missing.status_code == 404
+
+
+def test_result_route_also_mounted_under_api_prefix(tmp_path: Path) -> None:
+    # 운영 nginx 가 /ai/ 만 프록시하므로 API prefix 경로로도 서빙돼야 한다.
+    settings = Settings(tryon_result_dir=tmp_path)
+    (tmp_path / "job-9.png").write_bytes(png_bytes())
+    app.dependency_overrides[get_settings] = lambda: settings
+    try:
+        prefixed = client.get(
+            f"{settings.api_prefix}/try-on-results/job-9.png"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert prefixed.status_code == 200
+    assert prefixed.content == (tmp_path / "job-9.png").read_bytes()
