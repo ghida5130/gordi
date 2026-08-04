@@ -457,3 +457,50 @@ def test_embedding_settings_reject_invalid_fallback_flag(
         match="OPENROUTER_ALLOW_FALLBACKS must be true or false",
     ):
         EmbeddingSettings.from_env()
+
+
+def test_checkpoint_written_per_paid_batch_not_per_item(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 유료 임베딩 N건마다만 체크포인트를 쓴다 (매 아이템 전체 쓰기는
+    # 카탈로그가 커지면 O(n^2) 디스크 쓰기가 된다). 크래시 시 마지막
+    # 체크포인트까지의 유료 호출은 보존되어야 한다.
+    import app.recommendation.catalog_embeddings as mod
+
+    monkeypatch.setattr(mod, "_CHECKPOINT_EVERY_PAID", 2)
+
+    class ExplodingProvider(FakeProvider):
+        def embed(self, **kwargs):
+            if len(self.calls) >= 3:
+                raise CatalogEmbeddingError("provider down")
+            return super().embed(**kwargs)
+
+    products = [product(i) for i in range(1, 5)]
+    output = tmp_path / "catalog.json"
+
+    with pytest.raises(CatalogEmbeddingError, match="provider down"):
+        build_catalog_embeddings(
+            FakeRepository(products),
+            FakeImageResolver(),
+            ExplodingProvider(),
+            output,
+        )
+
+    checkpoint = json.loads(
+        (tmp_path / "catalog.json.checkpoint").read_text(encoding="utf-8")
+    )
+    assert checkpoint["status"] == "IN_PROGRESS"
+    assert len(checkpoint["items"]) == 2  # 배치 경계까지 저장
+
+    # 재실행: 체크포인트의 2건은 재사용, 나머지 2건만 재과금
+    retry_provider = FakeProvider()
+    report = build_catalog_embeddings(
+        FakeRepository(products),
+        FakeImageResolver(),
+        retry_provider,
+        output,
+    )
+    assert report.reused_count == 2
+    assert report.embedded_count == 2
+    assert not (tmp_path / "catalog.json.checkpoint").exists()
