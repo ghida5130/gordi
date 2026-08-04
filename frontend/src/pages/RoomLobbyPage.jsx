@@ -33,7 +33,7 @@ function RoomLobbyPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center bg-slate-100 py-12">
+    <main className="flex min-h-screen items-center bg-gray-50 py-12">
       <PageContainer>
         <section className="mx-auto max-w-2xl text-center">
           {location.state?.roomNotice && (

@@ -25,7 +25,7 @@ function RoomInvitePage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center bg-slate-100 py-12">
+    <main className="flex min-h-screen items-center bg-gray-50 py-12">
       <PageContainer>
         <section className="mx-auto max-w-lg rounded-3xl border bg-white p-7 shadow-xl shadow-slate-200/70 sm:p-9">
           <p className="text-sm font-semibold text-brand-600">ROOM INVITE</p>

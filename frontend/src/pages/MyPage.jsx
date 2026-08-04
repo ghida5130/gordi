@@ -30,7 +30,7 @@ function MyPage() {
     const nickname = user.nickname ?? storedNickname ?? "사용자";
 
     return (
-        <main className="min-h-screen bg-white pb-20 text-slate-900">
+        <main className="min-h-screen bg-gray-50 pb-20 text-slate-900">
             <MyPageTabs activeTab={activeTab} onChange={setActiveTab} />
             <PageContainer className="pt-10">
                 {activeTab === "profile" && <ProfileHome nickname={nickname} onHistory={() => setActiveTab("history")} />}
