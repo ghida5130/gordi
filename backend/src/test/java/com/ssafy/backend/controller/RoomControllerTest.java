@@ -52,6 +52,7 @@ class RoomControllerTest {
                 "IN_PROGRESS",
                 12L,
                 Instant.parse("2026-07-23T03:00:00Z"),
+                "TOP",
                 "SHIRT",
                 "https://cdn.example.com/images/avatars/host.png",
                 List.of(new RoomStatusResponseDTO.Participant(
@@ -87,6 +88,7 @@ class RoomControllerTest {
                 "WAITING",
                 0L,
                 Instant.parse("2026-07-23T03:00:00Z"),
+                "TOP",
                 "SHIRT",
                 null,
                 List.of(),

@@ -259,6 +259,7 @@ public class RoomService {
                 room.getStatus(),
                 room.getVersion(),
                 room.getExpiresAt().atZone(AppZone.KST).toInstant(),
+                room.getRecommendation().getCategory(),
                 room.getRecommendation().getSubcategory(),
                 resolveHostAvatarImageUrl(room),
                 participants,

@@ -436,6 +436,7 @@ class RoomServiceTest {
         assertThat(response.version()).isEqualTo(12L);
         assertThat(response.expiresAt())
                 .isEqualTo(room.getExpiresAt().atZone(AppZone.KST).toInstant());
+        assertThat(response.category()).isEqualTo("TOP");
         assertThat(response.subcategory()).isEqualTo("SHIRT");
         assertThat(response.hostAvatarImageUrl())
                 .isEqualTo("https://cdn.example.com/images/avatars/host.png");
