@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
+import ClothingDetailButton from '@/components/tierMaker/ClothingDetailButton'
 import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
 
 function Mannequin({ generatedItems }) {
@@ -69,6 +70,7 @@ function FittingPanel({
   isSubmitting,
   tryOn,
   errorMessage,
+  onViewDetails,
 }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const isProcessing =
@@ -151,7 +153,7 @@ function FittingPanel({
           <div
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
-            className={`mt-2 grid min-h-[74px] grid-cols-4 gap-2 rounded-xl border border-dashed p-2 ${
+            className={`mt-2 grid min-h-[92px] grid-cols-3 gap-2 rounded-xl border border-dashed p-2 ${
               isDraggingOver
                 ? 'border-violet-300 bg-violet-50'
                 : 'border-slate-200 bg-slate-50'
@@ -170,6 +172,11 @@ function FittingPanel({
                     item={item}
                     className="aspect-square rounded-lg border border-slate-200"
                   />
+                  <ClothingDetailButton
+                    item={item}
+                    onViewDetails={onViewDetails}
+                    className="inset-x-1.5 bottom-1.5"
+                  />
                   <button
                     type="button"
                     onClick={() => onRemoveCandidate(item.id)}
@@ -181,7 +188,7 @@ function FittingPanel({
                 </div>
               ))
             ) : (
-              <div className="col-span-4 flex items-center justify-center text-[11px] text-slate-400">
+              <div className="col-span-3 flex items-center justify-center text-[11px] text-slate-400">
                 의상을 이곳으로 드래그하세요
               </div>
             )}

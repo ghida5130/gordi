@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
+import ClothingDetailButton from '@/components/tierMaker/ClothingDetailButton'
 import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
 
 const categories = [
@@ -20,6 +21,7 @@ function ClothingCatalog({
   onDragEnd,
   onUnrank,
   onAddClothing,
+  onViewDetails,
   title = '피팅 전용 보관함',
   description = `티어 배정 불가 · 총 ${clothes.length}개`,
 }) {
@@ -83,7 +85,7 @@ function ClothingCatalog({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 p-4">
+      <div className="grid grid-cols-2 gap-2 p-3">
         {filteredClothes.map((item) => {
           const lock = itemLocks[item.id]
           const isLockedByOther =
@@ -97,7 +99,7 @@ function ClothingCatalog({
               draggable={!isLockedByOther}
               onDragStart={(event) => onDragStart(event, item.id)}
               onDragEnd={(event) => onDragEnd(event, item.id)}
-              className={`group relative rounded-2xl border bg-white p-2 transition ${
+              className={`group relative overflow-hidden rounded-2xl border bg-white transition ${
                 isLockedByOther
                   ? 'cursor-not-allowed border-amber-300 opacity-60'
                   : 'cursor-grab border-slate-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing'
@@ -105,9 +107,9 @@ function ClothingCatalog({
             >
             <ClothingArtwork
               item={item}
-              className="aspect-square w-full rounded-xl"
+              className="aspect-square w-full"
             />
-            <div className="px-1 pb-1 pt-2">
+            <div className="px-3 pb-3 pt-2">
               <div className="flex items-center justify-between gap-1">
                 <p className="truncate text-xs font-bold text-slate-800">
                   {item.name}
@@ -136,6 +138,11 @@ function ClothingCatalog({
                 )}
               </div>
             </div>
+            <ClothingDetailButton
+              item={item}
+              onViewDetails={onViewDetails}
+              className="inset-x-2 bottom-[58px]"
+            />
             {lock && (
               <span className="absolute inset-x-2 top-2 truncate rounded-lg bg-slate-900/85 px-2 py-1 text-center text-[9px] font-bold text-white">
                 {isLockedByOther

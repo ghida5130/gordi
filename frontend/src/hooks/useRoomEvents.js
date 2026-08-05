@@ -34,6 +34,7 @@ function createInitialState(roomSession) {
         tiers: [],
         roomItems: [],
         placements: [],
+        fittingCandidates: [],
         itemLocks: {},
         lockRejection: null,
         tryOn: {
@@ -107,6 +108,7 @@ function normalizeSnapshot(data) {
         })),
         roomItems,
         placements,
+        fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
     };
 }
 
@@ -238,6 +240,15 @@ function roomEventReducer(state, event) {
             };
         }
 
+        if (eventType === "FITTING_CANDIDATES_UPDATED") {
+            return {
+                ...state,
+                fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
+                version: nextVersion,
+                pendingEvents,
+            };
+        }
+
         if (eventType === "ROOM_FINISHED" || eventType === "ROOM_EXPIRED") {
             return {
                 ...state,
@@ -288,6 +299,14 @@ function roomEventReducer(state, event) {
             ...state,
             roomItems: upsertRoomItem(state.roomItems, data.item),
             placements: Array.isArray(data.placements) ? data.placements : state.placements,
+            version: nextVersion,
+        };
+    }
+
+    if (eventType === "FITTING_CANDIDATES_UPDATED") {
+        return {
+            ...state,
+            fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
             version: nextVersion,
         };
     }
@@ -816,6 +835,15 @@ export function useRoomEvents(roomSession) {
         [publishCommand],
     );
 
+    const updateFittingCandidate = useCallback(
+        ({ roomItemId, selected }) =>
+            publishCommand("fitting-candidates/update", {
+                roomItemId,
+                selected,
+            }),
+        [publishCommand],
+    );
+
     const publishPendingCursor = useCallback(() => {
         cursorPublishTimerRef.current = null;
 
@@ -919,6 +947,7 @@ export function useRoomEvents(roomSession) {
         unlockItem,
         moveItem,
         renameTier,
+        updateFittingCandidate,
         requestSync,
         applyRoomStatus,
         moveCursor,

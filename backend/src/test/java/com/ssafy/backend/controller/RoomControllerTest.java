@@ -182,7 +182,17 @@ class RoomControllerTest {
                 51L,
                 "A7K9Q2",
                 17L,
-                List.of(new RoomResultResponseDTO.TopItem(1, 101L)),
+                List.of(new RoomResultResponseDTO.TopItem(
+                        1,
+                        301L,
+                        101L,
+                        "오버핏 시어커튼 셔츠",
+                        "MUSINSA STANDARD",
+                        39_900,
+                        "https://cdn.example.com/products/501.jpg",
+                        1,
+                        1L
+                )),
                 "https://cdn.example.com/fittings/71.webp",
                 List.of(),
                 "생성 이미지는 실제 핏과 다를 수 있습니다.",

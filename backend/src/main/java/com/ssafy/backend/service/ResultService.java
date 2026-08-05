@@ -92,10 +92,7 @@ public class ResultService {
 
         List<RoomResultResponseDTO.TopItem> topItems = IntStream
                 .range(0, topBoardItems.size())
-                .mapToObj(index -> new RoomResultResponseDTO.TopItem(
-                        index + 1,
-                        topBoardItems.get(index).getProduct().getId()
-                ))
+                .mapToObj(index -> toRoomResultTopItem(index, topBoardItems.get(index)))
                 .toList();
 
         String snapshotImageUrl = getSnapshotImageUrl(result);
@@ -109,6 +106,30 @@ public class ResultService {
                 List.of(),
                 snapshotImageUrl == null ? null : DEFAULT_DISCLAIMER,
                 result.getCreatedAt().atZone(AppZone.KST).toInstant()
+        );
+    }
+
+    private RoomResultResponseDTO.TopItem toRoomResultTopItem(
+            int index,
+            ResultBoardItem item
+    ) {
+        Long roomItemId = item.getSourceRoomItem() == null
+                ? null
+                : item.getSourceRoomItem().getId();
+        Long tierId = item.getResultTier().getSourceTier() == null
+                ? null
+                : item.getResultTier().getSourceTier().getId();
+
+        return new RoomResultResponseDTO.TopItem(
+                index + 1,
+                roomItemId,
+                item.getProduct().getId(),
+                item.getProduct().getName(),
+                item.getProduct().getBrand(),
+                item.getProduct().getPrice(),
+                imageUrlResolver.resolve(item.getProduct().getImageUrl()),
+                item.getPosition(),
+                tierId
         );
     }
 

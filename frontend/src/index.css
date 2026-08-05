@@ -181,3 +181,26 @@
         animation: none;
     }
 }
+
+/* - 긴 상품명의 가로 흐름 처리 */
+@keyframes tier-maker-preview-name-scroll {
+    0%,
+    15% {
+        transform: translateX(0);
+    }
+
+    85%,
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.tier-maker-preview-name-scroll {
+    animation: tier-maker-preview-name-scroll 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tier-maker-preview-name-scroll {
+        animation: none;
+    }
+}

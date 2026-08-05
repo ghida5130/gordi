@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import ClothingCatalog from "@/components/tierMaker/ClothingCatalog";
 import ClothingAddModal from "@/components/tierMaker/ClothingAddModal";
 import FittingPanel from "@/components/tierMaker/FittingPanel";
 import ParticipantDock from "@/components/tierMaker/ParticipantDock";
+import ProductDetailModal from "@/components/tierMaker/ProductDetailModal";
 import SharedCursorLayer from "@/components/tierMaker/SharedCursorLayer";
 import TierBoard from "@/components/tierMaker/TierBoard";
 import TierMakerIcon from "@/components/tierMaker/TierMakerIcon";
@@ -170,13 +171,16 @@ function TierMakerRoomPage() {
   const activeDragRef = useRef(null);
   const cancelledDragItemIdsRef = useRef(new Set());
   const [roomSession] = useState(getRoomSession);
-  const [fittingCandidates, setFittingCandidates] = useState([]);
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
   const [isClothingModalOpen, setIsClothingModalOpen] = useState(false);
+  const [detailProductId, setDetailProductId] = useState(null);
   const [addingProductId, setAddingProductId] = useState(null);
   const [boardScale, setBoardScale] = useState(1);
   const [boardContentHeight, setBoardContentHeight] =
     useState(BOARD_MIN_HEIGHT);
+  const handleViewDetails = useCallback((item) => {
+    setDetailProductId(item.productId);
+  }, []);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
@@ -326,8 +330,8 @@ function TierMakerRoomPage() {
   const fittingOnlyClothes = clothes
     .filter((item) => !tierEligibleItemIds.has(item.id))
     .sort(compareRoomItemId);
-  const candidates = fittingCandidates
-    .map((itemId) => clothesById[itemId])
+  const candidates = roomEvents.fittingCandidates
+    .map((candidate) => clothesById[String(candidate.roomItemId)])
     .filter(Boolean);
   const isHost = roomSession?.role === "HOST";
   const isBoardReady =
@@ -720,15 +724,31 @@ function TierMakerRoomPage() {
 
     const nextItem = clothesById[itemId];
 
-    if (!nextItem) return;
+    if (!nextItem || candidates.some((item) => item.id === itemId)) return;
 
-    setFittingCandidates((currentItems) => [
-      ...currentItems.filter(
-        (currentItemId) =>
-          clothesById[currentItemId]?.category !== nextItem.category,
-      ),
-      itemId,
-    ]);
+    candidates
+      .filter((item) => item.category === nextItem.category)
+      .forEach((item) => {
+        roomEvents.updateFittingCandidate({
+          roomItemId: item.roomItemId,
+          selected: false,
+        });
+      });
+    roomEvents.updateFittingCandidate({
+      roomItemId: nextItem.roomItemId,
+      selected: true,
+    });
+  };
+
+  const handleRemoveCandidate = (itemId) => {
+    const item = clothesById[itemId];
+
+    if (!item) return;
+
+    roomEvents.updateFittingCandidate({
+      roomItemId: item.roomItemId,
+      selected: false,
+    });
   };
 
   const handleRenameTier = (tierId, name) => {
@@ -894,7 +914,10 @@ function TierMakerRoomPage() {
                 <div
                   ref={sharedBoardRef}
                   onPointerMove={handleBoardPointerMove}
-                  onDragOverCapture={handleBoardPointerMove}
+                  onDragOverCapture={(event) => {
+                    event.preventDefault();
+                    handleBoardPointerMove(event);
+                  }}
                   className="tier-maker-cursor-surface relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
                   style={{
                     transform: `scale(${boardScale})`,
@@ -911,11 +934,7 @@ function TierMakerRoomPage() {
                   <FittingPanel
                     candidates={candidates}
                     onDropCandidate={handleDropCandidate}
-                    onRemoveCandidate={(itemId) =>
-                      setFittingCandidates((currentItems) =>
-                        currentItems.filter((id) => id !== itemId),
-                      )
-                    }
+                    onRemoveCandidate={handleRemoveCandidate}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onGenerate={() => tryOnMutation.mutate()}
@@ -934,6 +953,7 @@ function TierMakerRoomPage() {
                     }
                     isSubmitting={tryOnMutation.isPending}
                     tryOn={visibleTryOn}
+                    onViewDetails={handleViewDetails}
                     errorMessage={
                       tryOnMutation.isError
                         ? getApiErrorMessage(
@@ -956,6 +976,7 @@ function TierMakerRoomPage() {
                     waitingClothes={waitingClothes}
                     roomCategory={roomCategoryLabel}
                     onUnrank={handleUnrank}
+                    onViewDetails={handleViewDetails}
                   />
                   <ClothingCatalog
                     clothes={fittingOnlyClothes}
@@ -963,6 +984,7 @@ function TierMakerRoomPage() {
                     currentParticipantId={roomSession.participantId}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    onViewDetails={handleViewDetails}
                     onAddClothing={() => {
                       addCandidateMutation.reset();
                       setIsClothingModalOpen(true);
@@ -993,6 +1015,13 @@ function TierMakerRoomPage() {
           </>
         )}
       </div>
+      {detailProductId && (
+        <ProductDetailModal
+          productId={detailProductId}
+          roomToken={roomSession.roomToken}
+          onClose={() => setDetailProductId(null)}
+        />
+      )}
       {isClothingModalOpen && (
         <ClothingAddModal
           roomToken={roomSession.roomToken}

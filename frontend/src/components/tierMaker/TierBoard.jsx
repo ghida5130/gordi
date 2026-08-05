@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
+import ClothingDetailButton from '@/components/tierMaker/ClothingDetailButton'
 import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
 
 const tierStyles = [
@@ -18,6 +19,7 @@ function TierItem({
   onDragStart,
   onDragEnd,
   onUnrank,
+  onViewDetails,
 }) {
   const isLockedByOther =
     lock &&
@@ -28,14 +30,13 @@ function TierItem({
       draggable={!isLockedByOther}
       onDragStart={(event) => onDragStart(event, item.id)}
       onDragEnd={(event) => onDragEnd(event, item.id)}
-      className={`group relative h-[74px] w-[68px] shrink-0 rounded-xl border bg-white p-1.5 shadow-sm transition ${
+      className={`group relative h-[92px] w-[84px] shrink-0 overflow-hidden rounded-xl border bg-white shadow-sm transition ${
         isLockedByOther
           ? 'cursor-not-allowed border-amber-300 opacity-60'
           : 'cursor-grab border-slate-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md active:cursor-grabbing'
       }`}
-      title={item.name}
     >
-      <ClothingArtwork item={item} className="h-full w-full rounded-lg" />
+      <ClothingArtwork item={item} className="h-full w-full" />
       <span className="absolute left-1 top-1 rounded bg-white/85 p-0.5 text-slate-400 opacity-0 shadow-sm transition group-hover:opacity-100">
         <TierMakerIcon name="grip" size={13} />
       </span>
@@ -53,6 +54,11 @@ function TierItem({
           <TierMakerIcon name="close" size={11} />
         </button>
       )}
+      <ClothingDetailButton
+        item={item}
+        onViewDetails={onViewDetails}
+        className={lock ? 'inset-x-2 bottom-7' : 'inset-x-2 bottom-2'}
+      />
       {lock && (
         <span className="absolute inset-x-1 bottom-1 truncate rounded bg-slate-900/85 px-1 py-0.5 text-center text-[9px] font-bold text-white">
           {isLockedByOther
@@ -137,7 +143,7 @@ function TierDropZone({ isActive, isTierActive, onActivate, onDrop }) {
         event.stopPropagation()
         onDrop(event.dataTransfer.getData('text/plain'))
       }}
-      className={`flex h-[74px] shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-all ${
+      className={`flex h-[92px] shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-all ${
         isActive
           ? 'w-16 border-violet-400 bg-violet-100 text-violet-600'
           : isTierActive
@@ -158,6 +164,7 @@ function WaitingItem({
   currentParticipantId,
   onDragStart,
   onDragEnd,
+  onViewDetails,
 }) {
   return (
     <div className="w-[84px] shrink-0">
@@ -167,6 +174,7 @@ function WaitingItem({
         currentParticipantId={currentParticipantId}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
+        onViewDetails={onViewDetails}
       />
       <p className="mt-1 truncate text-center text-[10px] font-semibold text-slate-600">
         {item.name}
@@ -188,6 +196,7 @@ function TierBoard({
   waitingClothes = [],
   roomCategory,
   onUnrank,
+  onViewDetails,
 }) {
   const [activeTier, setActiveTier] = useState(null)
   const [activeDropTarget, setActiveDropTarget] = useState(null)
@@ -246,7 +255,7 @@ function TierBoard({
                 }
               }}
               onDrop={(event) => handleDrop(event, tier.id)}
-              className={`flex min-h-[104px] border-b border-slate-200 last:border-b-0 ${
+              className={`flex min-h-[112px] border-b border-slate-200 last:border-b-0 ${
                 activeTier === tier.id
                   ? 'bg-violet-50/80'
                   : 'bg-slate-50/70'
@@ -263,7 +272,7 @@ function TierBoard({
                   onRename={onRenameTier}
                 />
               </div>
-              <div className="flex min-w-0 flex-1 flex-wrap content-center items-center gap-2 p-3">
+              <div className="flex min-w-0 flex-1 flex-wrap content-center items-center gap-0 p-2">
                 {tier.itemIds.length > 0 ? (
                   <>
                     {tier.itemIds.map((itemId, itemIndex) => {
@@ -289,6 +298,7 @@ function TierBoard({
                             onDragStart={onDragStart}
                             onDragEnd={onDragEnd}
                             onUnrank={onUnrank}
+                            onViewDetails={onViewDetails}
                           />
                         </Fragment>
                       )
@@ -316,7 +326,7 @@ function TierBoard({
                   </>
                 ) : (
                   <div
-                    className={`flex h-[74px] min-w-44 flex-1 items-center justify-center rounded-xl border border-dashed text-xs ${
+                    className={`flex h-[92px] min-w-44 flex-1 items-center justify-center rounded-xl border border-dashed text-xs ${
                       activeTier === tier.id
                         ? 'border-violet-300 bg-white text-violet-500'
                         : 'border-slate-200 text-slate-400'
@@ -342,7 +352,7 @@ function TierBoard({
               }
             }}
             onDrop={handleWaitingDrop}
-            className={`mt-4 rounded-2xl border p-4 transition ${
+            className={`mt-3 rounded-2xl border p-3 transition ${
               isWaitingActive
                 ? 'border-violet-400 bg-violet-50 ring-4 ring-violet-100'
                 : 'border-slate-200 bg-white'
@@ -361,7 +371,7 @@ function TierBoard({
                 {waitingClothes.length}개
               </span>
             </div>
-            <div className="mt-3 flex min-h-[98px] flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+            <div className="mt-2 flex min-h-[116px] flex-wrap items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-2">
               {waitingClothes.length > 0 ? (
                 waitingClothes.map((item) => (
                   <WaitingItem
@@ -371,6 +381,7 @@ function TierBoard({
                     currentParticipantId={currentParticipantId}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    onViewDetails={onViewDetails}
                   />
                 ))
               ) : (
