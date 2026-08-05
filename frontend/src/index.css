@@ -33,3 +33,9 @@ html.tier-maker-dragging,
 html.tier-maker-dragging * {
   cursor: none !important;
 }
+
+/* - 티어메이커 공유 보드에서 브라우저 기본 커서 숨김 */
+body .tier-maker-cursor-surface,
+body .tier-maker-cursor-surface * {
+  cursor: none !important;
+}

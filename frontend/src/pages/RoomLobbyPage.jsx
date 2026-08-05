@@ -52,10 +52,10 @@ function RoomLobbyPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => navigate("/rooms/create")}
+              onClick={() => navigate("/recommendation")}
               className="rounded-2xl bg-brand-600 px-6 py-8 text-lg font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:-translate-y-0.5 hover:bg-brand-500"
             >
-              방 만들기
+              의상 추천받고 티어메이커 시작하기
             </button>
             <button
               type="button"
@@ -118,9 +118,7 @@ function RoomLobbyPage() {
                 disabled={joinRoomMutation.isPending}
                 className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {joinRoomMutation.isPending
-                  ? "참여하는 중..."
-                  : "방 참여하기"}
+                {joinRoomMutation.isPending ? "참여하는 중..." : "방 참여하기"}
               </button>
             </form>
           )}
