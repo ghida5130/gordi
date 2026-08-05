@@ -14,7 +14,7 @@ const MainPage = () => {
       
       {/* 1. Hero Section */}
       <section className="relative w-full h-screen flex flex-col justify-center items-center text-center bg-gray-200 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/hero_background.jpg')" }}
+        style={{ backgroundImage: "url('/images/hero_background_v2.jpeg')" }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
 
@@ -22,7 +22,7 @@ const MainPage = () => {
           <h1 className="text-5xl md:text-6xl font-bold text-black mb-6 leading-tight">
             나만의 아바타로<br />친구들과 함께<br />골라봐요
           </h1>
-          <p className="text-gray-800 text-lg mb-10 font-medium">
+          <p className="text-lg mb-10 font-semibold text-[#e0e2e5]">
             체형 데이터를 기반으로 생성된 내 아바타에 AI 추천 옷을 입혀보고,<br />
             친구들과 함께 티어를 매겨 최고의 코디를 완성하세요.
           </p>
