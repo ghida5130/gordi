@@ -304,10 +304,12 @@ def _export_size(
         raise ManifestError(f"{external_id}: measurements_cm missing")
     if not str(size.get("size_name") or "").strip():
         raise ManifestError(f"{external_id}: size_name missing")
+    # validate.py의 완화된 필수 세트와 일치해야 한다:
+    # shoulder_width/hip_width는 optional (결측 → DB NULL).
     required = (
-        ("total_length", "shoulder_width", "chest_width")
+        ("total_length", "chest_width")
         if category == BackendCategory.TOP
-        else ("total_length", "waist_width", "hip_width")
+        else ("total_length", "waist_width")
     )
     missing = [field for field in required if measurements.get(field) is None]
     if missing:
