@@ -60,6 +60,9 @@ function Mannequin({ generatedItems }) {
 
 function FittingPanel({
   candidates,
+  hostAvatarImageUrl,
+  selectedSizeNames = {},
+  onSizeChange = () => {},
   onDropCandidate,
   onRemoveCandidate,
   onDragStart,
@@ -74,7 +77,21 @@ function FittingPanel({
 }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const isProcessing =
-    isSubmitting || tryOn.status === 'PROCESSING'
+    isSubmitting ||
+    ['QUEUED', 'PROCESSING', 'PROGRESSING'].includes(tryOn.status)
+  const hasUnavailableSizes = candidates.some(
+    (item) => !Array.isArray(item.sizeNames) || item.sizeNames.length === 0,
+  )
+  const hasUnselectedSizes = candidates.some(
+    (item) =>
+      Array.isArray(item.sizeNames) &&
+      item.sizeNames.length > 0 &&
+      !item.sizeNames.includes(selectedSizeNames[item.id]),
+  )
+  const isSizeSelectionComplete =
+    candidates.length > 0 &&
+    !hasUnavailableSizes &&
+    !hasUnselectedSizes
 
   const handleDrop = (event) => {
     event.preventDefault()
@@ -83,7 +100,7 @@ function FittingPanel({
   }
 
   const handleGenerate = () => {
-    if (candidates.length === 0 || isProcessing || !canGenerate) return
+    if (!isSizeSelectionComplete || isProcessing || !canGenerate) return
 
     onGenerate()
   }
@@ -132,6 +149,12 @@ function FittingPanel({
                 alt="가상 피팅 결과"
                 className="h-[292px] w-full object-cover"
               />
+            ) : hostAvatarImageUrl ? (
+              <img
+                src={hostAvatarImageUrl}
+                alt="방장 아바타"
+                className="absolute inset-0 size-full object-cover"
+              />
             ) : (
               <Mannequin generatedItems={candidates} />
             )}
@@ -153,7 +176,7 @@ function FittingPanel({
           <div
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
-            className={`mt-2 grid min-h-[92px] grid-cols-3 gap-2 rounded-xl border border-dashed p-2 ${
+            className={`mt-2 grid min-h-[92px] grid-cols-2 gap-2 rounded-xl border border-dashed p-2 ${
               isDraggingOver
                 ? 'border-violet-300 bg-violet-50'
                 : 'border-slate-200 bg-slate-50'
@@ -168,15 +191,46 @@ function FittingPanel({
                   onDragEnd={(event) => onDragEnd(event, item.id)}
                   className="group relative cursor-grab"
                 >
-                  <ClothingArtwork
-                    item={item}
-                    className="aspect-square rounded-lg border border-slate-200"
-                  />
-                  <ClothingDetailButton
-                    item={item}
-                    onViewDetails={onViewDetails}
-                    className="inset-x-1.5 bottom-1.5"
-                  />
+                  <div className="relative">
+                    <ClothingArtwork
+                      item={item}
+                      className="aspect-square rounded-lg border border-slate-200"
+                    />
+                    <ClothingDetailButton
+                      item={item}
+                      onViewDetails={onViewDetails}
+                      className="inset-x-1.5 bottom-1.5"
+                    />
+                  </div>
+                  <label className="mt-1 block">
+                    <span className="sr-only">{item.name} 사이즈 선택</span>
+                    <select
+                      value={
+                        item.sizeNames?.includes(selectedSizeNames[item.id])
+                          ? selectedSizeNames[item.id]
+                          : ''
+                      }
+                      onChange={(event) =>
+                        onSizeChange(item.id, event.target.value)
+                      }
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onDragStart={(event) => event.stopPropagation()}
+                      draggable={false}
+                      disabled={!item.sizeNames?.length}
+                      className="h-7 w-full rounded-md border border-slate-200 bg-white px-1.5 text-[10px] font-semibold text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      <option value="">
+                        {item.sizeNames?.length
+                          ? '사이즈 선택'
+                          : '사이즈 정보 없음'}
+                      </option>
+                      {item.sizeNames?.map((sizeName) => (
+                        <option key={sizeName} value={sizeName}>
+                          {sizeName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
                     onClick={() => onRemoveCandidate(item.id)}
@@ -188,11 +242,20 @@ function FittingPanel({
                 </div>
               ))
             ) : (
-              <div className="col-span-3 flex items-center justify-center text-[11px] text-slate-400">
+              <div className="col-span-2 flex items-center justify-center text-[11px] text-slate-400">
                 의상을 이곳으로 드래그하세요
               </div>
             )}
           </div>
+          {candidates.length > 0 && hasUnavailableSizes ? (
+            <p className="mt-2 text-[11px] leading-4 text-rose-600">
+              사이즈 정보가 없는 의상은 가상 피팅에 사용할 수 없습니다.
+            </p>
+          ) : candidates.length > 0 && hasUnselectedSizes ? (
+            <p className="mt-2 text-[11px] leading-4 text-violet-600">
+              가상 피팅에 사용할 사이즈를 모두 선택해 주세요.
+            </p>
+          ) : null}
         </div>
 
         {(tryOn.status === 'FAILED' || errorMessage) && (
@@ -205,16 +268,18 @@ function FittingPanel({
           type="button"
           onClick={handleGenerate}
           disabled={
-            candidates.length === 0 || isProcessing || !canGenerate
+            !isSizeSelectionComplete || isProcessing || !canGenerate
           }
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           <TierMakerIcon name="sparkles" size={17} />
           {isProcessing
             ? '생성 중...'
-            : canGenerate
-              ? '아바타 생성하기'
-              : generateDisabledMessage}
+            : !canGenerate
+              ? generateDisabledMessage
+              : candidates.length > 0 && !isSizeSelectionComplete
+                ? '사이즈를 선택해 주세요'
+                : '아바타 생성하기'}
         </button>
       </div>
     </aside>

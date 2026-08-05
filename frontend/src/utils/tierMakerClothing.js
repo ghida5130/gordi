@@ -81,6 +81,15 @@ export function createTierMakerClothing(roomItem, product) {
     : "TOP";
   const details = tierMakerCategoryDetails[category];
   const subcategory = roomItem.subcategory ?? product?.subcategory ?? "";
+  const sizeRows =
+    category === "BOTTOM" ? product?.bottomSizes : product?.topSizes;
+  const sizeNames = [
+    ...new Set(
+      (Array.isArray(sizeRows) ? sizeRows : [])
+        .map((size) => size?.sizeName)
+        .filter(Boolean),
+    ),
+  ];
 
   return {
     id: String(roomItem.roomItemId),
@@ -90,6 +99,7 @@ export function createTierMakerClothing(roomItem, product) {
     brand: roomItem.brand ?? product?.brand ?? "",
     price: roomItem.price ?? product?.price ?? null,
     imageUrl: roomItem.imageUrl ?? product?.imageUrl ?? "",
+    sizeNames,
     subcategory,
     slot: category,
     ...details,

@@ -171,6 +171,7 @@ function TierMakerRoomPage() {
   const activeDragRef = useRef(null);
   const cancelledDragItemIdsRef = useRef(new Set());
   const [roomSession] = useState(getRoomSession);
+  const [selectedSizeNames, setSelectedSizeNames] = useState({});
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
   const [isClothingModalOpen, setIsClothingModalOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState(null);
@@ -337,6 +338,7 @@ function TierMakerRoomPage() {
   const isBoardReady =
     roomEvents.hasSnapshot &&
     !roomStatusQuery.isPending &&
+    !productQueries.some((query) => query.isPending) &&
     !(roomEvents.status === "IN_PROGRESS" && candidateQuery.isPending);
 
   useEffect(() => {
@@ -521,7 +523,14 @@ function TierMakerRoomPage() {
           items: candidates.map((item) => ({
             roomItemId: item.roomItemId,
             slot: item.slot,
+            sizeName: selectedSizeNames[item.id],
           })),
+          wearOptions: {
+            topTuck: "UNTUCKED",
+            outerClosure: "OPEN",
+            sleeves: "NORMAL",
+          },
+          prompt: null,
         },
         crypto.randomUUID(),
       );
@@ -535,7 +544,7 @@ function TierMakerRoomPage() {
     onSuccess: (response) => {
       setLocalTryOn((current) => ({
         ...current,
-        status: response.data?.status ?? "PROCESSING",
+        status: "PROCESSING",
         jobId: response.data?.jobId ?? null,
       }));
     },
@@ -543,9 +552,15 @@ function TierMakerRoomPage() {
       setLocalTryOn(emptyTryOn);
     },
   });
-  const visibleTryOn =
-    tryOnMutation.isPending ||
-    (localTryOn.jobId && roomEvents.tryOn.jobId !== localTryOn.jobId)
+  const isLocalTryOnPending = ["QUEUED", "PROCESSING"].includes(
+    localTryOn.status,
+  );
+  const hasMatchingRoomTryOn =
+    localTryOn.jobId != null &&
+    String(localTryOn.jobId) === String(roomEvents.tryOn.jobId);
+  const visibleTryOn = tryOnMutation.isPending
+    ? localTryOn
+    : isLocalTryOnPending && !hasMatchingRoomTryOn
       ? localTryOn
       : roomEvents.tryOn.status !== "IDLE"
         ? roomEvents.tryOn
@@ -751,6 +766,20 @@ function TierMakerRoomPage() {
     });
   };
 
+  const handleCandidateSizeChange = (itemId, sizeName) => {
+    setSelectedSizeNames((currentSizeNames) => {
+      const nextSizeNames = { ...currentSizeNames };
+
+      if (sizeName) {
+        nextSizeNames[itemId] = sizeName;
+      } else {
+        delete nextSizeNames[itemId];
+      }
+
+      return nextSizeNames;
+    });
+  };
+
   const handleRenameTier = (tierId, name) => {
     const tier = tiers.find((currentTier) => currentTier.id === tierId);
 
@@ -933,6 +962,11 @@ function TierMakerRoomPage() {
                   />
                   <FittingPanel
                     candidates={candidates}
+                    hostAvatarImageUrl={
+                      roomStatusQuery.data?.data?.hostAvatarImageUrl
+                    }
+                    selectedSizeNames={selectedSizeNames}
+                    onSizeChange={handleCandidateSizeChange}
                     onDropCandidate={handleDropCandidate}
                     onRemoveCandidate={handleRemoveCandidate}
                     onDragStart={handleDragStart}
