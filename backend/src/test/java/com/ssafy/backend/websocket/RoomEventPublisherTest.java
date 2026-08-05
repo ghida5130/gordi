@@ -11,6 +11,8 @@ import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.FittingCandidatesUpdatedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
@@ -23,6 +25,8 @@ import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
+import com.ssafy.backend.websocket.event.TryOnProcessingEvent;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -305,5 +309,54 @@ class RoomEventPublisherTest {
         assertThat(event.version()).isEqualTo(18L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.data()).isEqualTo(Map.of());
+    }
+
+    @Test
+    void tryOnProcessingEventIsBroadcastWithJobId() {
+        TryOnProcessingEvent domainEvent = new TryOnProcessingEvent(31L, 17L, 42L, 11L);
+
+        roomEventPublisher.handleTryOnProcessing(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.TRY_ON_PROCESSING);
+        assertThat(event.clientEventId()).isNull();
+        assertThat(event.version()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new TryOnProcessingEventDataDTO(11L));
+    }
+
+    @Test
+    void tryOnSucceededEventIsBroadcastWithJobIdAndResultImageUrl() {
+        TryOnSucceededEvent domainEvent = new TryOnSucceededEvent(
+                31L,
+                17L,
+                42L,
+                11L,
+                "https://cdn.example.com/fittings/11.webp"
+        );
+
+        roomEventPublisher.handleTryOnSucceeded(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.TRY_ON_SUCCEEDED);
+        assertThat(event.clientEventId()).isNull();
+        assertThat(event.version()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new TryOnSucceededEventDataDTO(
+                11L,
+                "https://cdn.example.com/fittings/11.webp"
+        ));
     }
 }

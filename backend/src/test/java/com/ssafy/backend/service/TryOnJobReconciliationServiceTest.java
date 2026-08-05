@@ -6,16 +6,20 @@ import com.ssafy.backend.config.TryOnPolicy;
 import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
 import com.ssafy.backend.domain.Avatar;
+import com.ssafy.backend.domain.Room;
+import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.tryon.TryOnJobStatusResponse;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
@@ -43,6 +47,8 @@ class TryOnJobReconciliationServiceTest {
     private TryOnJobRepository tryOnJobRepository;
     @Mock
     private TryOnGenerationClient tryOnGenerationClient;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private TryOnJobReconciliationService reconciliationService;
 
@@ -51,7 +57,8 @@ class TryOnJobReconciliationServiceTest {
         reconciliationService = new TryOnJobReconciliationService(
                 tryOnJobRepository,
                 tryOnGenerationClient,
-                new TryOnPolicy(20, 1500L, 5, STALE_AFTER_MS, BATCH_SIZE, ORPHAN_AFTER_MS)
+                new TryOnPolicy(20, 1500L, 5, STALE_AFTER_MS, BATCH_SIZE, ORPHAN_AFTER_MS),
+                eventPublisher
         );
     }
 
@@ -91,6 +98,26 @@ class TryOnJobReconciliationServiceTest {
         assertThat(job.isCacheHit()).isTrue();
         // 01:20:09Z -> KST 10:20:09
         assertThat(job.getCompletedAt()).isEqualTo(LocalDateTime.of(2026, 7, 23, 10, 20, 9));
+    }
+
+    @Test
+    void roomSucceededReconciliationPublishesRoomEvent() {
+        TryOnJob job = queuedRoomJob();
+        when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
+        when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.of(succeeded()));
+
+        assertThat(reconciliationService.reconcile(JOB_ID)).isTrue();
+
+        ArgumentCaptor<TryOnSucceededEvent> eventCaptor =
+                ArgumentCaptor.forClass(TryOnSucceededEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TryOnSucceededEvent event = eventCaptor.getValue();
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.roomVersion()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.jobId()).isEqualTo(JOB_ID);
+        assertThat(event.resultImageUrl()).isEqualTo("https://cdn.example.com/fittings/71.webp");
     }
 
     @Test
@@ -237,6 +264,26 @@ class TryOnJobReconciliationServiceTest {
     private TryOnJob queuedJob() {
         TryOnJob job = TryOnJob.builder()
                 .contextType(TryOnContextType.SOLO.name())
+                .avatar(Avatar.builder().id(38L).gender("FEMALE").bodyType("STANDARD")
+                        .imageUrl("https://cdn.example.com/avatars/38.webp")
+                        .heightId(3L).weightId(2L).build())
+                .status(TryOnJobStatus.QUEUED.name())
+                .build();
+        job.setId(JOB_ID);
+        return job;
+    }
+
+    private TryOnJob queuedRoomJob() {
+        Room room = Room.builder().id(31L).version(17L).build();
+        RoomParticipant participant = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("participant")
+                .build();
+        TryOnJob job = TryOnJob.builder()
+                .contextType(TryOnContextType.ROOM.name())
+                .room(room)
+                .ownerParticipant(participant)
                 .avatar(Avatar.builder().id(38L).gender("FEMALE").bodyType("STANDARD")
                         .imageUrl("https://cdn.example.com/avatars/38.webp")
                         .heightId(3L).weightId(2L).build())

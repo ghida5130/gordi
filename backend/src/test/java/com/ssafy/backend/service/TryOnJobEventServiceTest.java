@@ -6,17 +6,21 @@ import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobEventType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
 import com.ssafy.backend.domain.Avatar;
+import com.ssafy.backend.domain.Room;
+import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.domain.TryOnJobEvent;
 import com.ssafy.backend.dto.tryon.TryOnJobEventRequest;
 import com.ssafy.backend.repository.TryOnJobEventRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,13 +47,15 @@ class TryOnJobEventServiceTest {
     private TryOnJobRepository tryOnJobRepository;
     @Mock
     private TryOnJobEventRepository tryOnJobEventRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private TryOnJobEventService tryOnJobEventService;
 
     @BeforeEach
     void setUp() {
         tryOnJobEventService = new TryOnJobEventService(
-                tryOnJobRepository, tryOnJobEventRepository);
+                tryOnJobRepository, tryOnJobEventRepository, eventPublisher);
     }
 
     /* ==================== 상태 전이 ==================== */
@@ -83,6 +89,25 @@ class TryOnJobEventServiceTest {
         assertThat(job.isCacheHit()).isFalse();
         // KST 저장 (01:20:09Z -> 10:20:09)
         assertThat(job.getCompletedAt()).isEqualTo(LocalDateTime.of(2026, 7, 23, 10, 20, 9));
+    }
+
+    @Test
+    void roomSucceededEventPublishesRoomEvent() {
+        TryOnJob job = queuedRoomJob();
+        stubJob(job);
+
+        tryOnJobEventService.apply(JOB_ID, succeededEvent(2L));
+
+        ArgumentCaptor<TryOnSucceededEvent> eventCaptor =
+                ArgumentCaptor.forClass(TryOnSucceededEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TryOnSucceededEvent event = eventCaptor.getValue();
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.roomVersion()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.jobId()).isEqualTo(JOB_ID);
+        assertThat(event.resultImageUrl()).isEqualTo("https://cdn.example.com/fittings/71.webp");
     }
 
     @Test
@@ -255,6 +280,26 @@ class TryOnJobEventServiceTest {
     private TryOnJob queuedJob() {
         TryOnJob job = TryOnJob.builder()
                 .contextType(TryOnContextType.SOLO.name())
+                .avatar(Avatar.builder().id(38L).gender("FEMALE").bodyType("STANDARD")
+                        .imageUrl("https://cdn.example.com/avatars/38.webp")
+                        .heightId(3L).weightId(2L).build())
+                .status(TryOnJobStatus.QUEUED.name())
+                .build();
+        job.setId(JOB_ID);
+        return job;
+    }
+
+    private TryOnJob queuedRoomJob() {
+        Room room = Room.builder().id(31L).version(17L).build();
+        RoomParticipant participant = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("participant")
+                .build();
+        TryOnJob job = TryOnJob.builder()
+                .contextType(TryOnContextType.ROOM.name())
+                .room(room)
+                .ownerParticipant(participant)
                 .avatar(Avatar.builder().id(38L).gender("FEMALE").bodyType("STANDARD")
                         .imageUrl("https://cdn.example.com/avatars/38.webp")
                         .heightId(3L).weightId(2L).build())
