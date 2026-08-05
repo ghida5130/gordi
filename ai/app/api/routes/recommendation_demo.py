@@ -95,16 +95,11 @@ def recommendation_demo_page() -> HTMLResponse:
     return HTMLResponse(html)
 
 
-@page_router.get(
-    "/catalog-images/{source}/{external_id}",
-    response_class=FileResponse,
-    include_in_schema=False,
-)
-def recommendation_demo_catalog_image(
+def _dataset_primary_image(
     source: str,
     external_id: str,
-    settings: Settings = Depends(get_settings),
-) -> FileResponse:
+    settings: Settings,
+) -> Path:
     dataset_root = settings.recommendation_demo_dataset_root
     if dataset_root is None:
         raise HTTPException(
@@ -139,7 +134,52 @@ def recommendation_demo_catalog_image(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid catalog image path",
         ) from exc
-    return FileResponse(matches[0])
+    return matches[0]
+
+
+@page_router.get(
+    "/catalog-images/{source}/{external_id}",
+    response_class=FileResponse,
+    include_in_schema=False,
+)
+def recommendation_demo_catalog_image(
+    source: str,
+    external_id: str,
+    settings: Settings = Depends(get_settings),
+) -> FileResponse:
+    return FileResponse(
+        _dataset_primary_image(source, external_id, settings)
+    )
+
+
+@page_router.get(
+    "/catalog-images-by-key/garments/{source}/{external_id}/{file_name}",
+    response_class=FileResponse,
+    include_in_schema=False,
+)
+def recommendation_demo_catalog_image_by_key(
+    source: str,
+    external_id: str,
+    file_name: str,
+    settings: Settings = Depends(get_settings),
+) -> FileResponse:
+    """Serve the local dataset image for an S3 object-key path.
+
+    Lets PRODUCT_IMAGE_BASE_URL point at this route so the VLM
+    reranker can attach candidate images offline: the snapshot's
+    stored URL keeps its S3 key path (garments/{source}/{id}/
+    primary-{sha}.{ext}) and this route maps it onto the reviewed
+    dataset's primary image. The sha-named file itself is not
+    looked up — the dataset holds one primary per product.
+    """
+    if not file_name.startswith("primary"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="catalog image not found",
+        )
+    return FileResponse(
+        _dataset_primary_image(source, external_id, settings)
+    )
 
 
 async def _parse_demo_request(

@@ -234,6 +234,34 @@ def test_demo_local_catalog_image_route(
     assert response.content == image_path.read_bytes()
 
 
+def test_demo_catalog_image_by_key_route(
+    tmp_path: Path,
+    demo_pipeline: FakePipeline,
+) -> None:
+    image_dir = tmp_path / "images" / "musinsa" / "3000012"
+    image_dir.mkdir(parents=True)
+    image_path = image_dir / "primary.jpg"
+    image_path.write_bytes(jpeg_bytes())
+    settings = Settings(
+        enable_recommendation_demo=True,
+        recommendation_demo_dataset_root=tmp_path,
+    )
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    by_key = client.get(
+        "/demo/catalog-images-by-key/garments/musinsa/3000012/"
+        "primary-3612a63af3e3928f.jpg"
+    )
+    wrong_name = client.get(
+        "/demo/catalog-images-by-key/garments/musinsa/3000012/"
+        "detail-0001.jpg"
+    )
+
+    assert by_key.status_code == 200
+    assert by_key.content == image_path.read_bytes()
+    assert wrong_name.status_code == 404
+
+
 def test_demo_is_hidden_when_disabled() -> None:
     settings = Settings(enable_recommendation_demo=False)
     app.dependency_overrides[get_settings] = lambda: settings
