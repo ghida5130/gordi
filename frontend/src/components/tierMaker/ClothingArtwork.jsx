@@ -70,7 +70,7 @@ function ClothingArtwork({ item, className = '' }) {
         <svg
           aria-hidden="true"
           viewBox="0 0 104 104"
-          className={`h-[88%] w-[88%] drop-shadow-sm ${item.color}`}
+          className={`h-full w-full drop-shadow-sm ${item.color}`}
         >
           {clothingShapes[item.artwork]}
         </svg>
