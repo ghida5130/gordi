@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import RootLayout from "@/layouts/RootLayout";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ApiExamplePage from "@/pages/ApiExamplePage";
 import CreateRoomPage from "@/pages/CreateRoomPage";
 import HomePage from "@/pages/HomePage";
@@ -52,10 +53,6 @@ export const router = createBrowserRouter([
         element: <RoomLobbyPage />,
       },
       {
-        path: "rooms/create",
-        element: <CreateRoomPage />,
-      },
-      {
         path: "rooms/join/:roomCode",
         element: <RoomInvitePage />,
       },
@@ -80,20 +77,30 @@ export const router = createBrowserRouter([
         element: <SignupCompletePage />,
       },
       {
-        path: "mypage",
-        element: <MyPage />,
-      },
-      {
-        path: "mypage/avatar/edit",
-        element: <AvatarSetupPage />,
-      },
-      {
         path: "oauth/callback",
         element: <OAuthCallbackPage />,
       },
+      // 로그인이 필요한 페이지는 이 children 배열에 추가
       {
-        path: "recommendation",
-        element: <RecommendationPage />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: "rooms/create",
+            element: <CreateRoomPage />,
+          },
+          {
+            path: "recommendation",
+            element: <RecommendationPage />,
+          },
+          {
+            path: "mypage",
+            element: <MyPage />,
+          },
+          {
+            path: "mypage/avatar/edit",
+            element: <AvatarSetupPage />,
+          },
+        ],
       },
       {
         path: "*",

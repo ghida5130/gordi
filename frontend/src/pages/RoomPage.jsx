@@ -135,7 +135,7 @@ function RoomPage() {
 
   if (!isCurrentRoom) {
     return (
-      <main className="flex min-h-screen items-center bg-slate-100 py-12">
+      <main className="flex min-h-screen items-center bg-gray-50 py-12">
         <PageContainer>
           <section className="mx-auto max-w-md rounded-3xl border bg-white p-8 text-center shadow-xl shadow-slate-200/70">
             <h1 className="text-2xl font-bold">방 참여 정보가 없습니다</h1>
@@ -157,7 +157,7 @@ function RoomPage() {
   const maxParticipants = roomSession.maxParticipants ?? 4;
 
   return (
-    <main className="min-h-screen bg-slate-100 py-10">
+    <main className="min-h-screen bg-gray-50 py-10">
       <PageContainer>
         <header className="flex flex-col gap-5 rounded-3xl border bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>

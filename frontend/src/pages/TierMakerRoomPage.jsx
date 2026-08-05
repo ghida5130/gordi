@@ -797,7 +797,7 @@ function TierMakerRoomPage() {
 
   if (!isCurrentRoom) {
     return (
-      <main className="flex min-h-screen items-center bg-slate-100 px-4">
+      <main className="flex min-h-screen items-center bg-gray-50 px-4">
         <section className="mx-auto max-w-md rounded-3xl border bg-white p-8 text-center shadow-xl shadow-slate-200/70">
           <h1 className="text-2xl font-bold">방 참여 정보가 없습니다</h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -815,7 +815,7 @@ function TierMakerRoomPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb]">
+    <main className="min-h-screen bg-gray-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -920,7 +920,7 @@ function TierMakerRoomPage() {
                   ref={sharedBoardRef}
                   onPointerMove={handleBoardPointerMove}
                   onDragOverCapture={handleBoardPointerMove}
-                  className="relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
+                  className="tier-maker-cursor-surface relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
                   style={{
                     transform: `scale(${boardScale})`,
                     transformOrigin: "top left",
