@@ -219,23 +219,35 @@ def tag_dataset_tpo(
         try:
             primary = record.images[0]
             content = (dataset_root / primary.local_path).read_bytes()
-            answer = client.complete_json(
-                system=_SYSTEM_PROMPT,
-                user_parts=[
-                    _image_part(content, primary.mime_type),
-                    {
-                        "type": "text",
-                        "text": (
-                            f"상품명: {record.product.name}\n"
-                            f"분류: {record.product.backend_category.value}"
-                            f"/{record.product.backend_subcategory.value}\n"
-                            f"성별: {record.product.gender.value}"
-                        ),
-                    },
-                ],
-                max_tokens=max_tokens,
-                reasoning_effort=reasoning_effort,
-            )
+            user_parts = [
+                _image_part(content, primary.mime_type),
+                {
+                    "type": "text",
+                    "text": (
+                        f"상품명: {record.product.name}\n"
+                        f"분류: {record.product.backend_category.value}"
+                        f"/{record.product.backend_subcategory.value}\n"
+                        f"성별: {record.product.gender.value}"
+                    ),
+                },
+            ]
+            answer = None
+            for attempt in (1, 2):
+                try:
+                    answer = client.complete_json(
+                        system=_SYSTEM_PROMPT,
+                        user_parts=user_parts,
+                        max_tokens=max_tokens,
+                        reasoning_effort=reasoning_effort,
+                    )
+                    break
+                except Exception:
+                    # 빈 응답 등 provider 일시 오류는 한 번만 즉시
+                    # 재시도한다 (2026-08-05 밤 luna 큐 장애에서 1.3만
+                    # 건이 이 오류로 연쇄 실패). 두 번째도 실패하면
+                    # 바깥 except 가 기록한다.
+                    if attempt == 2:
+                        raise
             fields = parse_tag_answer(answer)
         except ValueError as exc:
             with lock:
