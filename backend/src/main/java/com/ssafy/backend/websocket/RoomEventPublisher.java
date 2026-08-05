@@ -8,6 +8,7 @@ import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnFailedEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
@@ -21,6 +22,7 @@ import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnProcessingEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
@@ -187,6 +189,18 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.senderParticipantId(),
                 new TryOnSucceededEventDataDTO(event.jobId(), event.resultImageUrl())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTryOnFailed(TryOnFailedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TRY_ON_FAILED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TryOnFailedEventDataDTO(event.jobId(), event.reason())
         ));
     }
 

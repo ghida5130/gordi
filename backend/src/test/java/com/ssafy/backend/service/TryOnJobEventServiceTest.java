@@ -13,6 +13,7 @@ import com.ssafy.backend.domain.TryOnJobEvent;
 import com.ssafy.backend.dto.tryon.TryOnJobEventRequest;
 import com.ssafy.backend.repository.TryOnJobEventRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,6 +133,25 @@ class TryOnJobEventServiceTest {
         assertThat(job.getErrorRetryable()).isTrue();
         assertThat(job.isRetryable()).isTrue();
         assertThat(job.getModelVersion()).isEqualTo("provider-model-version");
+    }
+
+    @Test
+    void roomFailedEventPublishesRoomEvent() {
+        TryOnJob job = queuedRoomJob();
+        stubJob(job);
+
+        tryOnJobEventService.apply(JOB_ID, failedEvent(2L, true));
+
+        ArgumentCaptor<TryOnFailedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TryOnFailedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TryOnFailedEvent event = eventCaptor.getValue();
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.roomVersion()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.jobId()).isEqualTo(JOB_ID);
+        assertThat(event.reason()).isEqualTo(job.getErrorMessage());
     }
 
     @Test

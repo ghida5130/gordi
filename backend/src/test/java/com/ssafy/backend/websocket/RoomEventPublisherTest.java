@@ -11,6 +11,7 @@ import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.PlacementDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnFailedEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
@@ -25,6 +26,7 @@ import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnProcessingEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.Test;
@@ -357,6 +359,35 @@ class RoomEventPublisherTest {
         assertThat(event.data()).isEqualTo(new TryOnSucceededEventDataDTO(
                 11L,
                 "https://cdn.example.com/fittings/11.webp"
+        ));
+    }
+
+    @Test
+    void tryOnFailedEventIsBroadcastWithJobIdAndReason() {
+        TryOnFailedEvent domainEvent = new TryOnFailedEvent(
+                31L,
+                17L,
+                42L,
+                11L,
+                "착장 이미지를 생성하지 못했습니다."
+        );
+
+        roomEventPublisher.handleTryOnFailed(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.TRY_ON_FAILED);
+        assertThat(event.clientEventId()).isNull();
+        assertThat(event.version()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(new TryOnFailedEventDataDTO(
+                11L,
+                "착장 이미지를 생성하지 못했습니다."
         ));
     }
 }

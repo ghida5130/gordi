@@ -9,6 +9,7 @@ import com.ssafy.backend.domain.TryOnJobEvent;
 import com.ssafy.backend.dto.tryon.TryOnJobEventRequest;
 import com.ssafy.backend.repository.TryOnJobEventRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -129,6 +130,7 @@ public class TryOnJobEventService {
         );
         job.setModelVersion(request.modelVersion());
         job.setPromptVersion(request.promptVersion());
+        publishFailedIfRoom(job);
     }
 
     /* ==================== 변환 ==================== */
@@ -157,6 +159,20 @@ public class TryOnJobEventService {
                 job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
                 job.getId(),
                 job.getResultImageUrl()
+        ));
+    }
+
+    private void publishFailedIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnFailedEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getErrorMessage()
         ));
     }
 

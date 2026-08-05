@@ -12,6 +12,7 @@ import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.tryon.TryOnJobStatusResponse;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,6 +133,26 @@ class TryOnJobReconciliationServiceTest {
         assertThat(job.getStatus()).isEqualTo(TryOnJobStatus.FAILED.name());
         assertThat(job.getErrorCode()).isEqualTo("IMAGE_MODEL_TIMEOUT");
         assertThat(job.isRetryable()).isTrue();
+    }
+
+    @Test
+    void roomFailedReconciliationPublishesRoomEvent() {
+        TryOnJob job = queuedRoomJob();
+        when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
+        when(tryOnGenerationClient.fetchStatus(JOB_ID)).thenReturn(Optional.of(failed()));
+
+        assertThat(reconciliationService.reconcile(JOB_ID)).isTrue();
+
+        ArgumentCaptor<TryOnFailedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TryOnFailedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TryOnFailedEvent event = eventCaptor.getValue();
+        assertThat(event.roomId()).isEqualTo(31L);
+        assertThat(event.roomVersion()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.jobId()).isEqualTo(JOB_ID);
+        assertThat(event.reason()).isEqualTo(job.getErrorMessage());
     }
 
     @Test

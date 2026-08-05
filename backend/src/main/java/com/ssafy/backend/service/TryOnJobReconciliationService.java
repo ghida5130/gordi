@@ -7,6 +7,7 @@ import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.tryon.TryOnJobStatusResponse;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
 import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -124,6 +125,7 @@ public class TryOnJobReconciliationService {
                 true,
                 LocalDateTime.now(AppZone.KST)
         );
+        publishFailedIfRoom(job);
         log.warn("Closed orphaned try-on job. jobId={}, createdAt={}", job.getId(), createdAt);
         return true;
     }
@@ -176,6 +178,7 @@ public class TryOnJobReconciliationService {
         );
         job.setModelVersion(status.modelVersion());
         job.setPromptVersion(status.promptVersion());
+        publishFailedIfRoom(job);
         log.info("Recovered try-on job by reconciliation. jobId={}, status=FAILED", job.getId());
         return true;
     }
@@ -203,6 +206,20 @@ public class TryOnJobReconciliationService {
                 job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
                 job.getId(),
                 job.getResultImageUrl()
+        ));
+    }
+
+    private void publishFailedIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnFailedEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getErrorMessage()
         ));
     }
 
