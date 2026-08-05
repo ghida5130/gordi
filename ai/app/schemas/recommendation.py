@@ -133,3 +133,48 @@ class DemoRecommendationResponse(CamelCaseModel):
     index_version: str = Field(min_length=64, max_length=64)
     candidate_limit: int = Field(ge=1, le=200)
     results: list[DemoRecommendedProduct]
+
+
+class TpoQueryItem(CamelCaseModel):
+    query_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    moods: list[str] = Field(default_factory=list)
+    gender: str = Field(pattern="^(MALE|FEMALE)$")
+    category: str | None = None
+    subcategory: str | None = None
+    budget_min: int = Field(ge=0)
+    budget_max: int | None = Field(default=None, ge=0)
+
+
+class TpoQueriesResponse(CamelCaseModel):
+    schema_version: str
+    queries: list[TpoQueryItem]
+
+
+class TpoJudgmentItem(CamelCaseModel):
+    product_id: int = Field(gt=0)
+    rank: int = Field(gt=0)
+    fit: str = Field(pattern="^(FIT|UNFIT|UNSURE)$")
+
+
+class TpoJudgmentSubmission(CamelCaseModel):
+    evaluator: str = Field(min_length=1, max_length=40)
+    query_id: str = Field(min_length=1)
+    index_version: str = Field(min_length=64, max_length=64)
+    judgments: list[TpoJudgmentItem] = Field(
+        min_length=1,
+        max_length=50,
+    )
+
+    @model_validator(mode="after")
+    def validate_unique_products(self) -> "TpoJudgmentSubmission":
+        product_ids = [item.product_id for item in self.judgments]
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError(
+                "judgment productId values must be unique"
+            )
+        return self
+
+
+class TpoJudgmentSaveResponse(CamelCaseModel):
+    saved: int = Field(ge=0)

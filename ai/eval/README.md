@@ -64,6 +64,32 @@ accuracy가 규칙 기반 시스템에 유리하게 나온다.** 코디 궁합 �
 pairs를 판단한다. anchor 없이 텍스트 전용 query도 가능하다(그 경우
 live 모드로만 평가).
 
+## TPO 적합 평가 (사람 라벨, `queries-tpo-v1.jsonl`)
+
+TPO 자유 텍스트("결혼식 하객", "면접" 등)에 대해 **retrieval 모집단이
+실제로 그 상황에 맞는 상품을 담는지**를 재는 사람 라벨 평가다.
+heuristic 라벨로는 TPO 적합성을 판단할 수 없으므로 정답 라벨 없이
+출발하고, 팀원의 판정이 곧 라벨이 된다. nDCG 같은 리랭크 지표는
+모집단 내 상대 순위만 측정하므로 이 지표 없이는 "모집단 전체가
+TPO와 어긋나는" 실패를 볼 수 없다.
+
+- 쿼리셋: `queries-tpo-v1.jsonl` (`recommendation-tpo-eval-v1`,
+  24개 — 포멀/데일리/파티·데이트/운동/여행/계절, 남녀·상하의 균형)
+- 평가 진행: `ENABLE_RECOMMENDATION_DEMO=true`로 AI 서버 실행 후
+  `http://localhost:8000/demo/tpo-eval` 에서 평가자 이름 입력 →
+  쿼리 선택 → 추천 실행 → 결과별 적합/부적합/모름 판정 → 저장.
+- 판정 저장: `eval/judgments/tpo-v1.jsonl` (append-only,
+  `recommendation-tpo-judgment-v1`). 같은 (평가자, 쿼리, 상품)을
+  다시 판정하면 집계 시 마지막 기록이 이긴다. 판정 파일은 사람
+  라벨 원본이므로 **Git에 커밋한다.**
+- 집계: 데모의 "집계 보기" 또는 `GET /api/v1/demo/tpo-eval/summary`.
+  - `fit_rate = FIT / (FIT + UNFIT)` — UNSURE는 분모에서 제외
+  - `macro_fit_rate`: (쿼리, 평가자) 단위 적합률의 평균 —
+    특정 쿼리를 많이 판정해도 전체를 지배하지 못한다
+  - `micro_fit_rate`: 전체 판정 기준 적합률
+- 판정 기록에는 `index_version`(snapshot SHA-256)이 남으므로
+  카탈로그 확장 전후 수치를 같은 파일에서 분리 집계할 수 있다.
+
 ## Baseline (2026-08-01, 규칙 기반 0.65/0.35)
 
 `eval/baselines/2026-08-01-offline-rule-baseline.json`

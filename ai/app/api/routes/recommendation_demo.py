@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -36,15 +37,32 @@ from app.recommendation.pipeline import (
     RecommendationPipelineError,
 )
 from app.recommendation.vector_index import SearchFilters, VectorIndexError
+from app.recommendation.tpo_eval import (
+    TpoEvalError,
+    TpoJudgment,
+    append_judgments,
+    load_judgments,
+    load_tpo_queries,
+    summarize_judgments,
+)
 from app.schemas.recommendation import (
     DemoRecommendationResponse,
     DemoRecommendedProduct,
+    TpoJudgmentSaveResponse,
+    TpoJudgmentSubmission,
+    TpoQueriesResponse,
+    TpoQueryItem,
 )
 
 _DEMO_HTML_PATH = (
     Path(__file__).resolve().parents[2]
     / "static"
     / "recommendation_demo.html"
+)
+_TPO_EVAL_HTML_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "static"
+    / "tpo_eval_demo.html"
 )
 
 page_router = APIRouter(
@@ -53,6 +71,10 @@ page_router = APIRouter(
 )
 api_router = APIRouter(
     prefix="/demo/recommendations",
+    dependencies=[Depends(require_recommendation_demo)],
+)
+tpo_api_router = APIRouter(
+    prefix="/demo/tpo-eval",
     dependencies=[Depends(require_recommendation_demo)],
 )
 
@@ -363,6 +385,117 @@ async def run_recommendation_demo_stream(
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache"},
     )
+
+
+@page_router.get(
+    "/tpo-eval",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+def tpo_eval_page() -> HTMLResponse:
+    try:
+        html = _TPO_EVAL_HTML_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"demo asset unavailable: {exc}",
+        ) from exc
+    return HTMLResponse(html)
+
+
+@tpo_api_router.get(
+    "/queries",
+    response_model=TpoQueriesResponse,
+    summary="TPO 평가 쿼리셋 조회",
+)
+def tpo_eval_queries(
+    settings: Settings = Depends(get_settings),
+) -> TpoQueriesResponse:
+    try:
+        queries = load_tpo_queries(settings.tpo_eval_queries_path)
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return TpoQueriesResponse(
+        schema_version="recommendation-tpo-eval-v1",
+        queries=[
+            TpoQueryItem(
+                query_id=query.query_id,
+                text=query.text,
+                moods=list(query.moods),
+                gender=str(query.filters.get("gender")),
+                category=query.filters.get("category"),
+                subcategory=query.filters.get("subcategory"),
+                budget_min=int(query.filters.get("budget_min") or 0),
+                budget_max=query.filters.get("budget_max"),
+            )
+            for query in queries
+        ],
+    )
+
+
+@tpo_api_router.post(
+    "/judgments",
+    response_model=TpoJudgmentSaveResponse,
+    summary="TPO 적합 판정 저장",
+)
+def tpo_eval_save_judgments(
+    submission: TpoJudgmentSubmission,
+    settings: Settings = Depends(get_settings),
+) -> TpoJudgmentSaveResponse:
+    try:
+        queries = load_tpo_queries(settings.tpo_eval_queries_path)
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    if submission.query_id not in {
+        query.query_id for query in queries
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"unknown queryId {submission.query_id!r}",
+        )
+    judged_at = datetime.now(timezone.utc).isoformat()
+    saved = append_judgments(
+        settings.tpo_eval_judgments_path,
+        [
+            TpoJudgment(
+                evaluator=submission.evaluator.strip(),
+                query_id=submission.query_id,
+                product_id=item.product_id,
+                rank=item.rank,
+                fit=item.fit,
+                index_version=submission.index_version,
+                judged_at=judged_at,
+            )
+            for item in submission.judgments
+        ],
+    )
+    return TpoJudgmentSaveResponse(saved=saved)
+
+
+@tpo_api_router.get(
+    "/summary",
+    summary="TPO 적합률 집계",
+)
+def tpo_eval_summary(
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    try:
+        queries = load_tpo_queries(settings.tpo_eval_queries_path)
+        judgments = load_judgments(
+            settings.tpo_eval_judgments_path
+        )
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return summarize_judgments(judgments, queries)
 
 
 def _demo_image_url(
