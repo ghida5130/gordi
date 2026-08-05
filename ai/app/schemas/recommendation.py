@@ -21,6 +21,9 @@ class RankCondition(CamelCaseModel):
     budget_min: int = Field(ge=0)
     budget_max: int = Field(ge=0)
     moods: list[str] = Field(default_factory=list)
+    # 사용자 TPO 자유 텍스트 (프론트 300자 제한). Spring은 미입력 시
+    # 빈 문자열을 보내므로 "" 도 허용한다.
+    tpo: str | None = Field(default=None, max_length=300)
 
     @model_validator(mode="after")
     def validate_budget_range(self) -> "RankCondition":
