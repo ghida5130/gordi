@@ -145,6 +145,18 @@
     body * {
         cursor: var(--gordi-cursor) !important;
     }
+
+    /* - 티어메이커 드래그 중 브라우저 기본 커서 숨김 */
+    html.tier-maker-dragging,
+    html.tier-maker-dragging * {
+        cursor: none !important;
+    }
+
+    /* - 티어메이커 공유 보드에서 전역 커서 숨김 */
+    body .tier-maker-cursor-surface,
+    body .tier-maker-cursor-surface * {
+        cursor: none !important;
+    }
 }
 
 /* - Header 확장 콘텐츠의 탄성 있는 등장 처리 */
@@ -168,15 +180,4 @@
     .header-content-bounce {
         animation: none;
     }
-}
-
-/* - 티어메이커 드래그 중 브라우저 기본 커서 숨김 */
-html.tier-maker-dragging,
-html.tier-maker-dragging * {
-    cursor: none !important;
-}
-
-body .tier-maker-cursor-surface,
-body .tier-maker-cursor-surface * {
-    cursor: none !important;
 }

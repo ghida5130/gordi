@@ -83,7 +83,7 @@ function SharedCursorLayer({
               />
             </svg>
             <span
-              className={`ml-4 -mt-0.5 block max-w-28 truncate rounded-full px-2.5 py-1 text-[10px] tracking-tight text-white shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-2 ring-white/90 ${isCurrentParticipant ? "font-bold" : "font-normal"} ${color.background}`}
+              className={`ml-4 -mt-0.5 block w-fit max-w-28 truncate rounded-full px-2.5 py-1 text-[10px] tracking-tight text-white shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-2 ring-white/90 ${isCurrentParticipant ? "font-bold" : "font-normal"} ${color.background}`}
             >
               {isCurrentParticipant
                 ? "나"

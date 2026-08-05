@@ -16,6 +16,8 @@ from app.recommendation.image_fetcher import QueryImageError
 from app.schemas.tryon import TryOnGenerationRequest
 from app.services.tryon_jobs import (
     PROMPT_VERSION,
+    LocalResultStore,
+    S3ResultStore,
     TryOnJobError,
     TryOnJobProcessor,
     job_registry,
@@ -139,9 +141,11 @@ def make_processor(
         generator=generator,
         event_sender=sender,
         image_fetcher=fetcher,
-        result_dir=tmp_path / "results",
-        result_base_url="http://localhost:8000/try-on-results",
-        model_version="google/gemini-3-pro-image",
+        result_store=LocalResultStore(
+            result_dir=tmp_path / "results",
+            base_url="http://localhost:8000/try-on-results",
+        ),
+        model_version="google/gemini-3.1-flash-image",
     )
     return processor, generator, sender, fetcher
 
@@ -321,7 +325,7 @@ def test_status_endpoint_returns_terminal_job(
         "http://localhost:8000/try-on-results/job-41.png"
     )
     assert data["error"] is None
-    assert data["modelVersion"] == "google/gemini-3-pro-image"
+    assert data["modelVersion"] == "google/gemini-3.1-flash-image"
     assert data["promptVersion"] == PROMPT_VERSION
     assert data["createdAt"] and data["completedAt"]
 
@@ -365,3 +369,59 @@ def test_result_route_also_mounted_under_api_prefix(tmp_path: Path) -> None:
 
     assert prefixed.status_code == 200
     assert prefixed.content == (tmp_path / "job-9.png").read_bytes()
+
+
+class FakeS3Client:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.calls: list[dict[str, Any]] = []
+
+    def put_object(self, **kwargs: Any) -> None:
+        if self.fail:
+            raise RuntimeError("s3 unavailable")
+        self.calls.append(kwargs)
+
+
+def test_s3_result_store_uploads_and_joins_public_base() -> None:
+    s3 = FakeS3Client()
+    store = S3ResultStore(
+        bucket="gordi-app-bucket",
+        key_prefix="fittings",
+        public_base_url="https://cdn.example.net/",
+        client=s3,
+    )
+
+    url = store.store("job-7.png", b"png-bytes", "image/png")
+
+    assert url == "https://cdn.example.net/fittings/job-7.png"
+    assert s3.calls == [
+        {
+            "Bucket": "gordi-app-bucket",
+            "Key": "fittings/job-7.png",
+            "Body": b"png-bytes",
+            "ContentType": "image/png",
+        }
+    ]
+
+
+def test_s3_result_store_requires_public_base() -> None:
+    with pytest.raises(TryOnJobError) as excinfo:
+        S3ResultStore(
+            bucket="gordi-app-bucket",
+            key_prefix="fittings",
+            public_base_url="",
+            client=FakeS3Client(),
+        )
+    assert excinfo.value.retryable is False
+
+
+def test_s3_result_store_upload_failure_is_retryable() -> None:
+    store = S3ResultStore(
+        bucket="gordi-app-bucket",
+        key_prefix="fittings",
+        public_base_url="https://cdn.example.net",
+        client=FakeS3Client(fail=True),
+    )
+    with pytest.raises(TryOnJobError) as excinfo:
+        store.store("job-8.jpg", b"jpg-bytes", "image/jpeg")
+    assert excinfo.value.retryable is True

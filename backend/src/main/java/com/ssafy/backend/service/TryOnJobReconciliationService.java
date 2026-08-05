@@ -7,9 +7,12 @@ import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.tryon.TryOnJobStatusResponse;
 import com.ssafy.backend.infra.TryOnGenerationClient;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +44,7 @@ public class TryOnJobReconciliationService {
     private final TryOnJobRepository tryOnJobRepository;
     private final TryOnGenerationClient tryOnGenerationClient;
     private final TryOnPolicy tryOnPolicy;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** 콜백이 오지 않은 채 오래 머문 Job 목록 */
     @Transactional(readOnly = true)
@@ -121,6 +125,7 @@ public class TryOnJobReconciliationService {
                 true,
                 LocalDateTime.now(AppZone.KST)
         );
+        publishFailedIfRoom(job);
         log.warn("Closed orphaned try-on job. jobId={}, createdAt={}", job.getId(), createdAt);
         return true;
     }
@@ -153,6 +158,7 @@ public class TryOnJobReconciliationService {
                 status.promptVersion(),
                 toLocalDateTime(status.completedAt())
         );
+        publishSucceededIfRoom(job);
         log.info("Recovered try-on job by reconciliation. jobId={}, status=SUCCEEDED", job.getId());
         return true;
     }
@@ -172,6 +178,7 @@ public class TryOnJobReconciliationService {
         );
         job.setModelVersion(status.modelVersion());
         job.setPromptVersion(status.promptVersion());
+        publishFailedIfRoom(job);
         log.info("Recovered try-on job by reconciliation. jobId={}, status=FAILED", job.getId());
         return true;
     }
@@ -186,6 +193,34 @@ public class TryOnJobReconciliationService {
             log.warn("Unknown try-on status from generation service. status={}", status);
             return null;
         }
+    }
+
+    private void publishSucceededIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnSucceededEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getResultImageUrl()
+        ));
+    }
+
+    private void publishFailedIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnFailedEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getErrorMessage()
+        ));
     }
 
     private LocalDateTime toLocalDateTime(Instant completedAt) {

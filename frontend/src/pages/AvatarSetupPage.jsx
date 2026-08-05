@@ -18,26 +18,37 @@ const BODY_TYPE_LABELS = {
 
 const getAvatarId = (avatar) => avatar?.avatarId ?? avatar?.id;
 
+function groupAvatarTemplatesByWeight(avatarList, weightId) {
+    const referenceWeightId = Number(weightId);
+
+    return avatarList.reduce(
+        (groups, avatar) => {
+            const avatarWeightId = Number(avatar.weightId);
+
+            if (avatarWeightId === referenceWeightId) groups.reference.push(avatar);
+            if (avatarWeightId < referenceWeightId) groups.lower.push(avatar);
+            if (avatarWeightId > referenceWeightId) groups.higher.push(avatar);
+
+            return groups;
+        },
+        { lower: [], reference: [], higher: [] },
+    );
+}
+
 function prioritizeAvatarTemplates(avatarList, weightId) {
     if (!weightId || avatarList.length <= 3) {
         return { orderedAvatars: avatarList, initialAvatarCount: avatarList.length };
     }
 
-    let requestedRangeStart = 3;
+    const groups = groupAvatarTemplatesByWeight(avatarList, weightId);
 
-    if (weightId === 1) requestedRangeStart = 0;
-    if (weightId === 5) requestedRangeStart = Math.max(avatarList.length - 3, 0);
-
-    const requestedRangeEnd = Math.min(requestedRangeStart + 3, avatarList.length);
-    const requestedRangeAvatars = avatarList.slice(requestedRangeStart, requestedRangeEnd);
-    const otherRangeAvatars = [
-        ...avatarList.slice(0, requestedRangeStart),
-        ...avatarList.slice(requestedRangeEnd),
-    ];
+    if (groups.reference.length === 0) {
+        return { orderedAvatars: avatarList, initialAvatarCount: Math.min(3, avatarList.length) };
+    }
 
     return {
-        orderedAvatars: [...requestedRangeAvatars, ...otherRangeAvatars],
-        initialAvatarCount: requestedRangeAvatars.length,
+        orderedAvatars: [...groups.reference, ...groups.lower, ...groups.higher],
+        initialAvatarCount: groups.reference.length,
     };
 }
 
@@ -221,6 +232,38 @@ export default function AvatarSetupPage() {
 
     const visibleAvatars = showAdditionalAvatars ? avatars : avatars.slice(0, initialAvatarCount);
     const hasAdditionalAvatars = avatars.length > initialAvatarCount;
+    const requestedWeightId = mapWeightToId(weight);
+    const avatarWeightGroups = groupAvatarTemplatesByWeight(avatars, requestedWeightId);
+    const hasWeightGroups = requestedWeightId > 0 && avatarWeightGroups.reference.length > 0;
+    const avatarSections = hasWeightGroups
+        ? [
+            {
+                key: "reference",
+                label: "내 기준 체형",
+                description: "입력한 몸무게를 기준으로 추천된 체형이에요.",
+                labelClassName: "bg-gray-900 text-white",
+                avatars: avatarWeightGroups.reference,
+            },
+            ...(showAdditionalAvatars && avatarWeightGroups.lower.length > 0
+                ? [{
+                    key: "lower",
+                    label: "기준보다 작은 체형",
+                    description: "입력한 몸무게 기준보다 한 단계 작은 체형이에요.",
+                    labelClassName: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
+                    avatars: avatarWeightGroups.lower,
+                }]
+                : []),
+            ...(showAdditionalAvatars && avatarWeightGroups.higher.length > 0
+                ? [{
+                    key: "higher",
+                    label: "기준보다 큰 체형",
+                    description: "입력한 몸무게 기준보다 한 단계 큰 체형이에요.",
+                    labelClassName: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
+                    avatars: avatarWeightGroups.higher,
+                }]
+                : []),
+        ]
+        : [{ key: "all", avatars: visibleAvatars }];
 
     return (
         <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
@@ -300,9 +343,23 @@ export default function AvatarSetupPage() {
                             <h2 className="text-lg font-bold text-gray-950">체형 선택</h2>
                             <p className="mt-1 text-sm text-gray-500">생성된 체형 중 하나를 선택해 주세요.</p>
                         </div>
-                        <div className="mt-5 grid grid-cols-3 gap-3">
-                            {visibleAvatars.map((avatar, index) => (
-                                <AvatarOption key={`${getAvatarId(avatar) ?? avatar.bodyType}-${index}`} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
+                        <div className="mt-5 space-y-7">
+                            {avatarSections.map((section) => (
+                                <section key={section.key}>
+                                    {section.label && (
+                                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                                            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${section.labelClassName}`}>
+                                                {section.label}
+                                            </span>
+                                            <p className="text-xs text-gray-500">{section.description}</p>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {section.avatars.map((avatar, index) => (
+                                            <AvatarOption key={`${getAvatarId(avatar) ?? avatar.bodyType}-${index}`} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
+                                        ))}
+                                    </div>
+                                </section>
                             ))}
                         </div>
                         {hasAdditionalAvatars && !showAdditionalAvatars && (

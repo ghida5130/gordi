@@ -8,6 +8,9 @@ import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.ParticipantLeftEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.RoomStartedEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnFailedEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
+import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.FittingCandidatesUpdatedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
@@ -19,6 +22,9 @@ import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
 import com.ssafy.backend.websocket.event.TierRenamedEvent;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
+import com.ssafy.backend.websocket.event.TryOnProcessingEvent;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -159,6 +165,42 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.senderParticipantId(),
                 new FittingCandidatesUpdatedEventDataDTO(event.fittingCandidates())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTryOnProcessing(TryOnProcessingEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TRY_ON_PROCESSING,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TryOnProcessingEventDataDTO(event.jobId())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTryOnSucceeded(TryOnSucceededEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TRY_ON_SUCCEEDED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TryOnSucceededEventDataDTO(event.jobId(), event.resultImageUrl())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTryOnFailed(TryOnFailedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.TRY_ON_FAILED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                new TryOnFailedEventDataDTO(event.jobId(), event.reason())
         ));
     }
 

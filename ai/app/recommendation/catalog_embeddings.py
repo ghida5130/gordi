@@ -390,6 +390,10 @@ class HttpProductImageResolver:
             ) from exc
 
 
+# 유료 임베딩 N건마다 체크포인트 기록 (크래시 시 최대 N-1건 재과금)
+_CHECKPOINT_EVERY_PAID = 25
+
+
 def build_catalog_embeddings(
     repository: CatalogRepository,
     image_resolver: ProductImageResolver,
@@ -416,6 +420,7 @@ def build_catalog_embeddings(
     items: list[dict[str, Any]] = []
     embedded_count = 0
     reused_count = 0
+    paid_since_checkpoint = 0
 
     for product in products:
         resolved = image_resolver.resolve(product)
@@ -443,6 +448,7 @@ def build_catalog_embeddings(
                 provider.dimensions,
             )
             embedded_count += 1
+            paid_since_checkpoint += 1
 
         items.append(
             {
@@ -454,14 +460,20 @@ def build_catalog_embeddings(
                 "embedding": embedding,
             }
         )
-        checkpoint = _snapshot_payload(
-            items=items,
-            model=provider.model,
-            dimensions=provider.dimensions,
-            expected_product_count=len(products),
-            status="IN_PROGRESS",
-        )
-        _atomic_write_json(checkpoint_path, checkpoint)
+        # 체크포인트는 유료 호출 보호 장치다: 재사용 항목은 크래시 시
+        # 어차피 해시 재사용으로 무료 복구되므로 쓰지 않고, 유료 호출도
+        # N건 단위로만 기록한다. 매 아이템 전체 쓰기는 카탈로그가 커지면
+        # O(n^2) 디스크 쓰기가 되어 전량-재사용 재발행조차 30분+ 걸렸다.
+        if paid_since_checkpoint >= _CHECKPOINT_EVERY_PAID:
+            checkpoint = _snapshot_payload(
+                items=items,
+                model=provider.model,
+                dimensions=provider.dimensions,
+                expected_product_count=len(products),
+                status="IN_PROGRESS",
+            )
+            _atomic_write_json(checkpoint_path, checkpoint)
+            paid_since_checkpoint = 0
 
     payload = _snapshot_payload(
         items=items,
