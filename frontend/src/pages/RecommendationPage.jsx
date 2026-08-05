@@ -284,7 +284,7 @@ function RecommendationPage() {
 
   if (avatarQuery.isPending || avatarQuery.isFetching) {
     return (
-      <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16">
+      <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
         <div className="mx-auto h-72 max-w-xl animate-pulse rounded-3xl bg-white" />
       </main>
     );
@@ -293,14 +293,14 @@ function RecommendationPage() {
   if (avatarQuery.isError) {
     if (avatarQuery.error.response?.status === 404) {
       return (
-        <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16">
+        <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
           <AvatarSetupPrompt />
         </main>
       );
     }
 
     return (
-      <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 sm:py-16">
+      <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
         <p className="mx-auto max-w-xl rounded-2xl bg-red-50 p-4 text-sm text-red-700">
           {getApiErrorMessage(
             avatarQuery.error,
@@ -346,7 +346,7 @@ function RecommendationPage() {
     );
 
   return (
-    <main className="min-h-screen bg-[#f4f3ef] px-4 py-10 text-slate-900 sm:py-16">
+    <main className="min-h-screen bg-gray-50 px-4 py-10 text-slate-900 sm:py-16">
       <section className="mx-auto max-w-xl">
         <header className="mb-5 flex items-center justify-between">
           <div>
@@ -598,7 +598,7 @@ function AnalysisCard({ fallbackConditions, onRetry, onResults }) {
 function RecommendationLoading({ title, description }) {
   return (
     <main
-      className="flex min-h-screen items-center justify-center bg-[#f4f3ef] px-4"
+      className="flex min-h-screen items-center justify-center bg-gray-50 px-4"
       aria-busy="true"
       aria-live="polite"
     >
@@ -659,7 +659,7 @@ function RecommendationResults({
 
   if (error)
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f4f3ef] px-4">
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-sm">
           <p className="text-sm text-red-700">
             {getRecommendationErrorMessage(error)}
@@ -675,7 +675,7 @@ function RecommendationResults({
       </main>
     );
   return (
-    <main className="min-h-screen bg-[#f4f3ef] px-6 py-8 text-slate-950">
+    <main className="min-h-screen bg-gray-50 px-6 py-8 text-slate-950">
       <div className="mx-auto max-w-[1600px]">
         <header className="mb-6 flex items-center justify-between gap-4">
           <div>

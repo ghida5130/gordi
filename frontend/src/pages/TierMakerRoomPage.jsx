@@ -18,10 +18,7 @@ import { useRoomEvents } from "@/hooks/useRoomEvents";
 import { useToast } from "@/hooks/useToast";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { getApiErrorMessage } from "@/utils/apiError";
-import {
-  getRoomSession,
-  removeRoomSession,
-} from "@/utils/roomSessionStorage";
+import { getRoomSession, removeRoomSession } from "@/utils/roomSessionStorage";
 import {
   createTierMakerClothing,
   normalizeTierMakerCategory,
@@ -119,8 +116,7 @@ function getMovedDemoPlacements(
   const targetPlacements = currentPlacements
     .filter(
       (placement) =>
-        placement.roomItemId !== itemId &&
-        placement.tierId === targetTierId,
+        placement.roomItemId !== itemId && placement.tierId === targetTierId,
     )
     .sort((left, right) => left.position - right.position);
   const nextIndex = Math.max(
@@ -137,8 +133,7 @@ function getMovedDemoPlacements(
   return [
     ...currentPlacements.filter(
       (placement) =>
-        placement.roomItemId !== itemId &&
-        placement.tierId !== targetTierId,
+        placement.roomItemId !== itemId && placement.tierId !== targetTierId,
     ),
     ...targetPlacements.map((placement, index) => ({
       ...placement,
@@ -204,8 +199,7 @@ function TierMakerRoomPage() {
   const voiceChat = useVoiceChat({
     roomCode: roomSession?.roomCode,
     roomToken: roomSession?.roomToken,
-    enabled:
-      Boolean(isCurrentRoom) && roomEvents.status === "IN_PROGRESS",
+    enabled: Boolean(isCurrentRoom) && roomEvents.status === "IN_PROGRESS",
   });
   const candidateQuery = useQuery({
     queryKey: ["candidates", roomId, roomSession?.participantId],
@@ -268,10 +262,7 @@ function TierMakerRoomPage() {
   });
   const productsById = Object.fromEntries(
     productQueries
-      .map((query, index) => [
-        productIds[index],
-        query.data?.data,
-      ])
+      .map((query, index) => [productIds[index], query.data?.data])
       .filter(([, product]) => product),
   );
   const isDemoMode = false;
@@ -281,9 +272,7 @@ function TierMakerRoomPage() {
   const clothesById = Object.fromEntries(
     clothes.map((item) => [item.id, item]),
   );
-  const receivedDemoPlacements = Array.isArray(
-    roomEvents.sharedDemoPlacements,
-  )
+  const receivedDemoPlacements = Array.isArray(roomEvents.sharedDemoPlacements)
     ? roomEvents.sharedDemoPlacements.filter((placement) =>
         demoItemIds.has(String(placement.roomItemId)),
       )
@@ -298,9 +287,7 @@ function TierMakerRoomPage() {
     position: item.position,
   }));
   const sortedPlacements = [
-    ...(roomEvents.hasSnapshot
-      ? roomEvents.placements
-      : candidatePlacements),
+    ...(roomEvents.hasSnapshot ? roomEvents.placements : candidatePlacements),
   ].sort((left, right) => left.position - right.position);
   const roomCategory =
     roomEvents.category ?? roomStatusQuery.data?.data?.category ?? "";
@@ -309,8 +296,7 @@ function TierMakerRoomPage() {
     tierMakerCategoryDetails[normalizedRoomCategory]?.categoryLabel ??
     roomCategory;
   const tierEligibleClothes = clothes.filter(
-    (item) =>
-      !normalizedRoomCategory || item.slot === normalizedRoomCategory,
+    (item) => !normalizedRoomCategory || item.slot === normalizedRoomCategory,
   );
   const tierEligibleItemIds = new Set(
     tierEligibleClothes.map((item) => item.id),
@@ -334,9 +320,9 @@ function TierMakerRoomPage() {
       .filter((placement) => placement.tierId != null)
       .map((placement) => String(placement.roomItemId)),
   );
-  const waitingClothes = tierEligibleClothes.filter(
-    (item) => !tieredItemIds.has(item.id),
-  ).sort(compareRoomItemId);
+  const waitingClothes = tierEligibleClothes
+    .filter((item) => !tieredItemIds.has(item.id))
+    .sort(compareRoomItemId);
   const fittingOnlyClothes = clothes
     .filter((item) => !tierEligibleItemIds.has(item.id))
     .sort(compareRoomItemId);
@@ -360,15 +346,11 @@ function TierMakerRoomPage() {
     const updateBoardSize = () => {
       const availableWidth = viewport.clientWidth;
       const nextScale =
-        availableWidth > 0
-          ? Math.min(1, availableWidth / BOARD_WIDTH)
-          : 1;
+        availableWidth > 0 ? Math.min(1, availableWidth / BOARD_WIDTH) : 1;
       const nextHeight = Math.max(BOARD_MIN_HEIGHT, board.offsetHeight);
 
       setBoardScale((currentScale) =>
-        Math.abs(currentScale - nextScale) < 0.0001
-          ? currentScale
-          : nextScale,
+        Math.abs(currentScale - nextScale) < 0.0001 ? currentScale : nextScale,
       );
       setBoardContentHeight((currentHeight) =>
         currentHeight === nextHeight ? currentHeight : nextHeight,
@@ -456,8 +438,7 @@ function TierMakerRoomPage() {
 
     if (
       activeDrag &&
-      String(activeDrag.roomItemId) ===
-      String(rejection.roomItemId)
+      String(activeDrag.roomItemId) === String(rejection.roomItemId)
     ) {
       cancelledDragItemIdsRef.current.add(activeDrag.itemId);
     }
@@ -560,8 +541,7 @@ function TierMakerRoomPage() {
   });
   const visibleTryOn =
     tryOnMutation.isPending ||
-    (localTryOn.jobId &&
-      roomEvents.tryOn.jobId !== localTryOn.jobId)
+    (localTryOn.jobId && roomEvents.tryOn.jobId !== localTryOn.jobId)
       ? localTryOn
       : roomEvents.tryOn.status !== "IDLE"
         ? roomEvents.tryOn
@@ -572,8 +552,7 @@ function TierMakerRoomPage() {
     const lock = roomEvents.itemLocks[itemId];
     const isLockedByOther =
       lock &&
-      String(lock.ownerParticipantId) !==
-        String(roomSession.participantId);
+      String(lock.ownerParticipantId) !== String(roomSession.participantId);
 
     if (!item) {
       event.preventDefault();
@@ -676,8 +655,7 @@ function TierMakerRoomPage() {
     const lock = roomEvents.itemLocks[itemId];
     const isLockedByOther =
       lock &&
-      String(lock.ownerParticipantId) !==
-        String(roomSession.participantId);
+      String(lock.ownerParticipantId) !== String(roomSession.participantId);
 
     if (isLockedByOther) return;
 
@@ -704,8 +682,7 @@ function TierMakerRoomPage() {
 
     const nextIndex = sortedPlacements.filter(
       (placement) =>
-        placement.tierId == null &&
-        String(placement.roomItemId) !== itemId,
+        placement.tierId == null && String(placement.roomItemId) !== itemId,
     ).length;
 
     if (item.isDemo) {
@@ -716,8 +693,7 @@ function TierMakerRoomPage() {
     const lock = roomEvents.itemLocks[itemId];
     const isLockedByOther =
       lock &&
-      String(lock.ownerParticipantId) !==
-        String(roomSession.participantId);
+      String(lock.ownerParticipantId) !== String(roomSession.participantId);
     const isActiveDrag =
       String(activeDragRef.current?.itemId) === String(itemId);
 
@@ -797,7 +773,7 @@ function TierMakerRoomPage() {
 
   if (!isCurrentRoom) {
     return (
-      <main className="flex min-h-screen items-center bg-slate-100 px-4">
+      <main className="flex min-h-screen items-center bg-gray-50 px-4">
         <section className="mx-auto max-w-md rounded-3xl border bg-white p-8 text-center shadow-xl shadow-slate-200/70">
           <h1 className="text-2xl font-bold">방 참여 정보가 없습니다</h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -815,7 +791,7 @@ function TierMakerRoomPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb]">
+    <main className="min-h-screen bg-gray-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
@@ -882,11 +858,11 @@ function TierMakerRoomPage() {
                     "방 상태를 불러오지 못했습니다.",
                   )
                 : candidateQuery.isError
-                ? getApiErrorMessage(
-                    candidateQuery.error,
-                    "후보 상품을 불러오지 못했습니다.",
-                  )
-                : "일부 상품 정보를 불러오지 못했습니다.")}
+                  ? getApiErrorMessage(
+                      candidateQuery.error,
+                      "후보 상품을 불러오지 못했습니다.",
+                    )
+                  : "일부 상품 정보를 불러오지 못했습니다.")}
           </p>
         )}
 
@@ -903,9 +879,8 @@ function TierMakerRoomPage() {
           <>
             {isDemoMode && (
               <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                방 의상이 없어 프론트 테스트용 샘플을 표시하고
-                있습니다. 샘플 배치는 같은 방에 실시간 공유되지만
-                저장되지는 않습니다.
+                방 의상이 없어 프론트 테스트용 샘플을 표시하고 있습니다. 샘플
+                배치는 같은 방에 실시간 공유되지만 저장되지는 않습니다.
               </p>
             )}
             <div ref={boardViewportRef} className="w-full pb-2">
@@ -920,79 +895,79 @@ function TierMakerRoomPage() {
                   ref={sharedBoardRef}
                   onPointerMove={handleBoardPointerMove}
                   onDragOverCapture={handleBoardPointerMove}
-                  className="tier-maker-cursor-surface relative grid min-h-[720px] w-[1530px] grid-cols-[280px_900px_310px] items-start gap-5"
+                  className="tier-maker-cursor-surface relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
                   style={{
                     transform: `scale(${boardScale})`,
                     transformOrigin: "top left",
                   }}
                 >
-                <SharedCursorLayer
-                  cursors={roomEvents.cursors}
-                  participants={roomEvents.participants}
-                  currentParticipantId={roomSession.participantId}
-                  itemLocks={roomEvents.itemLocks}
-                  clothesById={clothesById}
-                />
-                <FittingPanel
-                  candidates={candidates}
-                  onDropCandidate={handleDropCandidate}
-                  onRemoveCandidate={(itemId) =>
-                    setFittingCandidates((currentItems) =>
-                      currentItems.filter((id) => id !== itemId),
-                    )
-                  }
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onGenerate={() => tryOnMutation.mutate()}
-                  canGenerate={
-                    !isDemoMode &&
-                    isHost &&
-                    Boolean(roomSession.roomCode) &&
-                    roomEvents.connectionState === "CONNECTED"
-                  }
-                  generateDisabledMessage={
-                    isDemoMode
-                      ? "샘플 의상은 가상 피팅을 생성할 수 없어요"
-                      : isHost
-                      ? "방 연결 후 생성할 수 있어요"
-                      : "방장만 생성할 수 있어요"
-                  }
-                  isSubmitting={tryOnMutation.isPending}
-                  tryOn={visibleTryOn}
-                  errorMessage={
-                    tryOnMutation.isError
-                      ? getApiErrorMessage(
-                          tryOnMutation.error,
-                          "가상 피팅 요청에 실패했습니다.",
-                        )
-                      : ""
-                  }
-                />
-                <TierBoard
-                  tiers={tiers}
-                  clothesById={clothesById}
-                  onDropTier={handleDropTier}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  itemLocks={roomEvents.itemLocks}
-                  currentParticipantId={roomSession.participantId}
-                  canRename={isHost}
-                  onRenameTier={handleRenameTier}
-                  waitingClothes={waitingClothes}
-                  roomCategory={roomCategoryLabel}
-                  onUnrank={handleUnrank}
-                />
-                <ClothingCatalog
-                  clothes={fittingOnlyClothes}
-                  itemLocks={roomEvents.itemLocks}
-                  currentParticipantId={roomSession.participantId}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onAddClothing={() => {
-                    addCandidateMutation.reset();
-                    setIsClothingModalOpen(true);
-                  }}
-                />
+                  <SharedCursorLayer
+                    cursors={roomEvents.cursors}
+                    participants={roomEvents.participants}
+                    currentParticipantId={roomSession.participantId}
+                    itemLocks={roomEvents.itemLocks}
+                    clothesById={clothesById}
+                  />
+                  <FittingPanel
+                    candidates={candidates}
+                    onDropCandidate={handleDropCandidate}
+                    onRemoveCandidate={(itemId) =>
+                      setFittingCandidates((currentItems) =>
+                        currentItems.filter((id) => id !== itemId),
+                      )
+                    }
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onGenerate={() => tryOnMutation.mutate()}
+                    canGenerate={
+                      !isDemoMode &&
+                      isHost &&
+                      Boolean(roomSession.roomCode) &&
+                      roomEvents.connectionState === "CONNECTED"
+                    }
+                    generateDisabledMessage={
+                      isDemoMode
+                        ? "샘플 의상은 가상 피팅을 생성할 수 없어요"
+                        : isHost
+                          ? "방 연결 후 생성할 수 있어요"
+                          : "방장만 생성할 수 있어요"
+                    }
+                    isSubmitting={tryOnMutation.isPending}
+                    tryOn={visibleTryOn}
+                    errorMessage={
+                      tryOnMutation.isError
+                        ? getApiErrorMessage(
+                            tryOnMutation.error,
+                            "가상 피팅 요청에 실패했습니다.",
+                          )
+                        : ""
+                    }
+                  />
+                  <TierBoard
+                    tiers={tiers}
+                    clothesById={clothesById}
+                    onDropTier={handleDropTier}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    itemLocks={roomEvents.itemLocks}
+                    currentParticipantId={roomSession.participantId}
+                    canRename={isHost}
+                    onRenameTier={handleRenameTier}
+                    waitingClothes={waitingClothes}
+                    roomCategory={roomCategoryLabel}
+                    onUnrank={handleUnrank}
+                  />
+                  <ClothingCatalog
+                    clothes={fittingOnlyClothes}
+                    itemLocks={roomEvents.itemLocks}
+                    currentParticipantId={roomSession.participantId}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onAddClothing={() => {
+                      addCandidateMutation.reset();
+                      setIsClothingModalOpen(true);
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -1001,9 +976,7 @@ function TierMakerRoomPage() {
               participants={roomEvents.participants}
               currentParticipantId={roomSession.participantId}
               maxParticipants={roomSession.maxParticipants ?? 4}
-              isConnected={
-                roomEvents.connectionState === "CONNECTED"
-              }
+              isConnected={roomEvents.connectionState === "CONNECTED"}
               isMicMuted={voiceChat.isMicMuted}
               isSpeakerMuted={voiceChat.isSpeakerMuted}
               isMicControlPending={voiceChat.isMicControlPending}
