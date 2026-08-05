@@ -8,6 +8,8 @@ import com.ssafy.backend.domain.Result;
 import com.ssafy.backend.domain.ResultBoardItem;
 import com.ssafy.backend.domain.ResultTier;
 import com.ssafy.backend.domain.Room;
+import com.ssafy.backend.domain.RoomItem;
+import com.ssafy.backend.domain.Tier;
 import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.results.RoomResultResponseDTO;
@@ -56,18 +58,20 @@ class ResultServiceTest {
         ResultTier tierS = ResultTier.builder()
                 .id(81L)
                 .result(result)
+                .sourceTier(Tier.builder().id(1L).build())
                 .name("S")
                 .position(0)
                 .build();
         ResultTier tierA = ResultTier.builder()
                 .id(82L)
                 .result(result)
+                .sourceTier(Tier.builder().id(2L).build())
                 .name("A")
                 .position(1)
                 .build();
-        ResultBoardItem first = boardItem(result, tierS, product(101L), 10_000);
-        ResultBoardItem second = boardItem(result, tierS, product(102L), 20_000);
-        ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 10_000);
+        ResultBoardItem first = boardItem(result, tierS, product(101L), 1);
+        ResultBoardItem second = boardItem(result, tierS, product(102L), 2);
+        ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 1);
 
         when(resultRepository.findAllByOwnerEmail("host@example.com"))
                 .thenReturn(List.of(result));
@@ -100,20 +104,22 @@ class ResultServiceTest {
         ResultTier tierS = ResultTier.builder()
                 .id(81L)
                 .result(result)
+                .sourceTier(Tier.builder().id(1L).build())
                 .name("S")
                 .position(0)
                 .build();
         ResultTier tierA = ResultTier.builder()
                 .id(82L)
                 .result(result)
+                .sourceTier(Tier.builder().id(2L).build())
                 .name("A")
                 .position(1)
                 .build();
-        ResultBoardItem first = boardItem(result, tierS, product(101L), 10_000);
-        ResultBoardItem second = boardItem(result, tierS, product(102L), 20_000);
-        ResultBoardItem third = boardItem(result, tierS, product(103L), 30_000);
-        ResultBoardItem fourth = boardItem(result, tierS, product(104L), 40_000);
-        ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 10_000);
+        ResultBoardItem first = boardItem(result, tierS, product(101L), 1);
+        ResultBoardItem second = boardItem(result, tierS, product(102L), 2);
+        ResultBoardItem third = boardItem(result, tierS, product(103L), 3);
+        ResultBoardItem fourth = boardItem(result, tierS, product(104L), 4);
+        ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 1);
         RoomPrincipal principal = new RoomPrincipal(42L, 31L, "guest", "PARTICIPANTS");
 
         when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(result));
@@ -131,12 +137,28 @@ class ResultServiceTest {
         assertThat(response.topItems())
                 .extracting(
                         RoomResultResponseDTO.TopItem::rank,
-                        RoomResultResponseDTO.TopItem::productId
+                        RoomResultResponseDTO.TopItem::roomItemId,
+                        RoomResultResponseDTO.TopItem::productId,
+                        RoomResultResponseDTO.TopItem::name,
+                        RoomResultResponseDTO.TopItem::brand,
+                        RoomResultResponseDTO.TopItem::price,
+                        RoomResultResponseDTO.TopItem::imageUrl,
+                        RoomResultResponseDTO.TopItem::position,
+                        RoomResultResponseDTO.TopItem::tierId
                 )
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(1, 101L),
-                        org.assertj.core.groups.Tuple.tuple(2, 102L),
-                        org.assertj.core.groups.Tuple.tuple(3, 103L)
+                        org.assertj.core.groups.Tuple.tuple(
+                                1, 301L, 101L, "product-101", "brand", 10_000,
+                                "https://example.com/101.png", 1, 1L
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                2, 302L, 102L, "product-102", "brand", 10_000,
+                                "https://example.com/102.png", 2, 1L
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                3, 303L, 103L, "product-103", "brand", 10_000,
+                                "https://example.com/103.png", 3, 1L
+                        )
                 );
         assertThat(response.snapshotImageUrl())
                 .isEqualTo("https://cdn.example.com/fittings/71.webp");
@@ -229,6 +251,7 @@ class ResultServiceTest {
         return ResultBoardItem.builder()
                 .result(result)
                 .resultTier(tier)
+                .sourceRoomItem(RoomItem.builder().id(product.getId() + 200L).build())
                 .product(product)
                 .position(position)
                 .build();

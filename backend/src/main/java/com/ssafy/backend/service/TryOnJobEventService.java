@@ -9,9 +9,12 @@ import com.ssafy.backend.domain.TryOnJobEvent;
 import com.ssafy.backend.dto.tryon.TryOnJobEventRequest;
 import com.ssafy.backend.repository.TryOnJobEventRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
+import com.ssafy.backend.websocket.event.TryOnFailedEvent;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class TryOnJobEventService {
 
     private final TryOnJobRepository tryOnJobRepository;
     private final TryOnJobEventRepository tryOnJobEventRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void apply(Long jobId, TryOnJobEventRequest request) {
         TryOnJobEventType eventType = parseEventType(request.eventType());
@@ -109,6 +113,7 @@ public class TryOnJobEventService {
                 request.promptVersion(),
                 toLocalDateTime(request.occurredAt())
         );
+        publishSucceededIfRoom(job);
     }
 
     private void markFailed(TryOnJob job, TryOnJobEventRequest request) {
@@ -125,6 +130,7 @@ public class TryOnJobEventService {
         );
         job.setModelVersion(request.modelVersion());
         job.setPromptVersion(request.promptVersion());
+        publishFailedIfRoom(job);
     }
 
     /* ==================== 변환 ==================== */
@@ -140,6 +146,34 @@ public class TryOnJobEventService {
     private boolean isStale(TryOnJob job, Long sequence) {
         Long last = job.getLastEventSequence();
         return last != null && sequence <= last;
+    }
+
+    private void publishSucceededIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnSucceededEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getResultImageUrl()
+        ));
+    }
+
+    private void publishFailedIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnFailedEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId(),
+                job.getId(),
+                job.getErrorMessage()
+        ));
     }
 
     // 발신 시각이 없으면 수신 시각을 사용한다.

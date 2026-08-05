@@ -62,8 +62,10 @@ class Settings(BaseSettings):
     # /rank 를 벡터 파이프라인으로 처리 (인덱스/키 불가 시 baseline fallback)
     recommendation_rank_vector_enabled: bool = True
 
-    # 착장 이미지 생성 (Nano Banana 2 = gemini-3-pro-image, 팀 블라인드 평가 1위)
-    tryon_image_model: str = "google/gemini-3-pro-image"
+    # 착장 이미지 생성 — 팀 블라인드 평가 1위는 Nano Banana 2 이고,
+    # 그 모델 ID 는 gemini-3.1-flash-image 다. gemini-3-pro-image 는
+    # 다른 모델(Nano Banana Pro)이니 혼동 주의.
+    tryon_image_model: str = "google/gemini-3.1-flash-image"
     tryon_generation_timeout_seconds: float = Field(
         default=180.0,
         gt=0.0,
@@ -71,6 +73,13 @@ class Settings(BaseSettings):
     )
     tryon_result_dir: Path = AI_ROOT / "tryon_results"
     tryon_result_base_url: str = "http://localhost:8000/try-on-results"
+    # 착장 결과 S3 업로드 (운영). 버킷을 지정하면 결과를 S3 에 올리고
+    # 공개 base(CloudFront) 조합 URL 을 콜백에 싣는다 — Spring 은 이
+    # URL 을 가공 없이 저장·서빙한다. 비우면 로컬 디스크 저장 +
+    # /try-on-results 라우트 서빙 (로컬 개발용).
+    tryon_s3_bucket: str = ""
+    tryon_s3_key_prefix: str = "fittings"
+    tryon_result_public_base_url: str = ""
     spring_internal_base_url: str = "http://localhost:8080"
     recommendation_vlm_rerank_top_k: int = Field(
         default=20,

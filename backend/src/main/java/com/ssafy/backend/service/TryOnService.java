@@ -40,9 +40,12 @@ import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TryOnJobItemRepository;
 import com.ssafy.backend.repository.TryOnJobRepository;
 import com.ssafy.backend.repository.UserRepository;
+import com.ssafy.backend.websocket.event.TryOnProcessingEvent;
+import com.ssafy.backend.websocket.event.TryOnSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -103,6 +106,7 @@ public class TryOnService {
     private final TryOnGenerationClient tryOnGenerationClient;
     private final TryOnPolicy tryOnPolicy;
     private final ImageUrlResolver imageUrlResolver;
+    private final ApplicationEventPublisher eventPublisher;
 
     /* ==================== 조회 ==================== */
 
@@ -177,8 +181,11 @@ public class TryOnService {
         TryOnJob saved = tryOnJobRepository.save(job);
         saveItems(saved, items);
 
-        if (!saved.isCacheHit()) {
+        if (saved.isCacheHit()) {
+            publishSucceededIfRoom(saved);
+        } else {
             tryOnGenerationClient.submit(toGenerationRequest(saved, avatar, items, wearOptions));
+            publishProcessingIfRoom(saved);
         }
 
         TryOnJobCreateResponseDTO response = new TryOnJobCreateResponseDTO(
@@ -255,6 +262,7 @@ public class TryOnService {
         tryOnGenerationClient.submit(
                 toGenerationRequest(retryJob, retryJob.getAvatar(), items, currentWearOptions(retryJob))
         );
+        publishProcessingIfRoom(retryJob);
 
         TryOnJobRetryResponseDTO response = new TryOnJobRetryResponseDTO(
                 retryJob.getId(),
@@ -714,6 +722,37 @@ public class TryOnService {
                 source.getPromptVersion(),
                 LocalDateTime.now(AppZone.KST)
         );
+    }
+
+    private void publishProcessingIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnProcessingEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                ownerParticipantId(job),
+                job.getId()
+        ));
+    }
+
+    private void publishSucceededIfRoom(TryOnJob job) {
+        if (!job.resolveContextType().isRoom() || job.getRoom() == null) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new TryOnSucceededEvent(
+                job.getRoom().getId(),
+                job.getRoom().getVersion(),
+                ownerParticipantId(job),
+                job.getId(),
+                job.getResultImageUrl()
+        ));
+    }
+
+    private Long ownerParticipantId(TryOnJob job) {
+        return job.getOwnerParticipant() == null ? null : job.getOwnerParticipant().getId();
     }
 
     private String hashJobRequest(
