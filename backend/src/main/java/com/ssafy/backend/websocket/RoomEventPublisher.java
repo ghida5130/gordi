@@ -18,6 +18,7 @@ import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomExpiredEvent;
 import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
@@ -138,6 +139,18 @@ public class RoomEventPublisher {
                 event.roomId(),
                 event.roomVersion(),
                 event.senderParticipantId(),
+                Map.of()
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRoomExpired(RoomExpiredEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.ROOM_EXPIRED,
+                null,
+                event.roomId(),
+                event.roomVersion(),
+                null,
                 Map.of()
         ));
     }

@@ -2,6 +2,7 @@ package com.ssafy.backend.repository;
 
 import com.ssafy.backend.domain.Room;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,6 +27,14 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     Optional<Room> findByRoomCode(String roomCode);
 
     Optional<Room> findByHostUserIdAndIdempotencyKey(Long hostUserId, String idempotencyKey);
+
+    @Query("select room.id from Room room "
+            + "where room.status in ('WAITING', 'IN_PROGRESS') "
+            + "and room.expiresAt <= :now order by room.expiresAt asc")
+    List<Long> findDueRoomIds(
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select room from Room room where room.roomCode = :roomCode")
