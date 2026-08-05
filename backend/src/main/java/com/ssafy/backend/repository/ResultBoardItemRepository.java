@@ -13,6 +13,8 @@ public interface ResultBoardItemRepository extends JpaRepository<ResultBoardItem
         select boardItem from ResultBoardItem boardItem
         join fetch boardItem.product
         join fetch boardItem.resultTier resultTier
+        left join fetch boardItem.sourceRoomItem
+        left join fetch resultTier.sourceTier
         where boardItem.result.id in :resultIds
         order by boardItem.result.id, resultTier.position, boardItem.position
         """)

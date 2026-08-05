@@ -15,7 +15,14 @@ public record RoomResultResponseDTO(
 ) {
     public record TopItem(
             int rank,
-            Long productId
+            Long roomItemId,
+            Long productId,
+            String name,
+            String brand,
+            int price,
+            String imageUrl,
+            int position,
+            Long tierId
     ) {
     }
 }
