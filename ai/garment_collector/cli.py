@@ -300,6 +300,15 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     review_images.add_argument(
+        "--max-tokens",
+        type=int,
+        default=256,
+        help=(
+            "per-call output token cap; hidden reasoning draws from "
+            "the same cap, so raise this together with effort"
+        ),
+    )
+    review_images.add_argument(
         "--dry-run",
         action="store_true",
         help="Count target records without VLM calls or writes",
@@ -630,6 +639,7 @@ def cmd_review_images(args: argparse.Namespace) -> int:
             reasoning_effort=(
                 None if effort in {"", "none"} else effort
             ),
+            max_tokens=args.max_tokens,
         )
     except ImageReviewError as exc:
         print(f"error: {exc}", file=sys.stderr)

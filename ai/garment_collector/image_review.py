@@ -146,6 +146,7 @@ def review_dataset_images(
     concurrency: int = 8,
     dry_run: bool = False,
     reasoning_effort: str | None = "low",
+    max_tokens: int = 256,
 ) -> ReviewReport:
     dataset_root = dataset_root.resolve()
     if not reviewer.strip():
@@ -202,11 +203,12 @@ def review_dataset_images(
                     _image_part(content, primary.mime_type),
                     {"type": "text", "text": _USER_INSTRUCTION},
                 ],
-                max_tokens=256,
-                # Bounded effort keeps hidden reasoning from eating the
-                # output cap on ambiguous photos (rerank benchmark
-                # lesson, 2026-08-01). None for models that reject the
-                # reasoning field (e.g. Gemma).
+                # Hidden reasoning draws from the same cap (rerank
+                # benchmark lesson, 2026-08-01), so the cap must scale
+                # with effort — higher effort needs more headroom or
+                # the JSON answer truncates. effort None for models
+                # that reject the reasoning field (e.g. Gemma).
+                max_tokens=max_tokens,
                 reasoning_effort=reasoning_effort,
             )
             fields = parse_review_answer(answer)
