@@ -23,93 +23,93 @@ import MyPage from "@/pages/MyPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <RouteErrorPage />,
-    children: [
-      {
-        index: true,
-        element: <MainPage />, // ⭐️ 기본 화면을 MainPage로 변경!
-      },
-      {
-        path: "home",
-        element: <HomePage />, // 기존 HomePage는 /home 주소로 빼두었습니다.
-      },
-      {
-        path: "login",
-        element: <LoginPage />,
-      },
-      {
-        path: "signup",
-        element: <SignupSelectPage />,
-      },
-      {
-        path: "signup/email",
-        element: <SignupPage />,
-      },
-      {
-        path: "rooms",
-        element: <RoomLobbyPage />,
-      },
-      {
-        path: "rooms/join/:roomCode",
-        element: <RoomInvitePage />,
-      },
-      {
-        path: "rooms/:roomId",
-        element: <RoomPage />,
-      },
-      {
-        path: "examples/api",
-        element: <ApiExamplePage />,
-      },
-      {
-        path: "rooms/:roomId/tier-maker",
-        element: <TierMakerRoomPage />,
-      },
-      {
-        path: "tier-maker-design",
-        element: <TierMakerDesignPage />,
-      },
-      {
-        path: "signup/complete",
-        element: <SignupCompletePage />,
-      },
-      {
-        path: "oauth/callback",
-        element: <OAuthCallbackPage />,
-      },
-      // 로그인이 필요한 페이지는 이 children 배열에 추가
-      {
-        element: <ProtectedRoute />,
+    {
+        path: "/",
+        element: <RootLayout />,
+        errorElement: <RouteErrorPage />,
         children: [
-          {
-            path: "rooms/create",
-            element: <CreateRoomPage />,
-          },
-          {
-            path: "rooms/create-test",
-            element: <CreateRoomPage />,
-          },
-          {
-            path: "recommendation",
-            element: <RecommendationPage />,
-          },
-          {
-            path: "mypage",
-            element: <MyPage />,
-          },
-          {
-            path: "mypage/avatar/edit",
-            element: <AvatarSetupPage />,
-          },
+            {
+                index: true,
+                element: <MainPage />,
+            },
+            {
+                path: "home",
+                element: <HomePage />,
+            },
+            {
+                path: "login",
+                element: <LoginPage />,
+            },
+            {
+                path: "signup",
+                element: <SignupSelectPage />,
+            },
+            {
+                path: "signup/email",
+                element: <SignupPage />,
+            },
+            {
+                path: "rooms",
+                element: <RoomLobbyPage />,
+            },
+            {
+                path: "rooms/join/:roomCode",
+                element: <RoomInvitePage />,
+            },
+            {
+                path: "rooms/:roomId",
+                element: <RoomPage />,
+            },
+            {
+                path: "examples/api",
+                element: <ApiExamplePage />,
+            },
+            {
+                path: "rooms/:roomId/tier-maker",
+                element: <TierMakerRoomPage />,
+            },
+            {
+                path: "tier-maker-design",
+                element: <TierMakerDesignPage />,
+            },
+            {
+                path: "signup/complete",
+                element: <SignupCompletePage />,
+            },
+            {
+                path: "oauth/callback",
+                element: <OAuthCallbackPage />,
+            },
+            // 로그인이 필요한 페이지
+            {
+                element: <ProtectedRoute />,
+                children: [
+                    {
+                        path: "rooms/create",
+                        element: <CreateRoomPage />,
+                    },
+                    {
+                        path: "rooms/create-test",
+                        element: <CreateRoomPage />,
+                    },
+                    {
+                        path: "recommendation",
+                        element: <RecommendationPage />,
+                    },
+                    {
+                        path: "mypage",
+                        element: <MyPage />,
+                    },
+                    {
+                        path: "mypage/avatar/edit",
+                        element: <AvatarSetupPage />,
+                    },
+                ],
+            },
+            {
+                path: "*",
+                element: <NotFoundPage />,
+            },
         ],
-      },
-      {
-        path: "*",
-        element: <NotFoundPage />,
-      },
-    ],
-  },
+    },
 ]);

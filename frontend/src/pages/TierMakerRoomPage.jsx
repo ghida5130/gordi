@@ -156,6 +156,14 @@ const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 const compareRoomItemId = (left, right) =>
   Number(left.roomItemId) - Number(right.roomItemId);
 
+function isOuterItem(item) {
+  return (
+    String(item.subCategory ?? "").trim().toUpperCase() === "OUTER" ||
+    String(item.subcategory ?? "").trim().toUpperCase() === "OUTER" ||
+    item.slot === "OUTER"
+  );
+}
+
 function getLockConflictMessage(ownerNickname) {
   const owner = ownerNickname ? `${ownerNickname} 사용자가` : "다른 사용자가";
   return `이미 ${owner} 이동하고 있습니다.`;
@@ -172,6 +180,12 @@ function TierMakerRoomPage() {
   const cancelledDragItemIdsRef = useRef(new Set());
   const [roomSession] = useState(getRoomSession);
   const [selectedSizeNames, setSelectedSizeNames] = useState({});
+  const [wearOptions, setWearOptions] = useState({
+    topTuck: null,
+    outerClosure: null,
+    sleeves: null,
+  });
+  const [tryOnPrompt, setTryOnPrompt] = useState("");
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
   const [isClothingModalOpen, setIsClothingModalOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState(null);
@@ -334,6 +348,7 @@ function TierMakerRoomPage() {
   const candidates = roomEvents.fittingCandidates
     .map((candidate) => clothesById[String(candidate.roomItemId)])
     .filter(Boolean);
+  const hasOuterCandidate = candidates.some(isOuterItem);
   const isHost = roomSession?.role === "HOST";
   const isBoardReady =
     roomEvents.hasSnapshot &&
@@ -526,11 +541,12 @@ function TierMakerRoomPage() {
             sizeName: selectedSizeNames[item.id],
           })),
           wearOptions: {
-            topTuck: "UNTUCKED",
-            outerClosure: "OPEN",
-            sleeves: "NORMAL",
+            ...wearOptions,
+            outerClosure: hasOuterCandidate
+              ? wearOptions.outerClosure
+              : null,
           },
-          prompt: null,
+          prompt: tryOnPrompt.trim() || null,
         },
         crypto.randomUUID(),
       );
@@ -760,6 +776,13 @@ function TierMakerRoomPage() {
 
     if (!item) return;
 
+    if (isOuterItem(item)) {
+      setWearOptions((currentOptions) => ({
+        ...currentOptions,
+        outerClosure: null,
+      }));
+    }
+
     roomEvents.updateFittingCandidate({
       roomItemId: item.roomItemId,
       selected: false,
@@ -778,6 +801,21 @@ function TierMakerRoomPage() {
 
       return nextSizeNames;
     });
+  };
+
+  const handleWearOptionChange = (optionName, value) => {
+    if (!isHost) return;
+
+    setWearOptions((currentOptions) => ({
+      ...currentOptions,
+      [optionName]: value || null,
+    }));
+  };
+
+  const handleTryOnPromptChange = (value) => {
+    if (!isHost) return;
+
+    setTryOnPrompt(value);
   };
 
   const handleRenameTier = (tierId, name) => {
@@ -967,6 +1005,12 @@ function TierMakerRoomPage() {
                     }
                     selectedSizeNames={selectedSizeNames}
                     onSizeChange={handleCandidateSizeChange}
+                    wearOptions={wearOptions}
+                    onWearOptionChange={handleWearOptionChange}
+                    prompt={tryOnPrompt}
+                    onPromptChange={handleTryOnPromptChange}
+                    canEditOptions={isHost}
+                    hasOuterCandidate={hasOuterCandidate}
                     onDropCandidate={handleDropCandidate}
                     onRemoveCandidate={handleRemoveCandidate}
                     onDragStart={handleDragStart}
