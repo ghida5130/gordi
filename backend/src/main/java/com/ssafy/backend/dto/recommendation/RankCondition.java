@@ -9,6 +9,7 @@ public record RankCondition(
         String subcategory,
         Integer budgetMin,
         Integer budgetMax,
-        List<String> moods
+        List<String> moods,
+        String tpo
 ) {
 }

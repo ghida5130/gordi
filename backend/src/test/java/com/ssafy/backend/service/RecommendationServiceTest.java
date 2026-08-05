@@ -165,6 +165,16 @@ class RecommendationServiceTest {
         assertThat(captor.getValue().condition().gender()).isEqualTo("MALE");
         assertThat(captor.getValue().candidates().getFirst().gender()).isEqualTo("MALE");
         assertThat(captor.getValue().condition().moods()).containsExactly("MINIMAL", "CASUAL");
+        assertThat(captor.getValue().condition().tpo()).isEqualTo("여름 저녁 데이트");
+        verify(idempotencyService).hashRequest(
+                "MALE",
+                "TOP",
+                "LONG_SLEEVE",
+                30_000,
+                120_000,
+                "MINIMAL,CASUAL",
+                "여름 저녁 데이트"
+        );
     }
 
     // 빈 결과는 오류가 아니라 status=EMPTY 로 반환하며 예산을 자동 확대하지 않는다
@@ -204,7 +214,7 @@ class RecommendationServiceTest {
     @Test
     void createSnapshotRejectsInvertedBudgetRange() {
         RecommendationRequest inverted =
-                new RecommendationRequest("TOP", "LONG_SLEEVE", 120_000, 30_000, List.of("MINIMAL"));
+                new RecommendationRequest("TOP", "LONG_SLEEVE", 120_000, 30_000, List.of("MINIMAL"), "");
 
         assertThatThrownBy(() -> recommendationService.createSnapshot(inverted, null))
                 .isInstanceOf(ApiException.class)
@@ -215,7 +225,7 @@ class RecommendationServiceTest {
     @Test
     void createSnapshotRejectsBudgetOutsidePolicy() {
         RecommendationRequest tooExpensive =
-                new RecommendationRequest("TOP", "LONG_SLEEVE", 0, 9_000_000, List.of("MINIMAL"));
+                new RecommendationRequest("TOP", "LONG_SLEEVE", 0, 9_000_000, List.of("MINIMAL"), "");
 
         assertThatThrownBy(() -> recommendationService.createSnapshot(tooExpensive, null))
                 .isInstanceOf(ApiException.class)
@@ -226,9 +236,9 @@ class RecommendationServiceTest {
     @Test
     void createSnapshotRejectsUnknownCategoryAndMood() {
         RecommendationRequest unknownCategory =
-                new RecommendationRequest("HAT", null, 10_000, 20_000, List.of("MINIMAL"));
+                new RecommendationRequest("HAT", null, 10_000, 20_000, List.of("MINIMAL"), "");
         RecommendationRequest unknownMood =
-                new RecommendationRequest("TOP", null, 10_000, 20_000, List.of("FANCY"));
+                new RecommendationRequest("TOP", null, 10_000, 20_000, List.of("FANCY"), "");
 
         assertThatThrownBy(() -> recommendationService.createSnapshot(unknownCategory, null))
                 .isInstanceOf(ApiException.class);
@@ -239,7 +249,7 @@ class RecommendationServiceTest {
     @Test
     void createSnapshotRejectsSubcategoryOutsideCategory() {
         RecommendationRequest mismatched =
-                new RecommendationRequest("TOP", "SLACKS", 10_000, 20_000, List.of("MINIMAL"));
+                new RecommendationRequest("TOP", "SLACKS", 10_000, 20_000, List.of("MINIMAL"), "");
 
         assertThatThrownBy(() -> recommendationService.createSnapshot(mismatched, null))
                 .isInstanceOf(ApiException.class)
@@ -472,7 +482,14 @@ class RecommendationServiceTest {
     }
 
     private RecommendationRequest request() {
-        return new RecommendationRequest("TOP", "LONG_SLEEVE", 30_000, 120_000, List.of("MINIMAL", "CASUAL"));
+        return new RecommendationRequest(
+                "TOP",
+                "LONG_SLEEVE",
+                30_000,
+                120_000,
+                List.of("MINIMAL", "CASUAL"),
+                "여름 저녁 데이트"
+        );
     }
 
     private User user(Long id) {

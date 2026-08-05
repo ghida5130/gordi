@@ -37,9 +37,6 @@ function TierItem({
       }`}
     >
       <ClothingArtwork item={item} className="h-full w-full" />
-      <span className="absolute left-1 top-1 rounded bg-white/85 p-0.5 text-slate-400 opacity-0 shadow-sm transition group-hover:opacity-100">
-        <TierMakerIcon name="grip" size={13} />
-      </span>
       {onUnrank && !isLockedByOther && (
         <button
           type="button"

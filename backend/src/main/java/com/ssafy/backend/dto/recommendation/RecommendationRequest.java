@@ -25,6 +25,8 @@ public record RecommendationRequest(
 
         @NotNull
         @Size(min = 1, max = 5)
-        List<@NotBlank String> moods
+        List<@NotBlank String> moods,
+
+        String tpo
 ) {
 }

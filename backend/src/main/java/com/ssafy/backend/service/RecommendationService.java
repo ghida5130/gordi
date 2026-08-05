@@ -107,6 +107,7 @@ public class RecommendationService {
         CategoryCode category = resolveCategory(request.category());
         String subcategory = resolveSubcategory(category, request.subcategory());
         List<String> moods = resolveMoods(request.moods());
+        String tpo = request.tpo() == null ? "" : request.tpo();
         validateBudget(request.budgetMin(), request.budgetMax());
 
         String requestHash = idempotencyService.hashRequest(
@@ -115,7 +116,8 @@ public class RecommendationService {
                 subcategory,
                 request.budgetMin(),
                 request.budgetMax(),
-                String.join(",", moods)
+                String.join(",", moods),
+                tpo
         );
         Optional<RecommendationResponse> replay = idempotencyService.findReplay(
                 user.getId(),
@@ -168,7 +170,8 @@ public class RecommendationService {
                             subcategory,
                             request.budgetMin(),
                             request.budgetMax(),
-                            moods
+                            moods,
+                            tpo
                     ),
                     policy.getResultCount(),
                     candidates.stream().map(RankCandidate::from).toList()
@@ -419,7 +422,8 @@ public class RecommendationService {
                         recommendation.getSubcategory(),
                         recommendation.getBudgetMin(),
                         recommendation.getBudgetMax(),
-                        moods
+                        moods,
+                        ""
                 ),
                 limit,
                 candidates.stream().map(RankCandidate::from).toList()
