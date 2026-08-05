@@ -10,8 +10,11 @@ Flow per accepted job (async to the submit request):
    authority on face/body/pose), garment photos are ``GARMENT ONLY``
    (color/pattern/material/cut only).
 4. Generate one image through OpenRouter (Nano Banana 2 by default).
-5. Persist the image under the result directory and send ``SUCCEEDED``
-   with its public URL — any failure sends ``FAILED`` instead.
+5. Persist the image — S3 (prod: CloudFront 조합 공개 URL) 또는 로컬
+   디스크(/try-on-results 서빙) — and send ``SUCCEEDED`` with a URL
+   the frontend can use as-is; any failure sends ``FAILED`` instead.
+   Spring 은 result.imageUrl 을 가공 없이 저장·서빙하므로 여기서
+   내보내는 URL 이 곧 사용자가 받는 URL 이다.
 
 Idempotency is in-memory per process, matching Spring's one-submit-
 per-job contract; a duplicate submit is acknowledged and ignored.
@@ -191,13 +194,94 @@ class SpringEventSender:
         ) from last_error
 
 
+class ResultStore(Protocol):
+    def store(
+        self,
+        filename: str,
+        content: bytes,
+        mime_type: str,
+    ) -> str:
+        """Persist one result image and return its public URL."""
+
+
+class LocalResultStore:
+    """Write under the result dir, served by the /try-on-results route."""
+
+    def __init__(self, *, result_dir: Path, base_url: str) -> None:
+        self._result_dir = result_dir
+        self._base_url = base_url.rstrip("/")
+
+    def store(
+        self,
+        filename: str,
+        content: bytes,
+        mime_type: str,
+    ) -> str:
+        self._result_dir.mkdir(parents=True, exist_ok=True)
+        (self._result_dir / filename).write_bytes(content)
+        return f"{self._base_url}/{filename}"
+
+
+class S3ResultStore:
+    """Upload to the private bucket and return the CloudFront-joined URL.
+
+    가먼트 이미지와 같은 배포 구조: 버킷은 비공개, 공개 접근은
+    CloudFront(public base)로만 한다. 그래서 public base 없이 버킷만
+    설정된 경우는 사용자가 열 수 없는 URL 이 나가므로 생성 시점에
+    거부한다.
+    """
+
+    def __init__(
+        self,
+        *,
+        bucket: str,
+        key_prefix: str,
+        public_base_url: str,
+        client: Any | None = None,
+    ) -> None:
+        if not public_base_url.strip():
+            raise TryOnJobError(
+                "TRYON_RESULT_PUBLIC_BASE_URL is required when "
+                "TRYON_S3_BUCKET is set (private bucket needs a "
+                "CloudFront base)",
+                retryable=False,
+            )
+        if client is None:
+            import boto3
+
+            client = boto3.client("s3")
+        self._client = client
+        self._bucket = bucket
+        self._key_prefix = key_prefix.strip("/")
+        self._public_base_url = public_base_url.rstrip("/")
+
+    def store(
+        self,
+        filename: str,
+        content: bytes,
+        mime_type: str,
+    ) -> str:
+        key = f"{self._key_prefix}/{filename}"
+        try:
+            self._client.put_object(
+                Bucket=self._bucket,
+                Key=key,
+                Body=content,
+                ContentType=mime_type,
+            )
+        except Exception as exc:  # noqa: BLE001 — boto 예외 전 계열
+            raise TryOnJobError(
+                f"result upload to s3 failed: {type(exc).__name__}"
+            ) from exc
+        return f"{self._public_base_url}/{key}"
+
+
 @dataclass
 class TryOnJobProcessor:
     generator: ImageGenerator
     event_sender: EventSender
     image_fetcher: QueryImageFetcher
-    result_dir: Path
-    result_base_url: str
+    result_store: ResultStore
     model_version: str
 
     def process(self, request: TryOnGenerationRequest) -> None:
@@ -304,8 +388,7 @@ class TryOnJobProcessor:
     ) -> tuple[str, int | None, int | None]:
         extension = ".png" if mime_type == "image/png" else ".jpg"
         filename = f"job-{job_id}{extension}"
-        self.result_dir.mkdir(parents=True, exist_ok=True)
-        (self.result_dir / filename).write_bytes(content)
+        image_url = self.result_store.store(filename, content, mime_type)
         width = height = None
         try:
             from io import BytesIO
@@ -316,11 +399,7 @@ class TryOnJobProcessor:
                 width, height = image.size
         except Exception:  # noqa: BLE001 — size is best-effort metadata
             width = height = None
-        return (
-            f"{self.result_base_url.rstrip('/')}/{filename}",
-            width,
-            height,
-        )
+        return image_url, width, height
 
 
 def _prompt_header(request: TryOnGenerationRequest) -> str:
@@ -508,6 +587,20 @@ class TryOnJobRegistry:
 job_registry = TryOnJobRegistry()
 
 
+def build_result_store(settings: Any = None) -> ResultStore:
+    settings = settings or get_settings()
+    if settings.tryon_s3_bucket.strip():
+        return S3ResultStore(
+            bucket=settings.tryon_s3_bucket.strip(),
+            key_prefix=settings.tryon_s3_key_prefix,
+            public_base_url=settings.tryon_result_public_base_url,
+        )
+    return LocalResultStore(
+        result_dir=settings.tryon_result_dir,
+        base_url=settings.tryon_result_base_url,
+    )
+
+
 def build_processor() -> TryOnJobProcessor:
     settings = get_settings()
     api_key = settings.openrouter_api_key.strip()
@@ -524,20 +617,22 @@ def build_processor() -> TryOnJobProcessor:
         image_fetcher=QueryImageFetcher.create(
             settings.recommendation_image_allowed_hosts
         ),
-        result_dir=settings.tryon_result_dir,
-        result_base_url=settings.tryon_result_base_url,
+        result_store=build_result_store(settings),
         model_version=settings.tryon_image_model,
     )
 
 
 __all__ = [
+    "LocalResultStore",
     "OpenRouterImageGenerator",
     "PROMPT_VERSION",
+    "S3ResultStore",
     "SpringEventSender",
     "TryOnJobError",
     "TryOnJobProcessor",
     "TryOnJobRecord",
     "TryOnJobRegistry",
     "build_processor",
+    "build_result_store",
     "job_registry",
 ]
