@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { logout } from "@/api/auth";
 import bodyIcon from "@/assets/images/header/body.svg";
+import logoImage from "@/assets/images/header/logo-image.webp";
+import logoText from "@/assets/images/header/logo-text.webp";
 import shirtIcon from "@/assets/images/header/shirt.svg";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
@@ -19,10 +21,10 @@ export default function Header() {
   const navigate = useNavigate();
   const toast = useToast();
   const { isLogin, clearUser } = useUserStore();
-  const [hoveredMenu, setHoveredMenu] = useState("tier");
-  const [displayedMenu, setDisplayedMenu] = useState("tier");
-  const [showMenuActions, setShowMenuActions] = useState(true);
-  const [showMenuDescription, setShowMenuDescription] = useState(true);
+  const [hoveredMenu, setHoveredMenu] = useState(null);
+  const [displayedMenu, setDisplayedMenu] = useState(null);
+  const [showMenuActions, setShowMenuActions] = useState(false);
+  const [showMenuDescription, setShowMenuDescription] = useState(false);
   const [animateMenuContent, setAnimateMenuContent] = useState(false);
   const contentDisplayTimerRef = useRef(null);
   const descriptionDisplayTimerRef = useRef(null);
@@ -131,22 +133,13 @@ export default function Header() {
               className="group flex items-center gap-2.5"
               onMouseEnter={closeMenu}
             >
-              <svg
-                className="h-7 w-7 text-black transition-transform duration-300 group-hover:scale-110"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                viewBox="0 0 24 24"
+              <img
+                src={logoImage}
+                alt=""
                 aria-hidden="true"
-              >
-                <path d="M12 10a3 3 0 1 0-3-3" />
-                <path d="M12 10L2.5 16.5A1.5 1.5 0 0 0 3.5 19h17a1.5 1.5 0 0 0 1-2.5L12 10z" />
-              </svg>
-              <span className="text-2xl font-bold tracking-tight text-black transition-colors duration-300 group-hover:text-gray-600">
-                gordi
-              </span>
+                className="h-6 w-auto transition-transform duration-300 group-hover:scale-110"
+              />
+              <img src={logoText} alt="gordi" className="h-4 w-auto" />
             </Link>
 
             <nav
