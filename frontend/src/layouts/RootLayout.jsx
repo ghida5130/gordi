@@ -7,12 +7,16 @@ import Toast from "@/components/Toast";
 const SCROLL_DIRECTION_THRESHOLD_PX = 4;
 
 function RootLayout() {
-  const { pathname } = useLocation();
+  const { key: locationKey, pathname } = useLocation();
   const outlet = useOutlet();
   const isMainPage = pathname === "/";
   const lastScrollYRef = useRef(0);
   const scrollFrameRef = useRef(null);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [locationKey]);
 
   useEffect(() => {
     const updateHeaderVisibility = () => {

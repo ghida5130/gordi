@@ -697,8 +697,8 @@ function RecommendationResults({
       </main>
     );
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-8 text-slate-950">
-      <div className="mx-auto max-w-[1600px]">
+    <main className="min-h-screen bg-gray-50 px-6 py-8 text-slate-950 sm:px-10 lg:px-14">
+      <div className="mx-auto max-w-[1320px]">
         <header className="mb-6 flex items-center justify-between gap-4">
           <div>
             <button
@@ -716,17 +716,22 @@ function RecommendationResults({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={onReplaceSelected}
-              disabled={!canRequestActions || selectedProductIds.length === 0}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold shadow-sm transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              선택한 항목 다시 추천받기
-              {selectedProductIds.length > 0
-                ? ` (${selectedProductIds.length})`
-                : ""}
-            </button>
+            <AnimatePresence initial={false}>
+              {selectedProductIds.length > 0 && (
+                <motion.button
+                  key="replace-selected"
+                  type="button"
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  onClick={onReplaceSelected}
+                  disabled={!canRequestActions}
+                  className="rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600 shadow-sm transition hover:border-red-400 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  선택한 {selectedProductIds.length}개 항목 다시 추천받기
+                </motion.button>
+              )}
+            </AnimatePresence>
             <button
               type="button"
               onClick={onCreateRoom}
@@ -748,7 +753,7 @@ function RecommendationResults({
             {replacementNotice}
           </p>
         )}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {items.map((item, index) => {
             const productId = item.productId ?? item.id;
             const name = item.name ?? item.productName ?? "추천 의상";
@@ -762,7 +767,7 @@ function RecommendationResults({
                 transition={{ delay: Math.min(index * 0.045, 0.36) }}
                 className={`relative overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition ${
                   isSelected
-                    ? "border-violet-600 ring-4 ring-violet-100"
+                    ? "border-red-500 ring-4 ring-red-100"
                     : "border-transparent hover:-translate-y-0.5 hover:shadow-lg"
                 }`}
               >
@@ -776,7 +781,7 @@ function RecommendationResults({
                   <span
                     className={`absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-full border-2 text-sm font-black shadow-sm ${
                       isSelected
-                        ? "border-violet-600 bg-violet-600 text-white"
+                        ? "border-red-500 bg-red-500 text-white"
                         : "border-white bg-white/90 text-transparent"
                     }`}
                     aria-hidden="true"
