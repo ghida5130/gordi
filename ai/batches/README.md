@@ -1,6 +1,6 @@
 # 수집 배치 ID 목록
 
-## TPO 확장 — 핸드오버 `docs/GROK_HANDOVER_TPO_EXPANSION_2026-08-04.md`
+## TPO 확장 — 핸드오버 `docs/ai/GROK_HANDOVER_TPO_EXPANSION_2026-08-04.md`
 
 ### 1일차 아우터 (완료 2026-08-05)
 
@@ -33,7 +33,7 @@
 | `tpo_day4_shortfall_all.txt` | 1221 unique new IDs |
 | `discover-report-tpo_day4_shortfall.json` | discover 메타 |
 
-종료 보고: `docs/GROK_COLLECTION_COMPLETION_REPORT_TPO_2026-08-05.md`
+종료 보고: `docs/ai/GROK_COLLECTION_COMPLETION_REPORT_TPO_2026-08-05.md`
 
 ---
 

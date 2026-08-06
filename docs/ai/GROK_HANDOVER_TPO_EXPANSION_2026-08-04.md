@@ -9,9 +9,9 @@
 
 - 수집 정책 **v1.1.0** 그대로: 실행 상한 없음, **상품 간 3.0초 하한**,
   403/429/503 발생 시 즉시 중단, 단일 워커.
-  (`docs/garment-data-collection-policy-v1.md`)
+  (`docs/ai/garment-data-collection-policy-v1.md`)
 - 분류 매핑 규칙 그대로: **아우터→TOP**, **스커트→BOTTOM**,
-  **원피스→TOP** (`docs/GROK_HANDOVER_DATASET_EXPANSION_2026-08-01.md`의
+  **원피스→TOP** (`docs/ai/GROK_HANDOVER_DATASET_EXPANSION_2026-08-01.md`의
   분류 규칙 표 참조).
 - `--skip-existing` 필수 — 기존 2,943개 raw는 재수집하지 않는다.
 - 신규 무신사 카테고리의 PLP id는 `ai/scripts/discover_plp_ids.py`로
@@ -119,5 +119,5 @@ python scripts/summarize_dataset_cells.py
 
 ## 5. 이전 문서
 
-- 수집기 사용법·계정·환경: `docs/GROK_HANDOVER_DATASET_EXPANSION_2026-08-01.md`
-- 정책: `docs/garment-data-collection-policy-v1.md` (v1.1.0)
+- 수집기 사용법·계정·환경: `docs/ai/GROK_HANDOVER_DATASET_EXPANSION_2026-08-01.md`
+- 정책: `docs/ai/garment-data-collection-policy-v1.md` (v1.1.0)

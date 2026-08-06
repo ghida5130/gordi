@@ -133,7 +133,7 @@ python -m garment_collector seed-db `
 ```
 
 EC2 전체 실행 순서와 재실행·정리 기준은
-`docs/garment-seed-ec2-runbook.md`를 따릅니다.
+`docs/ai/garment-seed-ec2-runbook.md`를 따릅니다.
 
 ## OpenRouter 기반 Gemini Embedding 2 카탈로그 임베딩
 

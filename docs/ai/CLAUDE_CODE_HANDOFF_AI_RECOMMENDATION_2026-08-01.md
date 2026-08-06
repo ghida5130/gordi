@@ -49,9 +49,9 @@ PR 생성 전에는 반드시 `git fetch` 후 다시 비교한다.
  M ai/README.md
  M docker-compose.local.yml
  M docker-compose.prod.yml
-?? docs/AI_RECOMMENDATION_CICD_ENV_GUIDE.md
-?? docs/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md
-?? docs/CLAUDE_CODE_HANDOFF_AI_RECOMMENDATION_2026-08-01.md
+?? docs/ai/AI_RECOMMENDATION_CICD_ENV_GUIDE.md
+?? docs/ai/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md
+?? docs/ai/CLAUDE_CODE_HANDOFF_AI_RECOMMENDATION_2026-08-01.md
 ```
 
 기존 tracked 파일의 미커밋 diff는 4파일, 27줄 추가다.
@@ -62,8 +62,8 @@ PR 생성 전에는 반드시 `git fetch` 후 다시 비교한다.
 | `ai/README.md` | 인덱스가 Git에 없고 별도 배치해야 한다는 운영 설명, Compose 데모 플래그 설명 | 문서 변경 |
 | `docker-compose.local.yml` | 내부 키, 인덱스 경로, 이미지 allowlist, 데모 플래그 전달 및 read-only 인덱스 mount | 로컬 기본 allowlist는 `localhost`, `gordi-nginx` |
 | `docker-compose.prod.yml` | 같은 설정과 read-only 인덱스 mount | 운영 기본 이미지 allowlist는 빈 배열, 데모 기본 false |
-| `docs/AI_RECOMMENDATION_CICD_ENV_GUIDE.md` | Jenkins/EC2의 환경변수 및 인덱스 배치 가이드 | 미추적, 약 7.5KB |
-| `docs/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md` | Docker 로컬 DB·임베딩·데모 전체 실행 가이드 | 미추적, 약 21KB |
+| `docs/ai/AI_RECOMMENDATION_CICD_ENV_GUIDE.md` | Jenkins/EC2의 환경변수 및 인덱스 배치 가이드 | 미추적, 약 7.5KB |
+| `docs/ai/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md` | Docker 로컬 DB·임베딩·데모 전체 실행 가이드 | 미추적, 약 21KB |
 | 이 문서 | Claude Code 인수인계 | 이번 요청으로 새로 생성 |
 
 이 변경들은 마지막 push에 의도적으로 포함하지 않았다. 커밋 여부와 커밋 경계는
@@ -525,8 +525,8 @@ backend/src/test/java/com/ssafy/backend/service/RecommendationServiceTest.java
 ### 운영 문서
 
 ```text
-docs/2026-07-31_garment_catalog_seed_progress_report.md
-docs/garment-seed-ec2-runbook.md
+docs/ai/2026-07-31_garment_catalog_seed_progress_report.md
+docs/ai/garment-seed-ec2-runbook.md
 ```
 
 ## 9. 검증 기록과 현재 재검증 상태
@@ -611,7 +611,7 @@ git diff --check
 
 1. 실제 EC2 S3 업로드는 아직 안 했다.
 2. 실제 운영 MySQL seed도 아직 안 했다. 로컬 MySQL만 198/732 검증됐다.
-3. 운영 전 `docs/garment-seed-ec2-runbook.md`에 따라 S3 dry-run/apply/재실행과 DB
+3. 운영 전 `docs/ai/garment-seed-ec2-runbook.md`에 따라 S3 dry-run/apply/재실행과 DB
    dry-run/backup/apply/재실행을 수행한다.
 4. `catalog-embeddings.json`은 Git push로 배포되지 않는다. Jenkins workspace
    밖의 지속 경로에 별도 복사하고 Compose에 read-only mount한다.
@@ -643,11 +643,11 @@ git diff -- .env.example ai/README.md docker-compose.local.yml docker-compose.pr
 2. 이 문서와 두 미추적 실행 가이드를 읽는다.
 
 ```text
-docs/CLAUDE_CODE_HANDOFF_AI_RECOMMENDATION_2026-08-01.md
-docs/AI_RECOMMENDATION_CICD_ENV_GUIDE.md
-docs/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md
-docs/2026-07-31_garment_catalog_seed_progress_report.md
-docs/garment-seed-ec2-runbook.md
+docs/ai/CLAUDE_CODE_HANDOFF_AI_RECOMMENDATION_2026-08-01.md
+docs/ai/AI_RECOMMENDATION_CICD_ENV_GUIDE.md
+docs/ai/DOCKER_LOCAL_RECOMMENDATION_DEMO_GUIDE.md
+docs/ai/2026-07-31_garment_catalog_seed_progress_report.md
+docs/ai/garment-seed-ec2-runbook.md
 ```
 
 3. 원격 최신 상태를 가져오고 충돌 가능성을 확인한다. 사용자 승인 없이 현재
