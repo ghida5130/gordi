@@ -172,7 +172,7 @@ class TryOnJobEventServiceTest {
             assertThat(appender.list)
                     .extracting(ILoggingEvent::getFormattedMessage)
                     .anySatisfy(message -> assertThat(message)
-                            .contains("tryOnJobLifecycle jobId=71")
+                            .contains("tryOnJob 라이프사이클 jobId=71")
                             .contains("status=SUCCEEDED")
                             .contains("totalDurationMs=18813")
                             .contains("attempt=1")
