@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { addCandidate, deleteCandidate, getCandidates } from "@/api/candidates";
@@ -22,6 +29,12 @@ import { useToast } from "@/hooks/useToast";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { getRoomSession, removeRoomSession } from "@/utils/roomSessionStorage";
+import {
+  createTierMakerCursorAnchorRegistry,
+  decodeTierMakerCursor,
+  encodeTierMakerCursor,
+  findTierMakerCursorAnchor,
+} from "@/utils/tierMakerCursor";
 import {
   createTierMakerClothing,
   normalizeTierMakerCategory,
@@ -153,6 +166,8 @@ const emptyTryOn = {
 };
 const BOARD_WIDTH = 1530;
 const BOARD_MIN_HEIGHT = 720;
+const DEFAULT_TIER_COLUMN_LEFT = 300;
+const DEFAULT_TIER_COLUMN_WIDTH = 900;
 const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 
 const compareRoomItemId = (left, right) =>
@@ -177,6 +192,7 @@ function TierMakerRoomPage() {
   const toast = useToast();
   const sharedBoardRef = useRef(null);
   const boardViewportRef = useRef(null);
+  const cursorAnchorRegistryRef = useRef(new Map());
   const completedDropItemIdsRef = useRef(new Set());
   const processedItemRemovalEventIdsRef = useRef(new Set());
   const activeDragRef = useRef(null);
@@ -194,6 +210,7 @@ function TierMakerRoomPage() {
   const [detailProductId, setDetailProductId] = useState(null);
   const [itemPendingDeletion, setItemPendingDeletion] = useState(null);
   const [addingProductId, setAddingProductId] = useState(null);
+  const [isTierFocusMode, setIsTierFocusMode] = useState(false);
   const [boardScale, setBoardScale] = useState(1);
   const [boardContentHeight, setBoardContentHeight] =
     useState(BOARD_MIN_HEIGHT);
@@ -374,6 +391,29 @@ function TierMakerRoomPage() {
     !roomStatusQuery.isPending &&
     !productQueries.some((query) => query.isPending) &&
     !(roomEvents.status === "IN_PROGRESS" && candidateQuery.isPending);
+  const cursorStructureKey = `${tiers
+    .map((tier) => `${tier.id}:${tier.itemIds.join(",")}`)
+    .join("|")}::${waitingClothes.map((item) => item.id).join(",")}`;
+
+  useLayoutEffect(() => {
+    const board = sharedBoardRef.current;
+
+    if (!isBoardReady || !board) {
+      cursorAnchorRegistryRef.current = new Map();
+      return undefined;
+    }
+
+    const refreshRegistry = () => {
+      cursorAnchorRegistryRef.current =
+        createTierMakerCursorAnchorRegistry(board);
+    };
+    const mutationObserver = new MutationObserver(refreshRegistry);
+
+    refreshRegistry();
+    mutationObserver.observe(board, { childList: true, subtree: true });
+
+    return () => mutationObserver.disconnect();
+  }, [cursorStructureKey, isBoardReady]);
 
   useEffect(() => {
     if (!isBoardReady) return undefined;
@@ -567,7 +607,6 @@ function TierMakerRoomPage() {
       setAddingProductId(productId);
     },
     onSuccess: () => {
-      setIsClothingModalOpen(false);
       candidateQuery.refetch();
       toast.success("후보 의상을 추가했습니다.");
     },
@@ -946,6 +985,94 @@ function TierMakerRoomPage() {
     finishRoomMutation.mutate();
   };
 
+  const resolveSharedCursorPosition = useCallback(
+    (cursor) => {
+      const board = sharedBoardRef.current;
+      const decodedCursor = decodeTierMakerCursor(cursor);
+
+      if (!board || !decodedCursor) return null;
+
+      if (!decodedCursor.isAnchored) {
+        if (!isTierFocusMode) return decodedCursor.rawPosition;
+
+        const tierStart = DEFAULT_TIER_COLUMN_LEFT / BOARD_WIDTH;
+        const tierEnd =
+          (DEFAULT_TIER_COLUMN_LEFT + DEFAULT_TIER_COLUMN_WIDTH) / BOARD_WIDTH;
+
+        if (
+          decodedCursor.rawPosition.x < tierStart ||
+          decodedCursor.rawPosition.x > tierEnd
+        ) {
+          return null;
+        }
+
+        return {
+          x:
+            (decodedCursor.rawPosition.x - tierStart) /
+            (tierEnd - tierStart),
+          y: decodedCursor.rawPosition.y,
+        };
+      }
+
+      const anchorEntry = cursorAnchorRegistryRef.current.get(
+        decodedCursor.anchorHash,
+      );
+      const anchorElement = anchorEntry?.element;
+
+      if (
+        anchorEntry?.anchorKey === "panel-fitting" ||
+        anchorEntry?.anchorKey === "panel-catalog"
+      ) {
+        return isTierFocusMode ? null : decodedCursor.rawPosition;
+      }
+
+      if (!anchorElement?.isConnected || !board.contains(anchorElement)) {
+        return null;
+      }
+
+      if (isTierFocusMode) {
+        const tierPanelElement = board.querySelector(
+          '[data-tier-maker-cursor-anchor="panel-tier"]',
+        );
+
+        if (!tierPanelElement?.contains(anchorElement)) {
+          return null;
+        }
+      }
+
+      const boardBounds = board.getBoundingClientRect();
+      const anchorBounds = anchorElement.getBoundingClientRect();
+
+      if (
+        boardBounds.width === 0 ||
+        boardBounds.height === 0 ||
+        anchorBounds.width < 0.5 ||
+        anchorBounds.height < 0.5
+      ) {
+        return null;
+      }
+
+      const x =
+        (anchorBounds.left - boardBounds.left +
+          decodedCursor.localPosition.x * anchorBounds.width) /
+        boardBounds.width;
+      const y =
+        (anchorBounds.top - boardBounds.top +
+          decodedCursor.localPosition.y * anchorBounds.height) /
+        boardBounds.height;
+
+      if (x < -0.01 || x > 1.01 || y < -0.01 || y > 1.01) {
+        return null;
+      }
+
+      return {
+        x: Math.max(0, Math.min(1, x)),
+        y: Math.max(0, Math.min(1, y)),
+      };
+    },
+    [isTierFocusMode],
+  );
+
   const handleBoardPointerMove = (event) => {
     const board = sharedBoardRef.current;
 
@@ -955,10 +1082,32 @@ function TierMakerRoomPage() {
 
     if (bounds.width === 0 || bounds.height === 0) return;
 
-    roomEvents.moveCursor({
-      x: (event.clientX - bounds.left) / bounds.width,
-      y: (event.clientY - bounds.top) / bounds.height,
+    const rawX = (event.clientX - bounds.left) / bounds.width;
+    const rawY = (event.clientY - bounds.top) / bounds.height;
+    const anchor = findTierMakerCursorAnchor({
+      target: event.target,
+      boardElement: board,
+      registry: cursorAnchorRegistryRef.current,
     });
+
+    if (!anchor) {
+      roomEvents.moveCursor({ x: rawX, y: rawY });
+      return;
+    }
+
+    const anchorBounds = anchor.anchorElement.getBoundingClientRect();
+
+    if (anchorBounds.width === 0 || anchorBounds.height === 0) return;
+
+    roomEvents.moveCursor(
+      encodeTierMakerCursor({
+        rawX,
+        rawY,
+        localX: (event.clientX - anchorBounds.left) / anchorBounds.width,
+        localY: (event.clientY - anchorBounds.top) / anchorBounds.height,
+        anchorKey: anchor.anchorKey,
+      }),
+    );
   };
 
   if (!isCurrentRoom) {
@@ -1016,22 +1165,42 @@ function TierMakerRoomPage() {
             </div>
           </div>
 
-          {isHost && (
-            <button
+          <div className="flex shrink-0 items-center gap-2">
+            <motion.button
               type="button"
-              onClick={handleFinishRoom}
-              disabled={
-                roomEvents.connectionState !== "CONNECTED" ||
-                !roomEvents.hasSnapshot ||
-                roomEvents.status !== "IN_PROGRESS" ||
-                finishRoomMutation.isPending
-              }
-              className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              layout
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setIsTierFocusMode((current) => !current)}
+              aria-pressed={isTierFocusMode}
+              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold shadow-sm transition ${
+                isTierFocusMode
+                  ? "border-violet-200 bg-violet-600 text-white hover:bg-violet-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:text-violet-700"
+              }`}
             >
-              <TierMakerIcon name="door" size={16} />
-              {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
-            </button>
-          )}
+              <TierMakerIcon
+                name={isTierFocusMode ? "columns" : "focus"}
+                size={16}
+              />
+              {isTierFocusMode ? "전체 패널 보기" : "티어 크게 보기"}
+            </motion.button>
+            {isHost && (
+              <button
+                type="button"
+                onClick={handleFinishRoom}
+                disabled={
+                  roomEvents.connectionState !== "CONNECTED" ||
+                  !roomEvents.hasSnapshot ||
+                  roomEvents.status !== "IN_PROGRESS" ||
+                  finishRoomMutation.isPending
+                }
+                className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <TierMakerIcon name="door" size={16} />
+                {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1074,22 +1243,33 @@ function TierMakerRoomPage() {
               </p>
             )}
             <div ref={boardViewportRef} className="w-full pb-2">
-              <div
+              <motion.div
                 className="mx-auto"
-                style={{
-                  width: `${BOARD_WIDTH * boardScale}px`,
-                  height: `${boardContentHeight * boardScale}px`,
+                animate={{
+                  height: boardContentHeight * boardScale,
                 }}
+                style={{ width: BOARD_WIDTH * boardScale }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div
+                <motion.div
                   ref={sharedBoardRef}
+                  data-tier-maker-cursor-anchor="board-root"
                   onPointerMove={handleBoardPointerMove}
                   onDragOverCapture={(event) => {
                     event.preventDefault();
                     handleBoardPointerMove(event);
                   }}
-                  className="tier-maker-cursor-surface relative grid min-h-[720px] w-[1530px] cursor-none grid-cols-[280px_900px_310px] items-start gap-5 [&_*]:cursor-none"
+                  initial={false}
+                  animate={{
+                    gridTemplateColumns: isTierFocusMode
+                      ? `0px ${BOARD_WIDTH}px 0px`
+                      : "280px 900px 310px",
+                    columnGap: isTierFocusMode ? 0 : 20,
+                  }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="tier-maker-cursor-surface relative grid min-h-[720px] cursor-none items-start [&_*]:cursor-none"
                   style={{
+                    width: BOARD_WIDTH,
                     transform: `scale(${boardScale})`,
                     transformOrigin: "top left",
                   }}
@@ -1100,82 +1280,116 @@ function TierMakerRoomPage() {
                     currentParticipantId={roomSession.participantId}
                     itemLocks={roomEvents.itemLocks}
                     clothesById={clothesById}
+                    boardRef={sharedBoardRef}
+                    layoutKey={`${isTierFocusMode}:${cursorStructureKey}`}
+                    resolveCursorPosition={resolveSharedCursorPosition}
                   />
-                  <FittingPanel
-                    candidates={candidates}
-                    hostAvatarImageUrl={
-                      roomStatusQuery.data?.data?.hostAvatarImageUrl
-                    }
-                    selectedSizeNames={selectedSizeNames}
-                    onSizeChange={handleCandidateSizeChange}
-                    wearOptions={wearOptions}
-                    onWearOptionChange={handleWearOptionChange}
-                    prompt={tryOnPrompt}
-                    onPromptChange={handleTryOnPromptChange}
-                    canEditOptions={isHost}
-                    hasOuterCandidate={hasOuterCandidate}
-                    onDropCandidate={handleDropCandidate}
-                    onRemoveCandidate={handleRemoveCandidate}
-                    onDeleteItem={handleRequestItemDelete}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onGenerate={() => tryOnMutation.mutate()}
-                    canGenerate={
-                      !isDemoMode &&
-                      isHost &&
-                      Boolean(roomSession.roomCode) &&
-                      roomEvents.connectionState === "CONNECTED"
-                    }
-                    generateDisabledMessage={
-                      isDemoMode
-                        ? "샘플 의상은 가상 피팅을 생성할 수 없어요"
-                        : isHost
-                          ? "방 연결 후 생성할 수 있어요"
-                          : "방장만 생성할 수 있어요"
-                    }
-                    isSubmitting={tryOnMutation.isPending}
-                    tryOn={visibleTryOn}
-                    onViewDetails={handleViewDetails}
-                    errorMessage={
-                      tryOnMutation.isError
-                        ? getApiErrorMessage(
-                            tryOnMutation.error,
-                            "가상 피팅 요청에 실패했습니다.",
-                          )
-                        : ""
-                    }
-                  />
-                  <TierBoard
-                    tiers={tiers}
-                    clothesById={clothesById}
-                    onDropTier={handleDropTier}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    itemLocks={roomEvents.itemLocks}
-                    currentParticipantId={roomSession.participantId}
-                    canRename={isHost}
-                    onRenameTier={handleRenameTier}
-                    waitingClothes={waitingClothes}
-                    roomCategory={roomCategoryLabel}
-                    onUnrank={handleUnrank}
-                    onDeleteItem={handleRequestItemDelete}
-                    onViewDetails={handleViewDetails}
-                  />
-                  <ClothingCatalog
-                    clothes={fittingOnlyClothes}
-                    itemLocks={roomEvents.itemLocks}
-                    currentParticipantId={roomSession.participantId}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onViewDetails={handleViewDetails}
-                    onDeleteItem={handleRequestItemDelete}
-                    onAddClothing={() => {
-                      addCandidateMutation.reset();
-                      setIsClothingModalOpen(true);
+                  <motion.div
+                    data-tier-maker-cursor-anchor="panel-fitting"
+                    initial={false}
+                    animate={{
+                      opacity: isTierFocusMode ? 0 : 1,
+                      x: isTierFocusMode ? -28 : 0,
                     }}
-                  />
-                </div>
-              </div>
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    aria-hidden={isTierFocusMode}
+                    inert={isTierFocusMode ? true : undefined}
+                    className="col-start-1 row-start-1 min-w-0 overflow-hidden [&>*]:w-[280px]"
+                  >
+                    <FittingPanel
+                      candidates={candidates}
+                      hostAvatarImageUrl={
+                        roomStatusQuery.data?.data?.hostAvatarImageUrl
+                      }
+                      selectedSizeNames={selectedSizeNames}
+                      onSizeChange={handleCandidateSizeChange}
+                      wearOptions={wearOptions}
+                      onWearOptionChange={handleWearOptionChange}
+                      prompt={tryOnPrompt}
+                      onPromptChange={handleTryOnPromptChange}
+                      canEditOptions={isHost}
+                      hasOuterCandidate={hasOuterCandidate}
+                      onDropCandidate={handleDropCandidate}
+                      onRemoveCandidate={handleRemoveCandidate}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onGenerate={() => tryOnMutation.mutate()}
+                      canGenerate={
+                        !isDemoMode &&
+                        isHost &&
+                        Boolean(roomSession.roomCode) &&
+                        roomEvents.connectionState === "CONNECTED"
+                      }
+                      generateDisabledMessage={
+                        isDemoMode
+                          ? "샘플 의상은 가상 피팅을 생성할 수 없어요"
+                          : isHost
+                            ? "방 연결 후 생성할 수 있어요"
+                            : "방장만 생성할 수 있어요"
+                      }
+                      isSubmitting={tryOnMutation.isPending}
+                      tryOn={visibleTryOn}
+                      onViewDetails={handleViewDetails}
+                      errorMessage={
+                        tryOnMutation.isError
+                          ? getApiErrorMessage(
+                              tryOnMutation.error,
+                              "가상 피팅 요청에 실패했습니다.",
+                            )
+                          : ""
+                      }
+                    />
+                  </motion.div>
+                  <div
+                    data-tier-maker-cursor-anchor="panel-tier"
+                    className="col-start-2 row-start-1 min-w-0"
+                  >
+                    <TierBoard
+                      tiers={tiers}
+                      clothesById={clothesById}
+                      onDropTier={handleDropTier}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      itemLocks={roomEvents.itemLocks}
+                      currentParticipantId={roomSession.participantId}
+                      canRename={isHost}
+                      onRenameTier={handleRenameTier}
+                      waitingClothes={waitingClothes}
+                      roomCategory={roomCategoryLabel}
+                      onUnrank={handleUnrank}
+                      onDeleteItem={handleRequestItemDelete}
+                      onViewDetails={handleViewDetails}
+                      isExpanded={isTierFocusMode}
+                    />
+                  </div>
+                  <motion.div
+                    data-tier-maker-cursor-anchor="panel-catalog"
+                    initial={false}
+                    animate={{
+                      opacity: isTierFocusMode ? 0 : 1,
+                      x: isTierFocusMode ? 28 : 0,
+                    }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    aria-hidden={isTierFocusMode}
+                    inert={isTierFocusMode ? true : undefined}
+                    className="col-start-3 row-start-1 min-w-0 overflow-hidden [&>*]:w-[310px]"
+                  >
+                    <ClothingCatalog
+                      clothes={fittingOnlyClothes}
+                      itemLocks={roomEvents.itemLocks}
+                      currentParticipantId={roomSession.participantId}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onViewDetails={handleViewDetails}
+                      onDeleteItem={handleRequestItemDelete}
+                      onAddClothing={() => {
+                        addCandidateMutation.reset();
+                        setIsClothingModalOpen(true);
+                      }}
+                    />
+                  </motion.div>
+                </motion.div>
+              </motion.div>
             </div>
 
             <ParticipantDock

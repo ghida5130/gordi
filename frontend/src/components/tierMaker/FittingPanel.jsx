@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
 import ClothingDetailButton from '@/components/tierMaker/ClothingDetailButton'
@@ -71,7 +72,6 @@ function FittingPanel({
   hasOuterCandidate,
   onDropCandidate,
   onRemoveCandidate,
-  onDeleteItem,
   onDragStart,
   onDragEnd,
   onGenerate,
@@ -83,6 +83,7 @@ function FittingPanel({
   onViewDetails,
 }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false)
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false)
   const isProcessing =
     isSubmitting ||
     ['QUEUED', 'PROCESSING', 'PROGRESSING'].includes(tryOn.status)
@@ -105,6 +106,25 @@ function FittingPanel({
       (tryOn.status === 'SUCCEEDED' && tryOn.resultImageUrl) ||
         hostAvatarImageUrl,
     )
+  const previewImageUrl =
+    tryOn.status === 'SUCCEEDED' && tryOn.resultImageUrl
+      ? tryOn.resultImageUrl
+      : hostAvatarImageUrl
+  const previewImageAlt =
+    tryOn.status === 'SUCCEEDED' && tryOn.resultImageUrl
+      ? '가상 피팅 결과'
+      : '방장 아바타'
+
+  useEffect(() => {
+    if (!isImagePreviewOpen) return undefined
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsImagePreviewOpen(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isImagePreviewOpen])
 
   const handleDrop = (event) => {
     event.preventDefault()
@@ -119,7 +139,8 @@ function FittingPanel({
   }
 
   return (
-    <aside className="rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+    <>
+      <aside className="rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
       <div className="border-b border-slate-100 px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
@@ -176,6 +197,16 @@ function FittingPanel({
               <Mannequin generatedItems={candidates} />
             )}
           </div>
+          {previewImageUrl && !isProcessing && (
+            <button
+              type="button"
+              onClick={() => setIsImagePreviewOpen(true)}
+              className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/80 bg-slate-950/75 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-slate-950"
+              aria-label={`${previewImageAlt} 크게 보기`}
+            >
+              <TierMakerIcon name="focus" size={18} />
+            </button>
+          )}
           {candidates.length === 0 && !isProcessing && (
             <p className="absolute inset-x-0 bottom-3 text-center text-[11px] text-slate-400">
               의상을 놓고 아바타를 생성해 보세요
@@ -260,29 +291,11 @@ function FittingPanel({
                       event.stopPropagation()
                       onRemoveCandidate(item.id)
                     }}
-                    className="mt-1 w-full rounded-md bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                    className="absolute -right-1 -top-1 z-20 hidden size-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-md transition hover:bg-slate-100 hover:text-slate-800 group-hover:flex"
+                    aria-label={`${item.name} 피팅 후보에서 제외`}
                   >
-                    피팅 후보 제외
+                    <TierMakerIcon name="close" size={11} />
                   </button>
-                  {onDeleteItem && (
-                    <button
-                      type="button"
-                      draggable={false}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onDragStart={(event) => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                      }}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onDeleteItem(item)
-                      }}
-                      className="absolute -right-1 -top-1 z-20 hidden size-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-md transition hover:bg-red-50 hover:text-red-600 group-hover:flex"
-                      aria-label={`${item.name} 삭제`}
-                    >
-                      <TierMakerIcon name="close" size={11} />
-                    </button>
-                  )}
                 </div>
               ))
             ) : (
@@ -403,7 +416,45 @@ function FittingPanel({
                 : '아바타 생성하기'}
         </button>
       </div>
-    </aside>
+      </aside>
+      <AnimatePresence>
+        {isImagePreviewOpen && previewImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={() => setIsImagePreviewOpen(false)}
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${previewImageAlt} 크게 보기`}
+          >
+            <motion.section
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              onMouseDown={(event) => event.stopPropagation()}
+              className="relative flex max-h-full w-full max-w-4xl items-center justify-center"
+            >
+              <img
+                src={previewImageUrl}
+                alt={previewImageAlt}
+                className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
+              />
+              <button
+                type="button"
+                onClick={() => setIsImagePreviewOpen(false)}
+                className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-full bg-slate-950/75 text-white shadow-lg backdrop-blur transition hover:bg-slate-950"
+                aria-label="크게 보기 닫기"
+              >
+                <TierMakerIcon name="close" size={20} />
+              </button>
+            </motion.section>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 

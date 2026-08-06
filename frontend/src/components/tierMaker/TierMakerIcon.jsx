@@ -11,11 +11,23 @@ const paths = {
       <path d="m6 6 12 12" />
     </>
   ),
+  columns: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16M15 4v16" />
+    </>
+  ),
   door: (
     <>
       <path d="M10 17l5-5-5-5" />
       <path d="M15 12H3" />
       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+    </>
+  ),
+  focus: (
+    <>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3" />
+      <path d="M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
     </>
   ),
   grip: (
