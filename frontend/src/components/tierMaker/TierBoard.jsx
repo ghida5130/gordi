@@ -18,7 +18,7 @@ function TierItem({
   currentParticipantId,
   onDragStart,
   onDragEnd,
-  onUnrank,
+  onDeleteItem,
   onViewDetails,
 }) {
   const isLockedByOther =
@@ -37,16 +37,20 @@ function TierItem({
       }`}
     >
       <ClothingArtwork item={item} className="h-full w-full" />
-      {onUnrank && !isLockedByOther && (
+      {onDeleteItem && !isLockedByOther && (
         <button
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
+          onDragStart={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
           onClick={(event) => {
             event.stopPropagation()
-            onUnrank(item.id)
+            onDeleteItem(item)
           }}
           className="absolute right-1 top-1 hidden size-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm hover:bg-red-50 hover:text-red-500 group-hover:flex"
-          aria-label={`${item.name} 티어 배정 취소`}
+          aria-label={`${item.name} 삭제`}
         >
           <TierMakerIcon name="close" size={11} />
         </button>
@@ -161,6 +165,7 @@ function WaitingItem({
   currentParticipantId,
   onDragStart,
   onDragEnd,
+  onDeleteItem,
   onViewDetails,
 }) {
   return (
@@ -171,6 +176,7 @@ function WaitingItem({
         currentParticipantId={currentParticipantId}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
+        onDeleteItem={onDeleteItem}
         onViewDetails={onViewDetails}
       />
       <p className="mt-1 truncate text-center text-[10px] font-semibold text-slate-600">
@@ -193,6 +199,7 @@ function TierBoard({
   waitingClothes = [],
   roomCategory,
   onUnrank,
+  onDeleteItem,
   onViewDetails,
 }) {
   const [activeTier, setActiveTier] = useState(null)
@@ -294,7 +301,7 @@ function TierBoard({
                             currentParticipantId={currentParticipantId}
                             onDragStart={onDragStart}
                             onDragEnd={onDragEnd}
-                            onUnrank={onUnrank}
+                            onDeleteItem={onDeleteItem}
                             onViewDetails={onViewDetails}
                           />
                         </Fragment>
@@ -378,6 +385,7 @@ function TierBoard({
                     currentParticipantId={currentParticipantId}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    onDeleteItem={onDeleteItem}
                     onViewDetails={onViewDetails}
                   />
                 ))

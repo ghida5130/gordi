@@ -193,7 +193,7 @@ public class RoomService {
     @Transactional(readOnly = true)
     public MyActiveRoomResponseDTO readMyActiveRoom(String email) {
         return roomParticipantRepository
-                .findActiveByUserEmail(email)
+                .findActiveByUserEmail(email, LocalDateTime.now(AppZone.KST))
                 .stream().findFirst()
                 .map(rp -> new MyActiveRoomResponseDTO(new MyActiveRoomResponseDTO.ActiveRoom(
                         rp.getRoom().getId(),
@@ -349,7 +349,7 @@ public class RoomService {
     private void validateJoinable(Room room) {
         boolean expired = !room.getExpiresAt().isAfter(LocalDateTime.now(AppZone.KST));
         boolean closedStatus = "FINISHED".equals(room.getStatus())
-                || "CLOSED".equals(room.getStatus());
+                || "EXPIRED".equals(room.getStatus());
         if (expired || closedStatus) {
             throw new ApiException(ErrorCode.ROOM_CLOSED);
         }

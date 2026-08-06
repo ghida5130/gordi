@@ -74,7 +74,7 @@ public class Room {
 
     @Builder.Default
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "WAITING"; // WAITING, IN_PROGRESS, FINISHED, CLOSED
+    private String status = "WAITING"; // WAITING, IN_PROGRESS, FINISHED, EXPIRED
 
     @Version
     @Builder.Default

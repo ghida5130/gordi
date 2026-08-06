@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+import { AnimatePresence } from "motion/react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { addCandidate, getCandidates } from "@/api/candidates";
+import { addCandidate, deleteCandidate, getCandidates } from "@/api/candidates";
 import { getProduct } from "@/api/products";
 import { finishRoom as finishRoomRequest, getRoomStatus } from "@/api/rooms";
 import { createTryOnJob } from "@/api/tryOn";
@@ -10,6 +11,7 @@ import { getMyAvatar } from "@/api/users";
 import ClothingCatalog from "@/components/tierMaker/ClothingCatalog";
 import ClothingAddModal from "@/components/tierMaker/ClothingAddModal";
 import FittingPanel from "@/components/tierMaker/FittingPanel";
+import ItemDeleteConfirmModal from "@/components/tierMaker/ItemDeleteConfirmModal";
 import ParticipantDock from "@/components/tierMaker/ParticipantDock";
 import ProductDetailModal from "@/components/tierMaker/ProductDetailModal";
 import SharedCursorLayer from "@/components/tierMaker/SharedCursorLayer";
@@ -176,6 +178,7 @@ function TierMakerRoomPage() {
   const sharedBoardRef = useRef(null);
   const boardViewportRef = useRef(null);
   const completedDropItemIdsRef = useRef(new Set());
+  const processedItemRemovalEventIdsRef = useRef(new Set());
   const activeDragRef = useRef(null);
   const cancelledDragItemIdsRef = useRef(new Set());
   const [roomSession] = useState(getRoomSession);
@@ -189,6 +192,7 @@ function TierMakerRoomPage() {
   const [localTryOn, setLocalTryOn] = useState(emptyTryOn);
   const [isClothingModalOpen, setIsClothingModalOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState(null);
+  const [itemPendingDeletion, setItemPendingDeletion] = useState(null);
   const [addingProductId, setAddingProductId] = useState(null);
   const [boardScale, setBoardScale] = useState(1);
   const [boardContentHeight, setBoardContentHeight] =
@@ -242,6 +246,7 @@ function TierMakerRoomPage() {
         : [],
     [candidateQuery.data],
   );
+  const refetchCandidates = candidateQuery.refetch;
   const roomItemRecords = useMemo(() => {
     const roomItemsById = new Map(
       candidateItems.map((item) => [String(item.roomItemId), item]),
@@ -255,8 +260,18 @@ function TierMakerRoomPage() {
       });
     });
 
-    return [...roomItemsById.values()];
-  }, [candidateItems, roomEvents.roomItems]);
+    const removedRoomItemIds = new Set(
+      roomEvents.removedRoomItemIds.map(String),
+    );
+
+    return [...roomItemsById.values()].filter(
+      (item) => !removedRoomItemIds.has(String(item.roomItemId)),
+    );
+  }, [
+    candidateItems,
+    roomEvents.removedRoomItemIds,
+    roomEvents.roomItems,
+  ]);
 
   const productIds = useMemo(
     () => [
@@ -348,6 +363,10 @@ function TierMakerRoomPage() {
   const candidates = roomEvents.fittingCandidates
     .map((candidate) => clothesById[String(candidate.roomItemId)])
     .filter(Boolean);
+  const pendingDeletionItem =
+    itemPendingDeletion && clothesById[itemPendingDeletion.id]
+      ? itemPendingDeletion
+      : null;
   const hasOuterCandidate = candidates.some(isOuterItem);
   const isHost = roomSession?.role === "HOST";
   const isBoardReady =
@@ -467,6 +486,41 @@ function TierMakerRoomPage() {
     toast.warning(getLockConflictMessage(rejection.ownerNickname));
   }, [roomEvents.lockRejection, toast]);
 
+  useEffect(() => {
+    const removal = roomEvents.itemRemoval;
+
+    if (!removal) return;
+
+    const removalEventId =
+      removal.eventId ??
+      `${removal.roomItemId}:${removal.productId}:${removal.senderParticipantId}`;
+
+    if (processedItemRemovalEventIdsRef.current.has(removalEventId)) return;
+
+    processedItemRemovalEventIdsRef.current.add(removalEventId);
+    refetchCandidates();
+
+    if (
+      String(removal.senderParticipantId) ===
+      String(roomSession.participantId)
+    ) {
+      return;
+    }
+
+    const removedCandidate = candidateItems.find(
+      (item) => String(item.roomItemId) === String(removal.roomItemId),
+    );
+    const itemName = removal.name ?? removedCandidate?.name ?? "해당";
+
+    toast.success(`${itemName} 항목이 삭제되었습니다.`);
+  }, [
+    candidateItems,
+    refetchCandidates,
+    roomEvents.itemRemoval,
+    roomSession.participantId,
+    toast,
+  ]);
+
   const finishRoomMutation = useMutation({
     mutationFn: async () => {
       const requestFinish = (expectedVersion) =>
@@ -517,8 +571,27 @@ function TierMakerRoomPage() {
       candidateQuery.refetch();
       toast.success("후보 의상을 추가했습니다.");
     },
+    onError: (error) => {
+      if (error.response?.status === 409) {
+        toast.info("이미 추가된 항목입니다");
+      }
+    },
     onSettled: () => {
       setAddingProductId(null);
+    },
+  });
+
+  const deleteCandidateMutation = useMutation({
+    mutationFn: (item) =>
+      deleteCandidate({
+        roomToken: roomSession.roomToken,
+        roomId: Number(roomId),
+        productId: item.productId,
+      }),
+    onSuccess: (_response, item) => {
+      setItemPendingDeletion(null);
+      refetchCandidates();
+      toast.success(`${item.name ?? "해당"} 항목이 삭제되었습니다.`);
     },
   });
 
@@ -834,7 +907,37 @@ function TierMakerRoomPage() {
 
     if (productId == null || addCandidateMutation.isPending) return;
 
+    const isAlreadyAdded = roomItemRecords.some(
+      (item) => String(item.productId) === String(productId),
+    );
+
+    if (isAlreadyAdded) {
+      addCandidateMutation.reset();
+      toast.info("이미 추가된 항목입니다");
+      return;
+    }
+
     addCandidateMutation.mutate(productId);
+  };
+
+  const handleRequestItemDelete = (item) => {
+    if (!item || deleteCandidateMutation.isPending) return;
+
+    deleteCandidateMutation.reset();
+    setItemPendingDeletion(item);
+  };
+
+  const handleCloseItemDelete = () => {
+    if (deleteCandidateMutation.isPending) return;
+
+    deleteCandidateMutation.reset();
+    setItemPendingDeletion(null);
+  };
+
+  const handleConfirmItemDelete = () => {
+    if (!pendingDeletionItem || deleteCandidateMutation.isPending) return;
+
+    deleteCandidateMutation.mutate(pendingDeletionItem);
   };
 
   const handleFinishRoom = () => {
@@ -1013,6 +1116,7 @@ function TierMakerRoomPage() {
                     hasOuterCandidate={hasOuterCandidate}
                     onDropCandidate={handleDropCandidate}
                     onRemoveCandidate={handleRemoveCandidate}
+                    onDeleteItem={handleRequestItemDelete}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onGenerate={() => tryOnMutation.mutate()}
@@ -1054,6 +1158,7 @@ function TierMakerRoomPage() {
                     waitingClothes={waitingClothes}
                     roomCategory={roomCategoryLabel}
                     onUnrank={handleUnrank}
+                    onDeleteItem={handleRequestItemDelete}
                     onViewDetails={handleViewDetails}
                   />
                   <ClothingCatalog
@@ -1063,6 +1168,7 @@ function TierMakerRoomPage() {
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onViewDetails={handleViewDetails}
+                    onDeleteItem={handleRequestItemDelete}
                     onAddClothing={() => {
                       addCandidateMutation.reset();
                       setIsClothingModalOpen(true);
@@ -1093,23 +1199,48 @@ function TierMakerRoomPage() {
           </>
         )}
       </div>
-      {detailProductId && (
-        <ProductDetailModal
-          productId={detailProductId}
-          roomToken={roomSession.roomToken}
-          onClose={() => setDetailProductId(null)}
-        />
-      )}
-      {isClothingModalOpen && (
-        <ClothingAddModal
-          roomToken={roomSession.roomToken}
-          onClose={() => setIsClothingModalOpen(false)}
-          onAdd={handleAddProduct}
-          isAdding={addCandidateMutation.isPending}
-          addingProductId={addingProductId}
-          addError={addCandidateMutation.error}
-        />
-      )}
+      <AnimatePresence>
+        {detailProductId && (
+          <ProductDetailModal
+            key="product-detail"
+            productId={detailProductId}
+            roomToken={roomSession.roomToken}
+            onClose={() => setDetailProductId(null)}
+          />
+        )}
+        {isClothingModalOpen && (
+          <ClothingAddModal
+            key="clothing-add"
+            roomToken={roomSession.roomToken}
+            onClose={() => setIsClothingModalOpen(false)}
+            onAdd={handleAddProduct}
+            isAdding={addCandidateMutation.isPending}
+            addingProductId={addingProductId}
+            addError={
+              addCandidateMutation.error?.response?.status === 409
+                ? null
+                : addCandidateMutation.error
+            }
+          />
+        )}
+        {pendingDeletionItem && (
+          <ItemDeleteConfirmModal
+            key="item-delete"
+            item={pendingDeletionItem}
+            isDeleting={deleteCandidateMutation.isPending}
+            errorMessage={
+              deleteCandidateMutation.isError
+                ? getApiErrorMessage(
+                    deleteCandidateMutation.error,
+                    "항목 삭제에 실패했습니다.",
+                  )
+                : ""
+            }
+            onConfirm={handleConfirmItemDelete}
+            onClose={handleCloseItemDelete}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }

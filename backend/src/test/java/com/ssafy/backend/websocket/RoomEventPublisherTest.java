@@ -22,6 +22,7 @@ import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
 import com.ssafy.backend.websocket.event.ParticipantLeaveReason;
 import com.ssafy.backend.websocket.event.ParticipantLeftEvent;
 import com.ssafy.backend.websocket.event.RoomEventType;
+import com.ssafy.backend.websocket.event.RoomExpiredEvent;
 import com.ssafy.backend.websocket.event.RoomFinishedEvent;
 import com.ssafy.backend.websocket.dto.TierRenamedEventDataDTO;
 import com.ssafy.backend.websocket.event.RoomStartedEvent;
@@ -310,6 +311,25 @@ class RoomEventPublisherTest {
         assertThat(event.eventType()).isEqualTo(RoomEventType.ROOM_FINISHED);
         assertThat(event.version()).isEqualTo(18L);
         assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(Map.of());
+    }
+
+    @Test
+    void roomExpiredEventIsBroadcast() {
+        RoomExpiredEvent domainEvent = new RoomExpiredEvent(31L, 19L);
+
+        roomEventPublisher.handleRoomExpired(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.ROOM_EXPIRED);
+        assertThat(event.version()).isEqualTo(19L);
+        assertThat(event.senderParticipantId()).isNull();
         assertThat(event.data()).isEqualTo(Map.of());
     }
 

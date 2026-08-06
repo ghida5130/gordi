@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useToastStore } from "@/stores/useToastStore";
 
 const EXIT_DURATION = 260;
@@ -53,8 +54,6 @@ function ToastItem({ toast, onClose }) {
 export default function Toast() {
     const toasts = useToastStore((state) => state.toasts);
     const removeToast = useToastStore((state) => state.removeToast);
-
-    if (toasts.length === 0) return null;
 
     return (
         <>
@@ -133,11 +132,20 @@ export default function Toast() {
                 aria-live="polite"
                 aria-atomic="false"
             >
-                {toasts.map((toast) => (
-                    <div key={toast.id} className="pointer-events-auto">
-                        <ToastItem toast={toast} onClose={removeToast} />
-                    </div>
-                ))}
+                <AnimatePresence initial={false}>
+                    {toasts.map((toast) => (
+                        <motion.div
+                            layout="position"
+                            key={toast.id}
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.96 }}
+                            className="pointer-events-auto"
+                        >
+                            <ToastItem toast={toast} onClose={removeToast} />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
         </>
     );

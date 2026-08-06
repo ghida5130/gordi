@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "motion/react";
 
 import { searchProducts } from "@/api/products";
 import { getApiErrorMessage } from "@/utils/apiError";
@@ -114,13 +115,21 @@ function ClothingAddModal({
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="의상 추가"
     >
-      <section className="flex h-[min(820px,calc(100vh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <motion.section
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.985 }}
+        className="flex h-[min(820px,calc(100vh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>
             <h2 className="text-xl font-bold text-slate-900">의상 추가</h2>
@@ -356,8 +365,8 @@ function ClothingAddModal({
             </button>
           </div>
         </footer>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
