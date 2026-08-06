@@ -80,6 +80,8 @@ ai/**/reports/
 ai/**/probe/
 ai/**/pilot/
 ai/catalog_index/
+# 아바타 프리셋 원본 — S3 배포본이 소스라 로컬 참조용만 보관
+ai/avatar_references/
 ai/tryon_results/
 
 # IntelliJ IDEA / JetBrains

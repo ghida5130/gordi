@@ -168,6 +168,33 @@ def test_uploaded_manifest_and_product_upsert_sql(tmp_path: Path) -> None:
     assert params[8].startswith(f"{BASE_URL}/")
 
 
+def test_seed_database_stores_object_key_when_requested(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_database_reads(monkeypatch)
+    connection = _Connection()
+
+    seed_database(
+        connection,
+        _manifest(),
+        database="gordi",
+        apply=True,
+        backup_output=tmp_path / "backup.json",
+        store_object_key=True,
+    )
+
+    upserts = [
+        params
+        for sql, params in connection.cursor_instance.statements
+        if "INSERT INTO products" in sql
+    ]
+    assert len(upserts) == 1
+    stored_image_url = upserts[0][8]
+    assert stored_image_url.startswith("garments/musinsa/")
+    assert not stored_image_url.startswith("http")
+
+
 def test_seed_database_rolls_back_entire_transaction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

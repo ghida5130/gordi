@@ -1,7 +1,21 @@
-# TPO 15k 카탈로그 배포 계획 (S3 · EC2) — 실행 대기
+# TPO 15k 카탈로그 배포 계획 (S3 · EC2) — 실행 완료
 
-- 작성일: 2026-08-05
-- 상태: **계획만 — 팀 쿼리 평가(기존 2k vs 확장 15k) 후 실행**
+- 작성일: 2026-08-05 / **실행 완료: 2026-08-06**
+- Go 조건 충족: 팀 평가 macro 0.772 → 0.927 (커밋 d382bc5)
+
+## 실행 결과 기록 (2026-08-06)
+
+| 단계 | 결과 |
+|---|---|
+| S3 업로드 | 신규 13,201 + 기존 1,991 skip, 충돌 0. 오프라인 enriched manifest와 키·URL 불일치 0 |
+| EC2 DB 시드 | 15,192 상품 / 44,775행, `--store-object-key`(신설, f6791cd)로 **키 형태 저장**(절대 URL 0), 백업 `ec2-db-backup-before-15k.json`, id 1129~18311 |
+| 스냅샷 재발행 | EC2 id 기준, **embedded_count=0 / reused 15,192** (input_sha256 재사용), SHA `0435f77b…` |
+| 배치 | workspace 마운트 경로 + `/opt/gordi/ai/catalog_index` 양쪽, 파일 SHA 로컬↔EC2 일치, 구 스냅샷 `.bak` 보존 |
+| 전환·스모크 | gordi-ai 재기동, health(`/ai/v1/health`) OK, `/rank` + `tpo` 필드 200, VLM 리랭크 failed=0 (6.6s) |
+
+비고: EC2 컨테이너에 OPENROUTER 키·INTERNAL_API_KEY·리랭크 플래그가
+CI/CD 경로로 반영돼 있음을 확인(무키 요청 401 정상). API prefix는
+`/ai/v1`.
 - 선행 산출물 (로컬 완료분):
   - seed manifest: `ai/garment_dataset-v2/reports/gordi-product-seed-tpo15k.json` (15,192 상품 / 44,775 사이즈 행)
   - 오프라인 enriched manifest: `...-enriched.json` (S3 키·URL 사전 계산, 업로드 안 함)

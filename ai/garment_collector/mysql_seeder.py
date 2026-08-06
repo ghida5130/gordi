@@ -227,8 +227,18 @@ def seed_database(
     database: str,
     apply: bool,
     backup_output: Path | None = None,
+    store_object_key: bool = False,
 ) -> SeedReport:
     products = manifest["products"]
+    if store_object_key:
+        # 백엔드 규약(2026-08-04 확정): products.image_url 은 객체
+        # 키만 저장하고 CloudFront base 는 백엔드 ImageUrlResolver 가
+        # 조합한다. manifest 검증은 절대 URL 로 통과한 뒤 저장 시점에
+        # 키로 치환한다 — 절대 URL 이 DB 에 노출되는 시간창을 없앤다.
+        products = [
+            {**product, "image_url": product["primary"]["s3_object_key"]}
+            for product in products
+        ]
     external_ids = [product["external_id"] for product in products]
     size_row_count = sum(len(product["sizes"]) for product in products)
 

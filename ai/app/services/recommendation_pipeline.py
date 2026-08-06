@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from functools import lru_cache
 
 from app.core.config import get_settings
@@ -95,14 +97,39 @@ def get_pairwise_reranker() -> VLMPairwiseCompatibilityModel:
     )
 
 
+# lru_cache 는 예외를 캐시하지 않아서, 스냅샷 로드 실패가 요청마다
+# 수백 MB JSON 재파싱을 유발해 응답 지연 → 호출자(Spring) 타임아웃으로
+# 번진다 (2026-08-06 EC2 장애). 실패도 backoff 동안 기억해 즉시
+# baseline 으로 강등되게 한다.
+_INDEX_FAILURE_BACKOFF_SECONDS = 60.0
+_index_failure: tuple[float, str] | None = None
+_index_failure_lock = threading.Lock()
+
+
 @lru_cache
-def get_catalog_index() -> CatalogVectorIndex:
+def _load_catalog_index() -> CatalogVectorIndex:
     settings = get_settings()
+    return CatalogVectorIndex.load(
+        settings.catalog_embedding_index_path
+    )
+
+
+def get_catalog_index() -> CatalogVectorIndex:
+    global _index_failure
+    with _index_failure_lock:
+        if _index_failure is not None:
+            failed_at, message = _index_failure
+            if (
+                time.monotonic() - failed_at
+                < _INDEX_FAILURE_BACKOFF_SECONDS
+            ):
+                raise RecommendationRuntimeError(message)
+            _index_failure = None
     try:
-        return CatalogVectorIndex.load(
-            settings.catalog_embedding_index_path
-        )
+        return _load_catalog_index()
     except VectorIndexError as exc:
+        with _index_failure_lock:
+            _index_failure = (time.monotonic(), str(exc))
         raise RecommendationRuntimeError(str(exc)) from exc
 
 
