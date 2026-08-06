@@ -1,5 +1,6 @@
 package com.ssafy.backend.websocket.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -35,6 +36,7 @@ public class FittingCandidatesService {
     private final RoomItemRepository roomItemRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    @BusinessOperation(value = "room.fitting-candidates.update", slowThresholdMs = 500)
     @Transactional
     public void update(
             Long roomId,

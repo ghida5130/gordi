@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -43,6 +44,7 @@ public class TryOnJobEventService {
     private final TryOnJobEventRepository tryOnJobEventRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    @BusinessOperation(value = "tryon.job.event.apply", slowThresholdMs = 1_000)
     public void apply(Long jobId, TryOnJobEventRequest request) {
         TryOnJobEventType eventType = parseEventType(request.eventType());
 

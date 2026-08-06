@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -97,6 +98,7 @@ public class RoomService {
         this.roomExpirationMillis = roomExpirationMillis;
     }
 
+    @BusinessOperation(value = "room.create", slowThresholdMs = 1_500)
     @Transactional
     public RoomCreateResponseDTO create(
             String email,
@@ -161,6 +163,7 @@ public class RoomService {
         return createResponse(room, hostParticipant, recommendationItems.size());
     }
 
+    @BusinessOperation(value = "room.join", slowThresholdMs = 1_500)
     @Transactional
     public RoomJoinResponseDTO join(
             String rawRoomCode,

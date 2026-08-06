@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -120,6 +121,7 @@ public class TryOnService {
 
     /* ==================== 등록 ==================== */
 
+    @BusinessOperation(value = "tryon.job.create", slowThresholdMs = 3_000)
     public TryOnJobCreateResponseDTO create(
             TryOnJobCreateRequestDTO request,
             String idempotencyKey,
@@ -203,6 +205,7 @@ public class TryOnService {
     /* ==================== 재시도 ==================== */
 
     /** 재시도 가능한 실패 Job 만 허용하며, 원본은 그대로 두고 새 Job 을 만든다. */
+    @BusinessOperation(value = "tryon.job.retry", slowThresholdMs = 3_000)
     public TryOnJobRetryResponseDTO retry(
             Long jobId,
             String idempotencyKey,
@@ -282,6 +285,7 @@ public class TryOnService {
      * HOST 만 가능. 같은 방에서 성공한 Job 과 현재 보드 버전을 한 트랜잭션에서 검증한다.
      * 방 행을 비관적 락으로 잡아 동시 확정 요청이 서로를 덮어쓰지 않게 한다.
      */
+    @BusinessOperation(value = "tryon.snapshot.confirm", slowThresholdMs = 1_500)
     public OutfitSnapshotResponseDTO confirmSnapshot(
             String roomCode,
             OutfitSnapshotConfirmRequestDTO request,

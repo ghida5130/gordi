@@ -1,5 +1,6 @@
 package com.ssafy.backend.websocket.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -35,6 +36,7 @@ public class RoomStartService {
 
     // - 인자: 방 ID, 요청자 participantId/role, 시작 요청(clientEventId/baseVersion)
     // - 동작: HOST 권한 → 방 상태(WAITING) → 버전 검증+상태 전이 → RoomStartedEvent 발행
+    @BusinessOperation(value = "room.start", slowThresholdMs = 1_000)
     @Transactional
     public void start(Long roomId, Long senderParticipantId, String senderRole, RoomStartRequestDTO request) {
         validateRequest(request);

@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.util.ImageUrlResolver;
@@ -41,6 +42,7 @@ public class CandidateService {
     private final ApplicationEventPublisher eventPublisher;
 
     /** 후보 의상 추가: product를 room에 넣는다 */
+    @BusinessOperation(value = "room.candidate.add", slowThresholdMs = 1_000)
     public CandidateResponseDTO add(CandidateAddRequestDTO request, RoomPrincipal principal) {
         roomAccessValidator.requireParticipant(request.roomId(), principal);
 
@@ -94,6 +96,7 @@ public class CandidateService {
     }
 
     /** 후보 의상 삭제 → 컨트롤러에서 204 반환 */
+    @BusinessOperation(value = "room.candidate.delete", slowThresholdMs = 1_000)
     public void delete(Long roomId, Long productId, RoomPrincipal principal) {
         roomAccessValidator.requireParticipant(roomId, principal);
 

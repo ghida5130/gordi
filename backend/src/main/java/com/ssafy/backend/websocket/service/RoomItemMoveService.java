@@ -1,5 +1,6 @@
 package com.ssafy.backend.websocket.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -49,6 +50,7 @@ public class RoomItemMoveService {
 
     // - 인자: 방 ID, 요청자 participantId, 이동 요청(clientEventId/baseVersion/data)
     // - 동작: 검증 → 버전 증가 → sparse position 계산·배치 → ItemMovedEvent 발행
+    @BusinessOperation(value = "room.item.move", slowThresholdMs = 500)
     @Transactional
     public void moveItem(Long roomId, Long senderParticipantId, ItemMoveRequestDTO request) {
         validateRequest(request);
