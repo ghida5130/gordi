@@ -74,6 +74,8 @@ ai/garment_dataset-v2/
 ai/**/raw/
 ai/**/normalized/
 ai/**/images/
+!ai/image_demo_local/test_data/musinsa/images/
+!ai/image_demo_local/test_data/musinsa/images/**
 ai/**/reports/
 ai/**/probe/
 ai/**/pilot/
