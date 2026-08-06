@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
+import numpy as np
+
 from app.recommendation.catalog_embeddings import (
     CATALOG_EMBEDDING_SCHEMA_VERSION,
     CatalogEmbeddingError,
@@ -92,7 +94,11 @@ class CatalogVectorIndex:
         self.model = model
         self.dimensions = dimensions
         self.snapshot_sha256 = snapshot_sha256
-        self._items = tuple(items)
+        self._products = tuple(item.product for item in items)
+        self._matrix = np.array(
+            [item.embedding for item in items],
+            dtype=np.float64,
+        )
 
     @classmethod
     def load(cls, path: Path) -> "CatalogVectorIndex":
@@ -152,45 +158,48 @@ class CatalogVectorIndex:
 
     @property
     def product_count(self) -> int:
-        return len(self._items)
+        return len(self._products)
 
     @property
     def products(self) -> list[dict[str, Any]]:
-        return [dict(item.product) for item in self._items]
+        return [dict(product) for product in self._products]
 
     def embedding_of(
         self,
         source: str,
         external_id: str,
     ) -> list[float] | None:
-        for item in self._items:
+        for row, product in enumerate(self._products):
             if (
-                item.product["source"] == source
-                and item.product["external_id"] == external_id
+                product["source"] == source
+                and product["external_id"] == external_id
             ):
-                return list(item.embedding)
+                return self._matrix[row].tolist()
         return None
 
     def embedding_by_product_id(
         self,
         product_id: int,
     ) -> tuple[float, ...] | None:
-        by_id = getattr(self, "_embeddings_by_product_id", None)
+        by_id = getattr(self, "_rows_by_product_id", None)
         if by_id is None:
             by_id = {
-                int(item.product["product_id"]): item.embedding
-                for item in self._items
+                int(product["product_id"]): row
+                for row, product in enumerate(self._products)
             }
-            self._embeddings_by_product_id = by_id
-        return by_id.get(int(product_id))
+            self._rows_by_product_id = by_id
+        row = by_id.get(int(product_id))
+        if row is None:
+            return None
+        return tuple(self._matrix[row].tolist())
 
     def product_by_id(self, product_id: int) -> dict[str, Any] | None:
         """Snapshot metadata (incl. image_url) for a backend DB id."""
         by_id = getattr(self, "_products_by_id", None)
         if by_id is None:
             by_id = {
-                int(item.product["product_id"]): item.product
-                for item in self._items
+                int(product["product_id"]): product
+                for product in self._products
             }
             self._products_by_id = by_id
         product = by_id.get(int(product_id))
@@ -208,28 +217,34 @@ class CatalogVectorIndex:
             raise VectorIndexError(
                 f"limit must be between 1 and {MAX_RETRIEVAL_LIMIT}"
             )
-        query = _normalized_vector(query_embedding, self.dimensions)
-        hits: list[SearchHit] = []
-        for item in self._items:
-            if not _matches_filters(item.product, filters):
-                continue
-            score = sum(
-                left * right
-                for left, right in zip(
-                    query,
-                    item.embedding,
-                    strict=True,
-                )
+        query = np.asarray(
+            _normalized_vector(query_embedding, self.dimensions),
+            dtype=np.float64,
+        )
+        rows = [
+            row
+            for row, product in enumerate(self._products)
+            if _matches_filters(product, filters)
+        ]
+        if not rows:
+            return []
+        scores = self._matrix[rows] @ query
+        np.clip(scores, -1.0, 1.0, out=scores)
+        ranked = sorted(
+            zip(rows, scores.tolist()),
+            key=lambda pair: (
+                -pair[1],
+                int(self._products[pair[0]]["product_id"]),
+            ),
+        )
+        return [
+            SearchHit(
+                product_id=int(self._products[row]["product_id"]),
+                score=score,
+                product=dict(self._products[row]),
             )
-            hits.append(
-                SearchHit(
-                    product_id=int(item.product["product_id"]),
-                    score=max(-1.0, min(1.0, score)),
-                    product=dict(item.product),
-                )
-            )
-        hits.sort(key=lambda hit: (-hit.score, hit.product_id))
-        return hits[:limit]
+            for row, score in ranked[:limit]
+        ]
 
 
 class CandidateRetriever:
