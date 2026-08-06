@@ -12,6 +12,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - MYSQL_HOST=gordi-mysql
+    command:
+      - --springdoc.api-docs.enabled=false
+      - --springdoc.swagger-ui.enabled=false
     networks:
       - app-network
 
