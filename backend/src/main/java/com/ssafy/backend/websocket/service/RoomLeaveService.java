@@ -1,5 +1,6 @@
 package com.ssafy.backend.websocket.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.common.time.AppZone;
@@ -26,6 +27,7 @@ public class RoomLeaveService {
      * 활성 참가자의 leftAt을 조건부 갱신하고 PARTICIPANT_LEFT 도메인 이벤트를 발행한다.
      * 이미 퇴장한 참가자라면 false를 반환하고 이벤트를 중복 발행하지 않는다.
      */
+    @BusinessOperation(value = "room.leave", slowThresholdMs = 1_000)
     @Transactional
     public boolean leave(
             Long roomId,

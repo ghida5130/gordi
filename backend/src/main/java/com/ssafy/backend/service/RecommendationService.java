@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.util.ImageUrlResolver;
@@ -99,6 +100,7 @@ public class RecommendationService {
 
     // ---------- 추천 스냅샷 생성 ----------
 
+    @BusinessOperation(value = "recommendation.snapshot.create", slowThresholdMs = 3_000)
     @Transactional
     public RecommendationResponse createSnapshot(RecommendationRequest request, String idempotencyKey) {
         User user = currentUser();
@@ -219,6 +221,7 @@ public class RecommendationService {
 
     // ---------- 선택 상품 재추천 ----------
 
+    @BusinessOperation(value = "recommendation.items.replace", slowThresholdMs = 3_000)
     @Transactional
     public ReplacementResponse replaceItems(
             Long recommendationId,

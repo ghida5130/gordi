@@ -1,5 +1,6 @@
 package com.ssafy.backend.service;
 
+import com.ssafy.backend.common.aop.BusinessOperation;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.util.ImageUrlResolver;
@@ -57,6 +58,7 @@ public class RoomFinishService {
     private final ApplicationEventPublisher eventPublisher;
     private final ImageUrlResolver imageUrlResolver;
 
+    @BusinessOperation(value = "room.finish", slowThresholdMs = 2_000)
     @Transactional
     public RoomFinishResponseDTO finish(
             String rawRoomCode,

@@ -30,6 +30,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<ProductSearchResponseDTO>> search(
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) String subcategory,
             @RequestParam(required = false) Integer minPrice,
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) String keyword,
@@ -39,6 +40,6 @@ public class ProductController {
     ) {
         RoomPrincipal principal = RoomPrincipalResolver.require(authentication);
         return ResponseEntity.ok(ApiResponse.success(
-                productService.search(category, minPrice, maxPrice, keyword, page, size, principal)));
+                productService.search(category, subcategory, minPrice, maxPrice, keyword, page, size, principal)));
     }
 }

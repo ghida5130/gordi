@@ -86,6 +86,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         SELECT p FROM Product p
         WHERE p.availability = 'AVAILABLE'
           AND (:category IS NULL OR p.category = :category)
+          AND (:subcategory IS NULL OR p.subcategory = :subcategory)
           AND (:minPrice IS NULL OR p.price >= :minPrice)
           AND (:maxPrice IS NULL OR p.price <= :maxPrice)
           AND (:keyword IS NULL
@@ -94,6 +95,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         """)
     Page<Product> search(
             @Param("category") String category,
+            @Param("subcategory") String subcategory,
             @Param("minPrice") Integer minPrice,
             @Param("maxPrice") Integer maxPrice,
             @Param("keyword") String keyword,
