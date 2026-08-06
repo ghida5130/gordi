@@ -51,6 +51,14 @@ function createSearchParams(filters, page) {
   return params;
 }
 
+function getProductSearchResult(response) {
+  const candidates = [response?.data, response, response?.data?.data];
+
+  return (
+    candidates.find((candidate) => Array.isArray(candidate?.products)) ?? {}
+  );
+}
+
 function ClothingAddModal({
   roomToken,
   onClose,
@@ -64,7 +72,7 @@ function ClothingAddModal({
   const [page, setPage] = useState(0);
   const [validationError, setValidationError] = useState("");
   const availableSubcategories = filters.category
-    ? SUBCATEGORY_OPTIONS[filters.category] ?? []
+    ? (SUBCATEGORY_OPTIONS[filters.category] ?? [])
     : Object.values(SUBCATEGORY_OPTIONS).flat();
   const productsQuery = useQuery({
     queryKey: ["roomProductSearch", roomToken, appliedFilters, page],
@@ -77,7 +85,7 @@ function ClothingAddModal({
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const result = productsQuery.data?.data ?? {};
+  const result = getProductSearchResult(productsQuery.data);
   const products = Array.isArray(result.products) ? result.products : [];
   const filteredProducts = appliedFilters.subcategory
     ? products.filter(
@@ -245,7 +253,7 @@ function ClothingAddModal({
           </p>
         )}
 
-        <div className="grid min-h-0 flex-1 grid-cols-4 gap-4 overflow-y-auto p-6">
+        <div className="grid min-h-0 flex-1 auto-rows-max grid-cols-2 content-start gap-3 overflow-y-auto p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {productsQuery.isPending && (
             <p className="col-span-full py-24 text-center text-sm text-slate-400">
               의상을 검색하는 중입니다.
@@ -262,60 +270,92 @@ function ClothingAddModal({
           {!productsQuery.isPending &&
             !productsQuery.isError &&
             filteredProducts.map((product) => {
-              const productId = product.productId ?? product.id;
-              const name = product.name ?? "이름 없는 의상";
-              const brand = product.brand ?? "브랜드 정보 없음";
+              const productDetails =
+                product.product ?? product.productInfo ?? product.item ?? {};
+              const productId =
+                product.productId ??
+                product.id ??
+                productDetails.productId ??
+                productDetails.id;
+              const name =
+                product.name ||
+                product.productName ||
+                productDetails.name ||
+                productDetails.productName ||
+                "이름 없는 의상";
+              const brand =
+                product.brand ||
+                product.brandName ||
+                productDetails.brand ||
+                productDetails.brandName ||
+                "브랜드 정보 없음";
+              const priceValue =
+                product.price ??
+                product.productPrice ??
+                productDetails.price ??
+                productDetails.productPrice;
               const price =
-                product.price == null
+                priceValue == null
                   ? "가격 정보 없음"
-                  : `${Number(product.price).toLocaleString()}원`;
+                  : `${Number(priceValue).toLocaleString()}원`;
               const subcategory =
-                product.subcategory ?? "상세 카테고리 정보 없음";
+                product.subcategory ??
+                productDetails.subcategory ??
+                "상세 카테고리 정보 없음";
+              const imageUrl =
+                product.imageUrl ??
+                product.thumbnailUrl ??
+                product.image ??
+                productDetails.imageUrl ??
+                productDetails.thumbnailUrl ??
+                productDetails.image;
 
               return (
                 <article
                   key={productId}
-                  className="flex min-h-[390px] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  className="group grid h-fit min-w-0 grid-rows-[auto_auto] self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
                 >
-                  <div className="h-48 shrink-0 overflow-hidden rounded-t-2xl bg-slate-100">
-                    {product.imageUrl ? (
+                  <div className="relative aspect-[5/4] shrink-0 overflow-hidden bg-slate-100">
+                    {imageUrl ? (
                       <img
-                        src={product.imageUrl}
+                        src={imageUrl}
                         alt={name}
-                        className="size-full object-cover"
+                        className="size-full object-cover transition duration-300 group-hover:scale-[1.03]"
                       />
                     ) : (
                       <div className="flex size-full items-center justify-center text-xs text-slate-400">
                         이미지 없음
                       </div>
                     )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-3 pb-3 pt-10">
+                      <p className="max-h-10 overflow-hidden break-words text-sm font-bold leading-5 text-white drop-shadow-sm">
+                        {name}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-1 flex-col p-4">
-                    <p className="min-h-10 break-words text-sm font-bold leading-5 text-slate-900">
-                      {name}
-                    </p>
-                    <dl className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
-                      <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col p-3">
+                    <dl className="space-y-1 text-[11px]">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
                         <dt className="shrink-0 font-semibold text-slate-400">
                           브랜드
                         </dt>
-                        <dd className="min-w-0 break-words text-right font-semibold text-slate-700">
+                        <dd className="min-w-0 truncate text-right font-semibold text-slate-700">
                           {brand}
                         </dd>
                       </div>
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
                         <dt className="shrink-0 font-semibold text-slate-400">
                           가격
                         </dt>
-                        <dd className="text-right font-bold text-slate-900">
+                        <dd className="min-w-0 truncate text-right font-bold text-slate-900">
                           {price}
                         </dd>
                       </div>
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
                         <dt className="shrink-0 font-semibold text-slate-400">
                           상세 분류
                         </dt>
-                        <dd className="min-w-0 break-words text-right font-semibold text-violet-600">
+                        <dd className="min-w-0 truncate text-right font-semibold text-violet-600">
                           {subcategory}
                         </dd>
                       </div>
@@ -324,7 +364,7 @@ function ClothingAddModal({
                       type="button"
                       onClick={() => onAdd(product)}
                       disabled={isAdding}
-                      className="mt-auto w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-2 w-full shrink-0 rounded-xl bg-violet-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isAdding && String(addingProductId) === String(productId)
                         ? "추가 중..."

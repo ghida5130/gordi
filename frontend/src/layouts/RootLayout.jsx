@@ -10,6 +10,9 @@ function RootLayout() {
   const { key: locationKey, pathname } = useLocation();
   const outlet = useOutlet();
   const isMainPage = pathname === "/";
+  const isTierMakerRoomPage = /^\/rooms\/[^/]+\/tier-maker\/?$/.test(
+    pathname,
+  );
   const lastScrollYRef = useRef(0);
   const scrollFrameRef = useRef(null);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
@@ -27,6 +30,9 @@ function RootLayout() {
       if (currentScrollY === 0) {
         setIsHeaderHidden(false);
         lastScrollYRef.current = 0;
+      } else if (isTierMakerRoomPage) {
+        setIsHeaderHidden(true);
+        lastScrollYRef.current = currentScrollY;
       } else if (Math.abs(scrollDelta) >= SCROLL_DIRECTION_THRESHOLD_PX) {
         setIsHeaderHidden(scrollDelta > 0);
         lastScrollYRef.current = currentScrollY;
@@ -40,8 +46,10 @@ function RootLayout() {
       );
     };
     const resetFrameId = window.requestAnimationFrame(() => {
-      lastScrollYRef.current = Math.max(window.scrollY, 0);
-      setIsHeaderHidden(false);
+      const currentScrollY = Math.max(window.scrollY, 0);
+
+      lastScrollYRef.current = currentScrollY;
+      setIsHeaderHidden(isTierMakerRoomPage && currentScrollY > 0);
     });
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -56,7 +64,7 @@ function RootLayout() {
 
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [pathname]);
+  }, [isTierMakerRoomPage, pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50">

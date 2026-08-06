@@ -49,6 +49,7 @@ function RecommendationPage() {
   const [submittedConditions, setSubmittedConditions] = useState(null);
   const [submittedRecommendation, setSubmittedRecommendation] = useState(null);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [replacingProductIds, setReplacingProductIds] = useState([]);
   const [replacementNotice, setReplacementNotice] = useState("");
   const [form, setForm] = useState({
     category: "",
@@ -121,25 +122,27 @@ function RecommendationPage() {
             currentRecommendation.products,
         );
         const responseItems = toArray(replacementResult.items);
-        const nextItems =
-          responseItems.length > 0
-            ? responseItems
-            : currentItems.map((item) => {
-                const productId = item.productId ?? item.id;
-                const replacement = replacements.find(
-                  (currentReplacement) =>
-                    String(currentReplacement.oldProductId) ===
-                    String(productId),
-                );
+        const nextItems = currentItems.map((item) => {
+          const productId = item.productId ?? item.id;
+          const replacement = replacements.find(
+            (currentReplacement) =>
+              String(currentReplacement.oldProductId) === String(productId),
+          );
 
-                if (!replacement) return item;
+          if (!replacement) return item;
 
-                return {
-                  ...replacement,
-                  productId: replacement.newProductId,
-                  rank: replacement.position ?? item.rank,
-                };
-              });
+          return (
+            responseItems.find(
+              (responseItem) =>
+                String(responseItem.productId ?? responseItem.id) ===
+                String(replacement.newProductId),
+            ) ?? {
+              ...replacement,
+              productId: replacement.newProductId,
+              rank: replacement.position ?? item.rank,
+            }
+          );
+        });
 
         return {
           ...currentRecommendation,
@@ -157,6 +160,9 @@ function RecommendationPage() {
           ? `${unreplacedCount}개 항목은 대체할 상품을 찾지 못했습니다.`
           : "선택한 항목을 새로운 추천으로 교체했습니다.",
       );
+    },
+    onSettled: () => {
+      setReplacingProductIds([]);
     },
   });
   const createRoomMutation = useMutation({
@@ -225,6 +231,7 @@ function RecommendationPage() {
     replaceMutation.reset();
     createRoomMutation.reset();
     setSelectedProductIds([]);
+    setReplacingProductIds([]);
     setReplacementNotice("");
     setStep("analysis");
   };
@@ -233,6 +240,7 @@ function RecommendationPage() {
 
     setRecommendation(null);
     setSelectedProductIds([]);
+    setReplacingProductIds([]);
     setReplacementNotice("");
     setStep("results");
     createMutation.mutate({
@@ -259,10 +267,12 @@ function RecommendationPage() {
 
     setReplacementNotice("");
     createRoomMutation.reset();
+    const targetProductIds = [...selectedProductIds];
+    setReplacingProductIds(targetProductIds);
     replaceMutation.mutate({
       recommendationId,
       baseVersion: recommendationResult?.version,
-      productIds: selectedProductIds.map(Number),
+      productIds: targetProductIds.map(Number),
       idempotencyKey: createIdempotencyKey(),
     });
   };
@@ -340,6 +350,7 @@ function RecommendationPage() {
           }
           replacementNotice={replacementNotice}
           selectedProductIds={selectedProductIds}
+          replacingProductIds={replacingProductIds}
           canRequestActions={Boolean(
             recommendationId && recommendationResult?.version,
           )}
@@ -636,6 +647,23 @@ function RecommendationLoading({ title, description }) {
   );
 }
 
+function RecommendationItemSkeleton() {
+  return (
+    <article
+      className="animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+      aria-label="추천 의상 정보를 불러오는 중"
+    >
+      <div className="aspect-[3/4] bg-slate-200" />
+      <div className="space-y-3 p-4">
+        <div className="h-3 w-2/5 rounded-full bg-slate-200" />
+        <div className="h-4 w-4/5 rounded-full bg-slate-200" />
+        <div className="h-4 w-1/2 rounded-full bg-slate-200" />
+        <div className="h-3 w-3/5 rounded-full bg-slate-200" />
+      </div>
+    </article>
+  );
+}
+
 function RecommendationResults({
   items,
   emptyReason,
@@ -646,13 +674,14 @@ function RecommendationResults({
   actionError,
   replacementNotice,
   selectedProductIds,
+  replacingProductIds,
   canRequestActions,
   onBack,
   onToggleProduct,
   onReplaceSelected,
   onCreateRoom,
 }) {
-  if (isPending) {
+  if (isPending && items.length > 0) {
     return (
       <RecommendationLoading
         title="사용자 맞춤형 의상을 선별 중입니다"
@@ -661,7 +690,7 @@ function RecommendationResults({
     );
   }
 
-  if (isReplacing) {
+  if (isReplacing && replacingProductIds.length === 0) {
     return (
       <RecommendationLoading
         title="선택한 의상을 다시 추천하는 중입니다"
@@ -725,7 +754,7 @@ function RecommendationResults({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -4, scale: 0.98 }}
                   onClick={onReplaceSelected}
-                  disabled={!canRequestActions}
+                  disabled={!canRequestActions || isReplacing}
                   className="rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600 shadow-sm transition hover:border-red-400 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   선택한 {selectedProductIds.length}개 항목 다시 추천받기
@@ -735,7 +764,7 @@ function RecommendationResults({
             <button
               type="button"
               onClick={onCreateRoom}
-              disabled={!canRequestActions || items.length === 0}
+              disabled={!canRequestActions || items.length === 0 || isReplacing}
               className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
             >
               티어 메이커로 이동
@@ -754,11 +783,32 @@ function RecommendationResults({
           </p>
         )}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map((item, index) => {
+          {isPending
+            ? Array.from({ length: 10 }, (_, index) => (
+                <RecommendationItemSkeleton
+                  key={`recommendation-skeleton-${index}`}
+                />
+              ))
+            : items.map((item, index) => {
             const productId = item.productId ?? item.id;
             const name = item.name ?? item.productName ?? "추천 의상";
             const image = item.imageUrl ?? item.thumbnailUrl ?? item.image;
             const isSelected = selectedProductIds.includes(productId);
+            const isReplacingItem =
+              isReplacing &&
+              replacingProductIds.some(
+                (replacingProductId) =>
+                  String(replacingProductId) === String(productId),
+              );
+
+            if (isReplacingItem) {
+              return (
+                <RecommendationItemSkeleton
+                  key={`replacement-skeleton-${productId ?? index}`}
+                />
+              );
+            }
+
             return (
               <motion.article
                 key={productId ?? index}
@@ -776,6 +826,7 @@ function RecommendationResults({
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => onToggleProduct(productId)}
+                    disabled={isReplacing}
                     className="sr-only"
                   />
                   <span
@@ -830,9 +881,9 @@ function RecommendationResults({
                 )}
               </motion.article>
             );
-          })}
+            })}
         </div>
-        {!items.length && (
+        {!isPending && !items.length && (
           <p className="py-24 text-center text-slate-400">
             {emptyReason ?? "조건에 맞는 추천 의상이 없습니다."}
           </p>

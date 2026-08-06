@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
+
 import ClothingArtwork from "@/components/tierMaker/ClothingArtwork";
+import { TIER_MAKER_CURSOR_ANCHOR_SELECTOR } from "@/utils/tierMakerCursor";
 
 const cursorColors = [
   {
@@ -34,10 +37,84 @@ function SharedCursorLayer({
   currentParticipantId,
   itemLocks,
   clothesById,
+  boardRef,
+  layoutKey,
+  resolveCursorPosition,
 }) {
+  const [, setLayoutRevision] = useState(0);
+
+  useEffect(() => {
+    const board = boardRef?.current;
+
+    if (!board) return undefined;
+
+    let scheduledFrame = null;
+    let animationFrame = null;
+    let animationUntil = performance.now() + 550;
+    const refreshLayout = () => {
+      if (scheduledFrame !== null) return;
+
+      scheduledFrame = window.requestAnimationFrame(() => {
+        scheduledFrame = null;
+        setLayoutRevision((current) => current + 1);
+      });
+    };
+    const resizeObserver = new ResizeObserver(refreshLayout);
+    const followLayoutAnimation = (timestamp) => {
+      refreshLayout();
+
+      if (timestamp < animationUntil) {
+        animationFrame = window.requestAnimationFrame(followLayoutAnimation);
+        return;
+      }
+
+      animationFrame = null;
+    };
+    const followFor = (duration) => {
+      animationUntil = Math.max(animationUntil, performance.now() + duration);
+
+      if (animationFrame === null) {
+        animationFrame = window.requestAnimationFrame(followLayoutAnimation);
+      }
+    };
+    const observeAnchors = () => {
+      board
+        .querySelectorAll(TIER_MAKER_CURSOR_ANCHOR_SELECTOR)
+        .forEach((element) => resizeObserver.observe(element));
+    };
+    const mutationObserver = new MutationObserver(() => {
+      observeAnchors();
+      followFor(320);
+    });
+
+    resizeObserver.observe(board);
+    observeAnchors();
+    mutationObserver.observe(board, { childList: true, subtree: true });
+    followFor(550);
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+
+      if (scheduledFrame !== null) {
+        window.cancelAnimationFrame(scheduledFrame);
+      }
+
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [boardRef, layoutKey]);
+
   return (
     <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden rounded-3xl">
       {Object.values(cursors).map((cursor) => {
+        const position = resolveCursorPosition
+          ? resolveCursorPosition(cursor)
+          : cursor;
+
+        if (!position) return null;
+
         const isCurrentParticipant =
           String(cursor.participantId) === String(currentParticipantId);
         const participant = participants.find(
@@ -64,8 +141,8 @@ function SharedCursorLayer({
             key={cursor.participantId}
             className="absolute"
             style={{
-              left: `${cursor.x * 100}%`,
-              top: `${cursor.y * 100}%`,
+              left: `${position.x * 100}%`,
+              top: `${position.y * 100}%`,
             }}
           >
             <svg

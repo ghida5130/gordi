@@ -152,6 +152,10 @@
         cursor: none !important;
     }
 
+    html.tier-maker-dragging .tier-maker-insert-zone {
+        pointer-events: auto !important;
+    }
+
     /* - 티어메이커 공유 보드에서 전역 커서 숨김 */
     body .tier-maker-cursor-surface,
     body .tier-maker-cursor-surface * {
