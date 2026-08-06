@@ -17,9 +17,11 @@ import AvatarSetupPage from "@/pages/AvatarSetupPage";
 import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
+import TierMakerResultPage from "@/pages/TierMakerResultPage";
 import TierMakerDesignPage from "@/pages/TierMakerDesignPage";
 import TierMakerRedesignPage from "@/pages/TierMakerRedesignPage";
 import TierMakerRedesignV2Page from "@/pages/TierMakerRedesignV2Page";
+import TierMakerJitterPage from "@/pages/TierMakerJitterPage";
 import RecommendationPage from "@/pages/RecommendationPage";
 import MyPage from "@/pages/MyPage";
 
@@ -33,6 +35,11 @@ export const router = createBrowserRouter([
     {
         path: "/tier-maker-redesign-v2",
         element: <TierMakerRedesignV2Page />,
+        errorElement: <RouteErrorPage />,
+    },
+    {
+        path: "/tier-maker-jitter",
+        element: <TierMakerJitterPage />,
         errorElement: <RouteErrorPage />,
     },
     {
@@ -79,6 +86,10 @@ export const router = createBrowserRouter([
             {
                 path: "rooms/:roomId/tier-maker",
                 element: <TierMakerRoomPage />,
+            },
+            {
+                path: "rooms/:roomCode/result",
+                element: <TierMakerResultPage />,
             },
             {
                 path: "tier-maker-design",

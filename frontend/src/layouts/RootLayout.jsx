@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocation, useOutlet } from 'react-router-dom'
 import Header from "@/components/Header";
 import Toast from "@/components/Toast";
 
 const SCROLL_DIRECTION_THRESHOLD_PX = 4;
+const TOP_SCROLL_THRESHOLD_PX = 8;
 
 function RootLayout() {
   const { key: locationKey, pathname } = useLocation();
@@ -17,8 +18,38 @@ function RootLayout() {
   const scrollFrameRef = useRef(null);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  useLayoutEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    let secondFrameId = null;
+    const resetScrollPosition = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      lastScrollYRef.current = 0;
+      setIsHeaderHidden(false);
+    };
+
+    resetScrollPosition();
+
+    const firstFrameId = window.requestAnimationFrame(() => {
+      resetScrollPosition();
+      secondFrameId = window.requestAnimationFrame(resetScrollPosition);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+
+      if (secondFrameId !== null) {
+        window.cancelAnimationFrame(secondFrameId);
+      }
+    };
   }, [locationKey]);
 
   useEffect(() => {
@@ -27,7 +58,7 @@ function RootLayout() {
       const currentScrollY = Math.max(window.scrollY, 0);
       const scrollDelta = currentScrollY - lastScrollYRef.current;
 
-      if (currentScrollY === 0) {
+      if (currentScrollY <= TOP_SCROLL_THRESHOLD_PX) {
         setIsHeaderHidden(false);
         lastScrollYRef.current = 0;
       } else if (isTierMakerRoomPage) {
@@ -49,7 +80,9 @@ function RootLayout() {
       const currentScrollY = Math.max(window.scrollY, 0);
 
       lastScrollYRef.current = currentScrollY;
-      setIsHeaderHidden(isTierMakerRoomPage && currentScrollY > 0);
+      setIsHeaderHidden(
+        isTierMakerRoomPage && currentScrollY > TOP_SCROLL_THRESHOLD_PX,
+      );
     });
 
     window.addEventListener("scroll", handleScroll, { passive: true });

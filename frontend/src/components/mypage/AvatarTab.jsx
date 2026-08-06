@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { getMyAvatar } from "@/api/users";
 import AvatarSetupPrompt from "@/components/common/AvatarSetupPrompt";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { getBodyInformation } from "@/utils/bodyInformationStorage";
 
 const BODY_TYPE_LABELS = {
     SLIM: "상체형",
@@ -17,7 +16,6 @@ export default function AvatarTab() {
     const navigate = useNavigate();
     const avatarQuery = useQuery({ queryKey: ["myAvatar"], queryFn: getMyAvatar, retry: false, refetchOnMount: "always" });
     const avatar = avatarQuery.data?.data ?? avatarQuery.data;
-    const bodyInformation = getBodyInformation();
 
     if (avatarQuery.isPending || avatarQuery.isFetching) {
         return <div className="mx-auto h-96 max-w-3xl animate-pulse rounded-lg bg-slate-100" />;
@@ -33,8 +31,8 @@ export default function AvatarTab() {
 
     const gender = avatar.gender === "MALE" ? "남성" : "여성";
     const bodyType = BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType;
-    const height = bodyInformation?.height ?? 0;
-    const weight = bodyInformation?.weight ?? 0;
+    const height = avatar.height;
+    const weight = avatar.weight;
 
     return (
         <section className="mx-auto max-w-3xl">
@@ -47,8 +45,8 @@ export default function AvatarTab() {
                     <h1 className="mt-2 text-2xl font-bold">{bodyType}</h1>
                     <dl className="mt-7 grid grid-cols-[auto_1fr] gap-x-8 gap-y-4 border-y border-slate-100 py-6 text-sm">
                         <dt className="text-slate-400">성별</dt><dd className="font-bold">{gender}</dd>
-                        <dt className="text-slate-400">키</dt><dd className="font-bold">{height === 0 ? "미입력" : `${height}cm`}</dd>
-                        <dt className="text-slate-400">몸무게</dt><dd className="font-bold">{weight === 0 ? "미입력" : `${weight}kg`}</dd>
+                        <dt className="text-slate-400">키</dt><dd className="font-bold">{height == null ? "미입력" : `${height}cm`}</dd>
+                        <dt className="text-slate-400">몸무게</dt><dd className="font-bold">{weight == null ? "미입력" : `${weight}kg`}</dd>
                     </dl>
                     <button type="button" onClick={() => navigate("/mypage/avatar/edit")} className="mt-7 w-full rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-800">아바타 수정하기</button>
                 </div>

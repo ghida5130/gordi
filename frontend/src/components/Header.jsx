@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 
 import { logout } from "@/api/auth";
+import { getMyAvatar } from "@/api/users";
 import bodyIcon from "@/assets/images/header/body.svg";
 import logoImage from "@/assets/images/header/logo-image.webp";
 import logoText from "@/assets/images/header/logo-text.webp";
@@ -29,6 +30,13 @@ export default function Header({ isHidden = false }) {
     const contentDisplayTimerRef = useRef(null);
     const descriptionDisplayTimerRef = useRef(null);
     const isLoggedIn = isLogin || !!getAccessToken();
+    const avatarQuery = useQuery({
+        queryKey: ["myAvatar"],
+        queryFn: getMyAvatar,
+        enabled: isLoggedIn,
+        retry: false,
+        staleTime: 5 * 60 * 1000,
+    });
 
     useEffect(
         () => () => {
@@ -97,6 +105,43 @@ export default function Header({ isHidden = false }) {
         setAnimateMenuContent(false);
     };
 
+    const hasConfiguredAvatar = (response) => {
+        const avatar = response?.data ?? response;
+
+        return Boolean(avatar?.avatarId ?? avatar?.id ?? avatar?.imageUrl);
+    };
+
+    const handleBodySetupNavigation = async () => {
+        closeMenu();
+
+        if (!isLoggedIn) {
+            navigate("/mypage/avatar/edit");
+            return;
+        }
+
+        let avatarResponse = avatarQuery.data;
+        let avatarError = avatarQuery.error;
+
+        if (!avatarResponse && avatarError?.response?.status !== 404) {
+            const queryResult = await avatarQuery.refetch();
+            avatarResponse = queryResult.data;
+            avatarError = queryResult.error;
+        }
+
+        if (hasConfiguredAvatar(avatarResponse)) {
+            toast.info("이미 체형이 설정되어있습니다");
+            navigate("/mypage", { state: { activeTab: "avatar" } });
+            return;
+        }
+
+        if (!avatarError || avatarError.response?.status === 404) {
+            navigate("/mypage/avatar/edit");
+            return;
+        }
+
+        toast.error("체형 설정 여부를 확인하지 못했습니다.");
+    };
+
     const actionsAnimationClass = `${showMenuActions ? "visible" : "invisible"} ${animateMenuContent && showMenuActions ? "header-content-bounce" : ""}`;
     const menuTextClass = (isVisible) => `transition-opacity duration-500 ease-out motion-reduce:transition-none ${isVisible ? "opacity-100" : "opacity-0"}`;
     const menuTextDelay = (isVisible, order) => ({
@@ -141,16 +186,16 @@ export default function Header({ isHidden = false }) {
                         <nav
                             className={`absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 transition-[top] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${hoveredMenu ? "top-[calc(50%+0.375rem)]" : "top-1/2"}`}
                         >
-                            <Link
-                                to="/mypage/avatar/edit"
-                                onClick={closeMenu}
+                            <button
+                                type="button"
+                                onClick={handleBodySetupNavigation}
                                 onMouseEnter={() => openMenu("body")}
                                 onFocus={() => openMenu("body")}
                                 aria-expanded={hoveredMenu === "body"}
                                 className={`inline-flex h-12 items-center rounded-full px-5 text-base font-semibold transition-colors duration-300 ${hoveredMenu && hoveredMenu !== "body" ? "text-gray-400" : "text-gray-950"}`}
                             >
                                 체형 설정
-                            </Link>
+                            </button>
 
                             <Link
                                 to="/recommendation"
@@ -224,7 +269,7 @@ export default function Header({ isHidden = false }) {
 
                     {displayedMenu && (
                         <div className="relative z-10">
-                            <div className="mx-auto flex h-[400px] w-fit max-w-full justify-center gap-10 px-6 py-5">
+                            <div className="mx-auto flex h-[400px] w-[calc(100%-2rem)] max-w-6xl justify-center gap-10 px-6 py-5">
                                 {displayedMenu === "tier" ? (
                                     <>
                                         <Link
@@ -316,11 +361,11 @@ export default function Header({ isHidden = false }) {
                                     </>
                                 ) : (
                                     <>
-                                        <Link
-                                            to="/mypage/avatar/edit"
-                                            onClick={closeMenu}
+                                        <button
+                                            type="button"
+                                            onClick={handleBodySetupNavigation}
                                             aria-label="맞춤형 체형 설정하기"
-                                            className={`group relative flex w-[260px] shrink-0 transform-gpu flex-col justify-between overflow-hidden rounded-[24px] bg-emerald-500 p-7 text-white shadow-[0_18px_40px_rgba(16,185,129,0.22)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[0.97] hover:shadow-[0_10px_24px_rgba(16,185,129,0.18)] focus-visible:scale-[0.97] focus-visible:ring-4 focus-visible:ring-emerald-200 active:scale-[0.95] ${actionsAnimationClass}`}
+                                            className={`group relative flex w-[260px] shrink-0 transform-gpu flex-col justify-between overflow-hidden rounded-[24px] bg-emerald-500 p-7 text-left text-white shadow-[0_18px_40px_rgba(16,185,129,0.22)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[0.97] hover:shadow-[0_10px_24px_rgba(16,185,129,0.18)] focus-visible:scale-[0.97] focus-visible:ring-4 focus-visible:ring-emerald-200 active:scale-[0.95] ${actionsAnimationClass}`}
                                         >
                                             <span className="absolute right-6 top-6 flex size-11 items-center justify-center rounded-full border border-white/40 bg-white/15 text-xl">↗</span>
                                             <div className="flex size-28 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-[0_22px_42px_-12px_rgba(5,150,105,0.48),0_6px_14px_-6px_rgba(5,150,105,0.28)] -rotate-3">
@@ -332,7 +377,7 @@ export default function Header({ isHidden = false }) {
                                                     <p>설정하기</p>
                                                 </h2>
                                             </div>
-                                        </Link>
+                                        </button>
 
                                         <section className="flex w-[650px] min-w-0 shrink-0 flex-col justify-center px-12">
                                             <div className="w-fit max-w-3xl">

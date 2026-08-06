@@ -245,7 +245,7 @@ function FittingPanel({
                   onDragEnd={(event) => onDragEnd(event, item.id)}
                   className="group relative cursor-grab"
                 >
-                  <div className="relative">
+                  <div className="relative origin-center transform-gpu transition-transform duration-200 ease-out group-hover:-translate-y-1 group-hover:-rotate-1">
                     <ClothingArtwork
                       item={item}
                       className="aspect-square rounded-lg border border-slate-200"

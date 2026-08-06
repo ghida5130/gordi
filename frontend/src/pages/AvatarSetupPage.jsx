@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
 import { getAvatarTemplates } from "@/api/avatar";
-import { updateMyAvatar } from "@/api/users";
+import { getMyAvatar, updateMyAvatar } from "@/api/users";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { getBodyInformation, setBodyInformation } from "@/utils/bodyInformationStorage";
 
 const BODY_TYPE_LABELS = {
     SLIM: "상체형",
@@ -105,31 +105,44 @@ export default function AvatarSetupPage() {
     const queryClient = useQueryClient();
     const toast = useToast();
     const updateUser = useUserStore((state) => state.updateUser);
+    const hasInitializedInformationRef = useRef(false);
     const [step, setStep] = useState("information");
-    const [gender, setGender] = useState(() => getBodyInformation()?.gender ?? "");
-    const [height, setHeight] = useState(() => {
-        const savedHeight = getBodyInformation()?.height;
-        return savedHeight ? String(savedHeight) : "";
-    });
-    const [weight, setWeight] = useState(() => {
-        const savedWeight = getBodyInformation()?.weight;
-        return savedWeight ? String(savedWeight) : "";
-    });
+    const [gender, setGender] = useState("");
+    const [height, setHeight] = useState("");
+    const [weight, setWeight] = useState("");
     const [avatars, setAvatars] = useState([]);
     const [initialAvatarCount, setInitialAvatarCount] = useState(0);
     const [showAdditionalAvatars, setShowAdditionalAvatars] = useState(false);
     const [selectedAvatar, setSelectedAvatar] = useState(null);
+    const avatarQuery = useQuery({
+        queryKey: ["myAvatar"],
+        queryFn: getMyAvatar,
+        retry: false,
+        refetchOnMount: "always",
+    });
+
+    useEffect(() => {
+        if (
+            hasInitializedInformationRef.current ||
+            !avatarQuery.isSuccess ||
+            avatarQuery.isFetching
+        ) {
+            return;
+        }
+
+        const savedAvatar = avatarQuery.data?.data ?? avatarQuery.data;
+
+        setGender(savedAvatar?.gender ?? "");
+        setHeight(savedAvatar?.height == null ? "" : String(savedAvatar.height));
+        setWeight(savedAvatar?.weight == null ? "" : String(savedAvatar.weight));
+        hasInitializedInformationRef.current = true;
+    }, [avatarQuery.data, avatarQuery.isFetching, avatarQuery.isSuccess]);
 
     const avatarMutation = useMutation({
         mutationFn: updateMyAvatar,
         onSuccess: (_response, { avatarId, avatar: requestedAvatar }) => {
             const savedAvatar = requestedAvatar ?? avatars.find((avatar) => String(getAvatarId(avatar)) === String(avatarId));
 
-            setBodyInformation({
-                gender,
-                height: height ? Number(height) : 0,
-                weight: weight ? Number(weight) : 0,
-            });
             updateUser({ profileImageUrl: savedAvatar?.imageUrl ?? null });
 
             queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
@@ -168,16 +181,28 @@ export default function AvatarSetupPage() {
                 }
 
                 setAvatars(avatarList);
-                avatarMutation.mutate({ avatarId, avatar: avatarList[0] });
+                avatarMutation.mutate({
+                    avatarId,
+                    avatar: avatarList[0],
+                    height: height ? Number(height) : null,
+                    weight: weight ? Number(weight) : null,
+                });
                 return;
             }
 
             const prioritizedTemplates = prioritizeAvatarTemplates(avatarList, request.weightId);
+            const initialAvatars = prioritizedTemplates.orderedAvatars.slice(
+                0,
+                prioritizedTemplates.initialAvatarCount,
+            );
+            const defaultAvatar = initialAvatars.find(
+                (avatar) => avatar.bodyType === "STANDARD",
+            ) ?? null;
 
             setAvatars(prioritizedTemplates.orderedAvatars);
             setInitialAvatarCount(prioritizedTemplates.initialAvatarCount);
             setShowAdditionalAvatars(false);
-            setSelectedAvatar(null);
+            setSelectedAvatar(defaultAvatar);
             setStep("selection");
         },
         onError: () => {
@@ -227,8 +252,40 @@ export default function AvatarSetupPage() {
             return;
         }
 
-        avatarMutation.mutate({ avatarId, avatar: selectedAvatar });
+        avatarMutation.mutate({
+            avatarId,
+            avatar: selectedAvatar,
+            height: height ? Number(height) : null,
+            weight: weight ? Number(weight) : null,
+        });
     };
+
+    if (avatarQuery.isPending || avatarQuery.isFetching) {
+        return (
+            <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
+                <div className="mx-auto h-[520px] w-full max-w-2xl animate-pulse rounded-lg bg-white" />
+            </main>
+        );
+    }
+
+    if (avatarQuery.isError && avatarQuery.error.response?.status !== 404) {
+        return (
+            <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
+                <section className="mx-auto w-full max-w-2xl rounded-lg border border-red-100 bg-white p-8 text-center shadow-sm">
+                    <p className="text-sm text-red-700">
+                        {getApiErrorMessage(avatarQuery.error, "저장된 체형 정보를 불러오지 못했습니다.")}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => avatarQuery.refetch()}
+                        className="mt-5 rounded-lg bg-black px-5 py-3 text-sm font-bold text-white hover:bg-gray-800"
+                    >
+                        다시 시도
+                    </button>
+                </section>
+            </main>
+        );
+    }
 
     const visibleAvatars = showAdditionalAvatars ? avatars : avatars.slice(0, initialAvatarCount);
     const hasAdditionalAvatars = avatars.length > initialAvatarCount;
@@ -237,13 +294,6 @@ export default function AvatarSetupPage() {
     const hasWeightGroups = requestedWeightId > 0 && avatarWeightGroups.reference.length > 0;
     const avatarSections = hasWeightGroups
         ? [
-            {
-                key: "reference",
-                label: "내 기준 체형",
-                description: "입력한 몸무게를 기준으로 추천된 체형이에요.",
-                labelClassName: "bg-gray-900 text-white",
-                avatars: avatarWeightGroups.reference,
-            },
             ...(showAdditionalAvatars && avatarWeightGroups.lower.length > 0
                 ? [{
                     key: "lower",
@@ -253,6 +303,13 @@ export default function AvatarSetupPage() {
                     avatars: avatarWeightGroups.lower,
                 }]
                 : []),
+            {
+                key: "reference",
+                label: "내 기준 체형",
+                description: "입력한 몸무게를 기준으로 추천된 체형이에요.",
+                labelClassName: "bg-gray-900 text-white",
+                avatars: avatarWeightGroups.reference,
+            },
             ...(showAdditionalAvatars && avatarWeightGroups.higher.length > 0
                 ? [{
                     key: "higher",
@@ -343,25 +400,44 @@ export default function AvatarSetupPage() {
                             <h2 className="text-lg font-bold text-gray-950">체형 선택</h2>
                             <p className="mt-1 text-sm text-gray-500">생성된 체형 중 하나를 선택해 주세요.</p>
                         </div>
-                        <div className="mt-5 space-y-7">
-                            {avatarSections.map((section) => (
-                                <section key={section.key}>
-                                    {section.label && (
-                                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                                            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${section.labelClassName}`}>
-                                                {section.label}
-                                            </span>
-                                            <p className="text-xs text-gray-500">{section.description}</p>
+                        <motion.div layout className="mt-5 space-y-7">
+                            <AnimatePresence initial={false}>
+                                {avatarSections.map((section) => (
+                                    <motion.section
+                                        layout
+                                        key={section.key}
+                                        initial={section.key === "reference"
+                                            ? false
+                                            : {
+                                                opacity: 0,
+                                                y: section.key === "lower" ? 36 : -36,
+                                                scale: 0.98,
+                                            }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{
+                                            layout: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+                                            opacity: { duration: 0.24 },
+                                            y: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+                                            scale: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+                                        }}
+                                    >
+                                        {section.label && (
+                                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                                                <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${section.labelClassName}`}>
+                                                    {section.label}
+                                                </span>
+                                                <p className="text-xs text-gray-500">{section.description}</p>
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {section.avatars.map((avatar, index) => (
+                                                <AvatarOption key={`${getAvatarId(avatar) ?? avatar.bodyType}-${index}`} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
+                                            ))}
                                         </div>
-                                    )}
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {section.avatars.map((avatar, index) => (
-                                            <AvatarOption key={`${getAvatarId(avatar) ?? avatar.bodyType}-${index}`} avatar={avatar} selected={selectedAvatar === avatar} onSelect={setSelectedAvatar} />
-                                        ))}
-                                    </div>
-                                </section>
-                            ))}
-                        </div>
+                                    </motion.section>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
                         {hasAdditionalAvatars && !showAdditionalAvatars && (
                             <button
                                 type="button"
