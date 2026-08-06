@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VLM 리랭크 A/B 평가</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --ink: #0f172a; --sub: #64748b;
+    --line: #e2e8f0; --accent: #0f172a; --win: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220; --card: #101a2e; --ink: #e2e8f0; --sub: #94a3b8;
+      --line: #1e293b; --accent: #e2e8f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--sub); font-size: 0.9rem; margin: 0 0 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; font-size: 0.95rem; background: var(--bg); color: var(--ink);
+  }
+  button {
+    border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700;
+    cursor: pointer; font-size: 0.9rem;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .primary { background: var(--accent); color: var(--bg); }
+  .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  .query-list { display: grid; gap: 8px; }
+  .query-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    font-size: 0.88rem;
+  }
+  .query-item:hover { border-color: var(--sub); }
+  .query-item.active { border-color: var(--accent); border-width: 2px; }
+  .badge {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+    background: var(--line); color: var(--sub); white-space: nowrap;
+  }
+  .badge.done { background: #dcfce7; color: #166534; }
+  .status { font-size: 0.85rem; color: var(--sub); margin-top: 10px; min-height: 1.2em; }
+  .arms { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 860px) { .arms { grid-template-columns: 1fr; } }
+  .arm {
+    border: 1.5px solid var(--line); border-radius: 14px; padding: 12px;
+  }
+  .arm h3 { margin: 0 0 10px; font-size: 1.0rem; text-align: center; }
+  .item {
+    display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .item:last-child { border-bottom: 0; }
+  .item img {
+    width: 56px; height: 70px; object-fit: cover; border-radius: 8px;
+    background: var(--line); flex-shrink: 0;
+  }
+  .item .name { font-size: 0.82rem; font-weight: 600; }
+  .item .meta { font-size: 0.74rem; color: var(--sub); }
+  .vote { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .vote button {
+    min-width: 140px; padding: 12px 16px; background: var(--bg);
+    border: 1.5px solid var(--line); color: var(--ink);
+  }
+  .vote button.selected { background: var(--win); border-color: var(--win); color: #fff; }
+  .kpi { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .kpi .box {
+    flex: 1; min-width: 140px; border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px;
+  }
+  .kpi .num { font-size: 1.4rem; font-weight: 800; }
+  .kpi .cap { font-size: 0.75rem; color: var(--sub); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>VLM 리랭크 A/B 평가</h1>
+  <p class="sub">같은 쿼리를 VLM 리랭크 켠 것/끈 것으로 실행해 좌우 블라인드로 보여줍니다. 어느 쪽 추천이 그 상황에 더 좋은지 골라 주세요. (어느 쪽이 VLM인지는 저장 전까지 비공개)</p>
+
+  <section class="card">
+    <div class="row">
+      <div>
+        <label for="evaluator">평가자 이름</label>
+        <input id="evaluator" type="text" maxlength="40" placeholder="예) 임효민" />
+      </div>
+      <button id="load-queries" class="primary">쿼리셋 불러오기 (6개)</button>
+      <button id="show-summary">집계 보기</button>
+    </div>
+    <p id="top-status" class="status"></p>
+  </section>
+
+  <section id="query-section" class="card" hidden>
+    <label>평가 쿼리 (완료: <span id="done-count">0</span>/<span id="total-count">0</span>)</label>
+    <div id="query-list" class="query-list"></div>
+  </section>
+
+  <section id="run-section" class="card" hidden>
+    <div id="run-query-text" style="font-weight:700; margin-bottom:12px;"></div>
+    <button id="run-ab" class="primary">두 안 생성 (~15초)</button>
+    <p id="run-status" class="status"></p>
+    <div id="arms" class="arms" hidden>
+      <div class="arm"><h3>안 A</h3><div id="arm-a"></div></div>
+      <div class="arm"><h3>안 B</h3><div id="arm-b"></div></div>
+    </div>
+    <div id="vote-area" class="vote" hidden>
+      <button data-vote="A">👈 안 A가 낫다</button>
+      <button data-vote="TIE">비슷하다</button>
+      <button data-vote="B">안 B가 낫다 👉</button>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+      <button id="submit-vote" class="primary" hidden disabled>판정 저장</button>
+      <p id="submit-status" class="status"></p>
+    </div>
+  </section>
+
+  <section id="summary-section" class="card" hidden>
+    <label>집계</label>
+    <div class="kpi">
+      <div class="box"><div id="kpi-on" class="num">–</div><div class="cap">VLM ON 승</div></div>
+      <div class="box"><div id="kpi-off" class="num">–</div><div class="cap">VLM OFF 승</div></div>
+      <div class="box"><div id="kpi-tie" class="num">–</div><div class="cap">무승부</div></div>
+      <div class="box"><div id="kpi-rate" class="num">–</div><div class="cap">ON 승률 (무승부 제외)</div></div>
+      <div class="box"><div id="kpi-latency" class="num">–</div><div class="cap">평균 지연 ON / OFF</div></div>
+    </div>
+    <table>
+      <thead><tr><th>쿼리</th><th>ON 승</th><th>OFF 승</th><th>무</th></tr></thead>
+      <tbody id="summary-rows"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const BASE = "/api/v1/demo/vlm-ab";
+  const state = {
+    queries: [],
+    activeQuery: null,
+    run: null,
+    vote: null,
+    completed: new Set(JSON.parse(localStorage.getItem("vlmAbDone") || "[]")),
+  };
+  const $ = (id) => document.getElementById(id);
+  const evaluatorName = () => $("evaluator").value.trim();
+
+  $("evaluator").value = localStorage.getItem("tpoEvalEvaluator") || "";
+  $("evaluator").addEventListener("change", () => {
+    localStorage.setItem("tpoEvalEvaluator", evaluatorName());
+  });
+
+  $("load-queries").addEventListener("click", async () => {
+    if (!evaluatorName()) {
+      $("top-status").textContent = "평가자 이름을 먼저 입력해 주세요.";
+      return;
+    }
+    try {
+      const response = await fetch(`${BASE}/queries`);
+      if (!response.ok) throw new Error(await response.text());
+      state.queries = (await response.json()).queries;
+      renderQueryList();
+      $("query-section").hidden = false;
+      $("summary-section").hidden = true;
+      $("top-status").textContent = "";
+    } catch (error) {
+      $("top-status").textContent = `쿼리셋 로드 실패: ${error.message}`;
+    }
+  });
+
+  function renderQueryList() {
+    const list = $("query-list");
+    list.replaceChildren();
+    $("total-count").textContent = state.queries.length;
+    $("done-count").textContent = state.queries.filter((q) => state.completed.has(q.queryId)).length;
+    for (const query of state.queries) {
+      const item = document.createElement("div");
+      item.className = "query-item" + (state.activeQuery?.queryId === query.queryId ? " active" : "");
+      const badge = document.createElement("span");
+      badge.className = "badge" + (state.completed.has(query.queryId) ? " done" : "");
+      badge.textContent = state.completed.has(query.queryId) ? "완료" : "대기";
+      const text = document.createElement("span");
+      text.textContent = query.text;
+      item.append(badge, text);
+      item.addEventListener("click", () => selectQuery(query));
+      list.appendChild(item);
+    }
+  }
+
+  function selectQuery(query) {
+    state.activeQuery = query;
+    state.run = null;
+    state.vote = null;
+    renderQueryList();
+    $("run-section").hidden = false;
+    $("run-query-text").textContent = query.text;
+    $("arms").hidden = true;
+    $("vote-area").hidden = true;
+    $("submit-vote").hidden = true;
+    $("run-status").textContent = "";
+    $("submit-status").textContent = "";
+    $("run-section").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("run-ab").addEventListener("click", async () => {
+    if (!state.activeQuery) return;
+    $("run-ab").disabled = true;
+    $("run-status").textContent = "두 파이프라인 실행 중...";
+    try {
+      const response = await fetch(`${BASE}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ queryId: state.activeQuery.queryId }),
+      });
+      if (!response.ok) throw new Error((await response.json()).detail ?? response.statusText);
+      state.run = await response.json();
+      state.vote = null;
+      for (const arm of state.run.arms) {
+        renderArm(arm.label === "A" ? "arm-a" : "arm-b", arm.results);
+      }
+      $("arms").hidden = false;
+      $("vote-area").hidden = false;
+      $("submit-vote").hidden = false;
+      $("submit-vote").disabled = true;
+      for (const button of document.querySelectorAll("#vote-area button")) {
+        button.classList.remove("selected");
+      }
+      $("run-status").textContent = "어느 쪽 추천이 이 상황에 더 좋은가요?";
+    } catch (error) {
+      $("run-status").textContent = `실행 실패: ${error.message}`;
+    } finally {
+      $("run-ab").disabled = false;
+    }
+  });
+
+  function renderArm(containerId, results) {
+    const container = $(containerId);
+    container.replaceChildren();
+    for (const result of results) {
+      const row = document.createElement("div");
+      row.className = "item";
+      const img = document.createElement("img");
+      img.src = result.imageUrl;
+      img.loading = "lazy";
+      img.onerror = () => { img.style.visibility = "hidden"; };
+      const info = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = `${result.rank}. ${result.name}`;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${result.brand} · ${Number(result.price).toLocaleString()}원`;
+      info.append(name, meta);
+      row.append(img, info);
+      container.appendChild(row);
+    }
+  }
+
+  for (const button of document.querySelectorAll("#vote-area button")) {
+    button.addEventListener("click", () => {
+      state.vote = button.dataset.vote;
+      for (const sibling of document.querySelectorAll("#vote-area button")) {
+        sibling.classList.toggle("selected", sibling === button);
+      }
+      $("submit-vote").disabled = false;
+    });
+  }
+
+  $("submit-vote").addEventListener("click", async () => {
+    if (!state.run || !state.vote || !evaluatorName()) return;
+    const preferred = state.vote === "TIE"
+      ? "TIE"
+      : state.run.assignment[state.vote];
+    $("submit-vote").disabled = true;
+    $("submit-status").textContent = "저장 중...";
+    try {
+      const response = await fetch(`${BASE}/judgments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          evaluator: evaluatorName(),
+          queryId: state.activeQuery.queryId,
+          preferred,
+          indexVersion: state.run.indexVersion,
+          latencyOnMs: state.run.latencyOnMs,
+          latencyOffMs: state.run.latencyOffMs,
+        }),
+      });
+      if (!response.ok) throw new Error((await response.json()).detail ?? response.statusText);
+      state.completed.add(state.activeQuery.queryId);
+      localStorage.setItem("vlmAbDone", JSON.stringify([...state.completed]));
+      renderQueryList();
+      $("submit-status").textContent = "저장 완료. 다음 쿼리를 선택하세요.";
+    } catch (error) {
+      $("submit-status").textContent = `저장 실패: ${error.message}`;
+      $("submit-vote").disabled = false;
+    }
+  });
+
+  $("show-summary").addEventListener("click", async () => {
+    try {
+      const response = await fetch(`${BASE}/summary`);
+      if (!response.ok) throw new Error(await response.text());
+      const summary = await response.json();
+      $("kpi-on").textContent = summary.on_wins;
+      $("kpi-off").textContent = summary.off_wins;
+      $("kpi-tie").textContent = summary.ties;
+      $("kpi-rate").textContent = summary.on_win_rate != null ? `${(summary.on_win_rate * 100).toFixed(0)}%` : "–";
+      $("kpi-latency").textContent =
+        summary.mean_latency_on_ms != null
+          ? `${(summary.mean_latency_on_ms / 1000).toFixed(1)}s / ${(summary.mean_latency_off_ms / 1000).toFixed(1)}s`
+          : "–";
+      const rows = $("summary-rows");
+      rows.replaceChildren();
+      const textById = new Map(state.queries.map((q) => [q.queryId, q.text]));
+      for (const entry of summary.queries) {
+        const tr = document.createElement("tr");
+        for (const value of [
+          textById.get(entry.query_id) ?? entry.query_id,
+          String(entry.on_wins), String(entry.off_wins), String(entry.ties),
+        ]) {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        }
+        rows.appendChild(tr);
+      }
+      $("summary-section").hidden = false;
+      $("summary-section").scrollIntoView({ behavior: "smooth" });
+    } catch (error) {
+      $("top-status").textContent = `집계 로드 실패: ${error.message}`;
+    }
+  });
+</script>
+</body>
+</html>

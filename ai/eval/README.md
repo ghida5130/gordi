@@ -127,6 +127,25 @@ TPO 균형 재고 확충(2k→15k, INVALID 회수 포함) + 임베딩 문서의
 한국어 TPO 태그·캡션 + TPO 텍스트의 질의·리랭크 반영이 결합된
 것으로, 요인 분리는 하지 않았다(팀 합의 범위).
 
+## VLM 리랭크 on/off A/B 평가 (`queries-vlm-ab-v1.jsonl`)
+
+VLM opt-in(pairwise 리랭크)이 추천 품질을 실제로 올리는지 재는
+블라인드 선호 평가. TPO 쿼리셋에서 6개를 추려 빠른 라운드
+(인당 ~10분)로 돌린다.
+
+- 진행: 데모 서버 실행 후 `http://localhost:8000/demo/vlm-ab` —
+  쿼리 선택 → 같은 쿼리를 리랭크 ON/OFF 두 파이프라인으로 동시
+  실행(좌우 배치 무작위, 어느 쪽이 VLM인지 비공개) → 더 나은 쪽
+  투표(A/B/비슷함) → 저장.
+- ON 팔은 로컬 env 플래그와 무관하게 리랭커를 강제 주입한다 —
+  VLM 런타임이 없으면 503 으로 명시 실패(조용한 강등 금지).
+- 판정 저장: `eval/judgments/vlm-ab-v1.jsonl` (append-only,
+  재투표는 마지막 것이 이김, **Git 커밋 대상**). 실행별 지연
+  (ON/OFF ms)도 함께 기록되어 품질-비용 트레이드오프를 같은
+  데이터로 말할 수 있다.
+- 집계: 페이지 "집계 보기" 또는 `GET /api/v1/demo/vlm-ab/summary`
+  — ON 승률(무승부 제외), 쿼리별 승패, 평균 지연 ON/OFF.
+
 ## Baseline (2026-08-01, 규칙 기반 0.65/0.35)
 
 `eval/baselines/2026-08-01-offline-rule-baseline.json`

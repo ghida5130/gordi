@@ -121,6 +121,12 @@ class Settings(BaseSettings):
     tpo_eval_judgments_path: Path = (
         AI_ROOT / "eval" / "judgments" / "tpo-v1.jsonl"
     )
+    vlm_ab_queries_path: Path = (
+        AI_ROOT / "eval" / "queries-vlm-ab-v1.jsonl"
+    )
+    vlm_ab_judgments_path: Path = (
+        AI_ROOT / "eval" / "judgments" / "vlm-ab-v1.jsonl"
+    )
 
     cors_allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:5173"]
