@@ -398,7 +398,9 @@ public class TryOnService {
     private void requireRoomOpen(Room room) {
         boolean expired = room.getExpiresAt() != null
                 && room.getExpiresAt().isBefore(LocalDateTime.now(AppZone.KST));
-        if (room.getFinishedAt() != null || expired) {
+        boolean terminalStatus = "FINISHED".equals(room.getStatus())
+                || "EXPIRED".equals(room.getStatus());
+        if (room.getFinishedAt() != null || expired || terminalStatus) {
             throw new ApiException(ErrorCode.ROOM_CLOSED, Map.of("roomCode", room.getRoomCode()));
         }
     }

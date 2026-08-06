@@ -242,7 +242,7 @@ public class RoomItemLockService {
     private void validateActive(Room room) {
         boolean expired = !room.getExpiresAt().isAfter(LocalDateTime.now(AppZone.KST));
         boolean closedStatus = "FINISHED".equals(room.getStatus())
-                || "CLOSED".equals(room.getStatus());
+                || "EXPIRED".equals(room.getStatus());
         if (expired || closedStatus) {
             throw new ApiException(ErrorCode.ROOM_CLOSED);
         }

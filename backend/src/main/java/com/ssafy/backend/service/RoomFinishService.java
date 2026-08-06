@@ -260,7 +260,7 @@ public class RoomFinishService {
 
     private void validateFinishable(Room room) {
         boolean expired = !room.getExpiresAt().isAfter(LocalDateTime.now(AppZone.KST));
-        if (expired || FINISHED.equals(room.getStatus()) || "CLOSED".equals(room.getStatus())) {
+        if (expired || FINISHED.equals(room.getStatus()) || "EXPIRED".equals(room.getStatus())) {
             throw new ApiException(ErrorCode.ROOM_CLOSED);
         }
         if (!IN_PROGRESS.equals(room.getStatus())) {
