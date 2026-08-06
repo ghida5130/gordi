@@ -3,6 +3,7 @@ package com.ssafy.backend.controller;
 import com.ssafy.backend.common.response.ApiResponse;
 import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
 import com.ssafy.backend.dto.avatar.AvatarSelectRequestDTO;
+import com.ssafy.backend.dto.avatar.MyAvatarResponseDTO;
 import com.ssafy.backend.dto.avatar.UserAvatarResponseDTO;
 import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.room.MyActiveRoomResponseDTO;
@@ -61,7 +62,7 @@ public class UserController {
 
     /** 나의 아바타 조회 */
     @GetMapping("/me/avatar")
-    public ApiResponse<AvatarResponseDTO> readMyAvatar(Authentication authentication) {
+    public ApiResponse<MyAvatarResponseDTO> readMyAvatar(Authentication authentication) {
         return ApiResponse.success(avatarService.readMyAvatar(authentication.getName()));
     }
 
@@ -72,7 +73,11 @@ public class UserController {
             Authentication authentication
     ) {
         return ApiResponse.success(
-                avatarService.selectAvatar(authentication.getName(), request.avatarId()));
+                avatarService.selectAvatar(
+                        authentication.getName(),
+                        request.avatarId(),
+                        request.height(),
+                        request.weight()));
     }
 
     @GetMapping("/me/results")
