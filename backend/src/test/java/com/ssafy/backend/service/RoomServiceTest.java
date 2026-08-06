@@ -11,6 +11,7 @@ import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.Tier;
+import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.domain.User;
 import com.ssafy.backend.dto.room.RoomCreateRequestDTO;
 import com.ssafy.backend.dto.room.RoomCreateResponseDTO;
@@ -23,6 +24,7 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
+import com.ssafy.backend.repository.TryOnJobRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
@@ -68,6 +70,8 @@ class RoomServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private TryOnJobRepository tryOnJobRepository;
+    @Mock
     private RoomTokenProvider roomTokenProvider;
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -84,6 +88,7 @@ class RoomServiceTest {
                 recommendationRepository,
                 recommendationItemRepository,
                 userRepository,
+                tryOnJobRepository,
                 roomTokenProvider,
                 eventPublisher,
                 new ImageUrlResolver("https://cdn.example.com/"),
@@ -476,6 +481,38 @@ class RoomServiceTest {
                 .isEqualTo("https://cdn.example.com/images/avatars/default.png");
         verify(roomParticipantRepository)
                 .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
+    }
+
+    @Test
+    void readStatusUsesLatestTryOnImageBeforeHostAvatar() {
+        Room room = waitingRoom(31L, 4);
+        RoomParticipant requester = RoomParticipant.builder()
+                .id(42L)
+                .room(room)
+                .nickname("host")
+                .role("HOST")
+                .build();
+        RoomPrincipal principal = new RoomPrincipal(42L, 31L, "host", "HOST");
+        TryOnJob latestTryOnJob = TryOnJob.builder()
+                .id(51L)
+                .room(room)
+                .resultImageUrl("/images/try-on/latest.png")
+                .build();
+
+        when(roomRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.findByIdAndRoomIdAndLeftAtIsNull(42L, 31L))
+                .thenReturn(Optional.of(requester));
+        when(roomParticipantRepository.findAllByRoomIdAndLeftAtIsNullOrderByJoinedAtAsc(31L))
+                .thenReturn(List.of(requester));
+        when(tierRepository.findAllByRoomIdOrderByPositionAsc(31L)).thenReturn(List.of());
+        when(tryOnJobRepository
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(31L))
+                .thenReturn(Optional.of(latestTryOnJob));
+
+        RoomStatusResponseDTO response = roomService.readStatus("A7K9Q2", principal);
+
+        assertThat(response.hostAvatarImageUrl())
+                .isEqualTo("https://cdn.example.com/images/try-on/latest.png");
     }
 
     @Test

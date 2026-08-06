@@ -10,6 +10,7 @@ import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.Tier;
+import com.ssafy.backend.domain.TryOnJob;
 import com.ssafy.backend.domain.User;
 import com.ssafy.backend.dto.room.*;
 import com.ssafy.backend.repository.RecommendationItemRepository;
@@ -18,6 +19,7 @@ import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
+import com.ssafy.backend.repository.TryOnJobRepository;
 import com.ssafy.backend.repository.UserRepository;
 import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.util.RoomTokenProvider;
@@ -58,6 +60,7 @@ public class RoomService {
     private final RecommendationRepository recommendationRepository;
     private final RecommendationItemRepository recommendationItemRepository;
     private final UserRepository userRepository;
+    private final TryOnJobRepository tryOnJobRepository;
     private final RoomTokenProvider roomTokenProvider;
     private final ApplicationEventPublisher eventPublisher;
     private final ImageUrlResolver imageUrlResolver;
@@ -71,6 +74,7 @@ public class RoomService {
             RecommendationRepository recommendationRepository,
             RecommendationItemRepository recommendationItemRepository,
             UserRepository userRepository,
+            TryOnJobRepository tryOnJobRepository,
             RoomTokenProvider roomTokenProvider,
             ApplicationEventPublisher eventPublisher,
             ImageUrlResolver imageUrlResolver,
@@ -83,6 +87,7 @@ public class RoomService {
         this.recommendationRepository = recommendationRepository;
         this.recommendationItemRepository = recommendationItemRepository;
         this.userRepository = userRepository;
+        this.tryOnJobRepository = tryOnJobRepository;
         this.roomTokenProvider = roomTokenProvider;
         this.eventPublisher = eventPublisher;
         this.imageUrlResolver = imageUrlResolver;
@@ -268,6 +273,15 @@ public class RoomService {
     }
 
     private String resolveHostAvatarImageUrl(Room room) {
+        String latestTryOnImageUrl = tryOnJobRepository
+                .findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(room.getId())
+                .map(TryOnJob::getResultImageUrl)
+                .filter(imageUrl -> !imageUrl.isBlank())
+                .orElse(null);
+        if (latestTryOnImageUrl != null) {
+            return imageUrlResolver.resolve(latestTryOnImageUrl);
+        }
+
         User host = room.getHostUser();
         Avatar avatar = host.getAvatar();
         if (avatar == null
