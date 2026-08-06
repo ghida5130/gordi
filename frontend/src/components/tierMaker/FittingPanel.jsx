@@ -71,6 +71,7 @@ function FittingPanel({
   hasOuterCandidate,
   onDropCandidate,
   onRemoveCandidate,
+  onDeleteItem,
   onDragStart,
   onDragEnd,
   onGenerate,
@@ -249,12 +250,39 @@ function FittingPanel({
                   </label>
                   <button
                     type="button"
-                    onClick={() => onRemoveCandidate(item.id)}
-                    className="absolute -right-1 -top-1 hidden size-5 items-center justify-center rounded-full bg-slate-800 text-white group-hover:flex"
-                    aria-label={`${item.name} 피팅 후보에서 제거`}
+                    draggable={false}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onDragStart={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onRemoveCandidate(item.id)
+                    }}
+                    className="mt-1 w-full rounded-md bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
                   >
-                    <TierMakerIcon name="close" size={11} />
+                    피팅 후보 제외
                   </button>
+                  {onDeleteItem && (
+                    <button
+                      type="button"
+                      draggable={false}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onDragStart={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onDeleteItem(item)
+                      }}
+                      className="absolute -right-1 -top-1 z-20 hidden size-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-md transition hover:bg-red-50 hover:text-red-600 group-hover:flex"
+                      aria-label={`${item.name} 삭제`}
+                    >
+                      <TierMakerIcon name="close" size={11} />
+                    </button>
+                  )}
                 </div>
               ))
             ) : (

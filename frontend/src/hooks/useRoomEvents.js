@@ -35,6 +35,8 @@ function createInitialState(roomSession) {
         roomItems: [],
         placements: [],
         fittingCandidates: [],
+        removedRoomItemIds: [],
+        itemRemoval: null,
         itemLocks: {},
         lockRejection: null,
         tryOn: {
@@ -68,6 +70,32 @@ function upsertRoomItem(currentRoomItems, item) {
         ...currentRoomItems.filter((currentItem) => String(currentItem.roomItemId) !== String(item.roomItemId)),
         item,
     ];
+}
+
+function removeRoomItem(state, event, data, nextVersion, pendingEvents) {
+    const roomItemKey = String(data.roomItemId);
+    const itemLocks = { ...state.itemLocks };
+    const removedItem = state.roomItems.find((item) => String(item.roomItemId) === roomItemKey);
+
+    delete itemLocks[roomItemKey];
+
+    return {
+        ...state,
+        roomItems: state.roomItems.filter((item) => String(item.roomItemId) !== roomItemKey),
+        placements: state.placements.filter((placement) => String(placement.roomItemId) !== roomItemKey),
+        fittingCandidates: state.fittingCandidates.filter((candidate) => String(candidate.roomItemId) !== roomItemKey),
+        removedRoomItemIds: [...new Set([...state.removedRoomItemIds, roomItemKey])],
+        itemRemoval: {
+            eventId: event.eventId ?? null,
+            roomItemId: data.roomItemId,
+            productId: data.productId,
+            name: removedItem?.name ?? null,
+            senderParticipantId: event.senderParticipantId,
+        },
+        itemLocks,
+        version: nextVersion,
+        ...(pendingEvents ? { pendingEvents } : {}),
+    };
 }
 
 function normalizeSnapshot(data) {
@@ -109,6 +137,7 @@ function normalizeSnapshot(data) {
         roomItems,
         placements,
         fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
+        removedRoomItemIds: [],
     };
 }
 
@@ -235,9 +264,16 @@ function roomEventReducer(state, event) {
                 ...state,
                 roomItems: upsertRoomItem(state.roomItems, data.item),
                 placements: Array.isArray(data.placements) ? data.placements : state.placements,
+                removedRoomItemIds: state.removedRoomItemIds.filter(
+                    (roomItemId) => String(roomItemId) !== String(data.item?.roomItemId),
+                ),
                 version: nextVersion,
                 pendingEvents,
             };
+        }
+
+        if (eventType === "ITEM_REMOVED") {
+            return removeRoomItem(state, event, data, nextVersion, pendingEvents);
         }
 
         if (eventType === "FITTING_CANDIDATES_UPDATED") {
@@ -299,8 +335,15 @@ function roomEventReducer(state, event) {
             ...state,
             roomItems: upsertRoomItem(state.roomItems, data.item),
             placements: Array.isArray(data.placements) ? data.placements : state.placements,
+            removedRoomItemIds: state.removedRoomItemIds.filter(
+                (roomItemId) => String(roomItemId) !== String(data.item?.roomItemId),
+            ),
             version: nextVersion,
         };
+    }
+
+    if (eventType === "ITEM_REMOVED") {
+        return removeRoomItem(state, event, data, nextVersion);
     }
 
     if (eventType === "FITTING_CANDIDATES_UPDATED") {

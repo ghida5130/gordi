@@ -20,6 +20,7 @@ function ClothingCatalog({
   onDragStart,
   onDragEnd,
   onUnrank,
+  onDeleteItem,
   onAddClothing,
   onViewDetails,
   title = '피팅 전용 보관함',
@@ -105,6 +106,25 @@ function ClothingCatalog({
                   : 'cursor-grab border-slate-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing'
               }`}
             >
+            {onDeleteItem && !lock && (
+              <button
+                type="button"
+                draggable={false}
+                onPointerDown={(event) => event.stopPropagation()}
+                onDragStart={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                }}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onDeleteItem(item)
+                }}
+                className="absolute right-2 top-2 z-20 hidden size-6 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-md transition hover:bg-red-50 hover:text-red-600 group-hover:flex"
+                aria-label={`${item.name} 삭제`}
+              >
+                <TierMakerIcon name="close" size={12} />
+              </button>
+            )}
             <ClothingArtwork
               item={item}
               className="aspect-square w-full"
