@@ -191,7 +191,7 @@ class RoomControllerTest {
                         39_900,
                         "https://cdn.example.com/products/501.jpg",
                         1,
-                        1L
+                        new RoomResultResponseDTO.TierInfo(1L, "S")
                 )),
                 "https://cdn.example.com/fittings/71.webp",
                 List.of(),

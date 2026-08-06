@@ -146,28 +146,33 @@ class ResultServiceTest {
                         RoomResultResponseDTO.TopItem::price,
                         RoomResultResponseDTO.TopItem::imageUrl,
                         RoomResultResponseDTO.TopItem::position,
-                        RoomResultResponseDTO.TopItem::tierId
+                        RoomResultResponseDTO.TopItem::tier
                 )
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(
                                 1, 301L, 101L, "product-101", "brand", 10_000,
-                                "https://example.com/101.png", 1, 1L
+                                "https://example.com/101.png", 1,
+                                new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 2, 302L, 102L, "product-102", "brand", 10_000,
-                                "https://example.com/102.png", 2, 1L
+                                "https://example.com/102.png", 2,
+                                new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 3, 303L, 103L, "product-103", "brand", 10_000,
-                                "https://example.com/103.png", 3, 1L
+                                "https://example.com/103.png", 3,
+                                new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 4, 304L, 104L, "product-104", "brand", 10_000,
-                                "https://example.com/104.png", 4, 1L
+                                "https://example.com/104.png", 4,
+                                new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 5, 305L, 105L, "product-105", "brand", 10_000,
-                                "https://example.com/105.png", 1, 2L
+                                "https://example.com/105.png", 1,
+                                new RoomResultResponseDTO.TierInfo(2L, "A")
                         )
                 );
         assertThat(response.snapshotImageUrl())

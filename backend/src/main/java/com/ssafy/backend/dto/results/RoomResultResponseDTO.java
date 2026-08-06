@@ -22,7 +22,13 @@ public record RoomResultResponseDTO(
             int price,
             String imageUrl,
             int position,
-            Long tierId
+            TierInfo tier
+    ) {
+    }
+
+    public record TierInfo(
+            Long tierId,
+            String tierName
     ) {
     }
 }
