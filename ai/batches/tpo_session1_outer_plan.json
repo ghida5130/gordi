@@ -1,0 +1,140 @@
+{
+  "session": "tpo_day1_outer",
+  "description": "1일차 아우터 전부 (남녀 블레이저·재킷·코트·패딩·카디건·플리스·바람막이)",
+  "oversample": 1.45,
+  "combined_outfile": "tpo_day1_outer_all.txt",
+  "buckets": [
+    {
+      "name": "MALE/outer_blazer",
+      "outfile": "tpo_day1_male_blazer.txt",
+      "current_ready": 0,
+      "target_ready": 250,
+      "sources": [
+        ["M", "002003", "블레이저"]
+      ]
+    },
+    {
+      "name": "MALE/outer_jacket",
+      "outfile": "tpo_day1_male_jacket.txt",
+      "current_ready": 0,
+      "target_ready": 300,
+      "sources": [
+        ["M", "002001", "블루종/워크재킷"],
+        ["M", "002002", "봄버/레더"],
+        ["M", "002004", "바시티"],
+        ["M", "002015", "오버셔츠/트랙"],
+        ["M", "002017", "트러커/데님재킷"]
+      ]
+    },
+    {
+      "name": "MALE/outer_coat",
+      "outfile": "tpo_day1_male_coat.txt",
+      "current_ready": 0,
+      "target_ready": 200,
+      "sources": [
+        ["M", "002007", "발마칸/싱글코트"],
+        ["M", "002008", "트렌치"],
+        ["M", "002009", "후드/카코트"],
+        ["M", "002024", "더블/로브코트"]
+      ]
+    },
+    {
+      "name": "MALE/outer_padding",
+      "outfile": "tpo_day1_male_padding.txt",
+      "current_ready": 0,
+      "target_ready": 200,
+      "sources": [
+        ["M", "002012", "다운/패딩"],
+        ["M", "002013", "롱패딩/파카"],
+        ["M", "002027", "라이트 패딩"]
+      ]
+    },
+    {
+      "name": "MALE/outer_cardigan",
+      "outfile": "tpo_day1_male_cardigan.txt",
+      "current_ready": 9,
+      "target_ready": 150,
+      "sources": [
+        ["M", "002020", "가디건"]
+      ]
+    },
+    {
+      "name": "MALE/outer_fleece_wind",
+      "outfile": "tpo_day1_male_fleece_wind.txt",
+      "current_ready": 0,
+      "target_ready": 200,
+      "sources": [
+        ["M", "002006", "윈드브레이커"],
+        ["M", "002019", "윈드/아노락"],
+        ["M", "002022", "플리스 집업"],
+        ["M", "002023", "파일 재킷"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_blazer",
+      "outfile": "tpo_day1_female_blazer.txt",
+      "current_ready": 0,
+      "target_ready": 200,
+      "sources": [
+        ["F", "002003", "블레이저"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_jacket",
+      "outfile": "tpo_day1_female_jacket.txt",
+      "current_ready": 0,
+      "target_ready": 250,
+      "sources": [
+        ["F", "002001", "블루종/워크재킷"],
+        ["F", "002002", "봄버/레더"],
+        ["F", "002004", "바시티"],
+        ["F", "002015", "오버셔츠/트랙"],
+        ["F", "002017", "트러커/데님재킷"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_coat",
+      "outfile": "tpo_day1_female_coat.txt",
+      "current_ready": 0,
+      "target_ready": 250,
+      "sources": [
+        ["F", "002007", "발마칸/싱글코트"],
+        ["F", "002008", "트렌치"],
+        ["F", "002009", "후드/카코트"],
+        ["F", "002024", "더블/로브코트"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_padding",
+      "outfile": "tpo_day1_female_padding.txt",
+      "current_ready": 0,
+      "target_ready": 150,
+      "sources": [
+        ["F", "002012", "다운/패딩"],
+        ["F", "002013", "롱패딩/파카"],
+        ["F", "002027", "라이트 패딩"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_cardigan",
+      "outfile": "tpo_day1_female_cardigan.txt",
+      "current_ready": 0,
+      "target_ready": 200,
+      "sources": [
+        ["F", "002020", "가디건"]
+      ]
+    },
+    {
+      "name": "FEMALE/outer_fleece_wind",
+      "outfile": "tpo_day1_female_fleece_wind.txt",
+      "current_ready": 0,
+      "target_ready": 150,
+      "sources": [
+        ["F", "002006", "윈드브레이커"],
+        ["F", "002019", "윈드/아노락"],
+        ["F", "002022", "플리스 집업"],
+        ["F", "002023", "파일 재킷"]
+      ]
+    }
+  ]
+}
