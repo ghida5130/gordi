@@ -14,7 +14,11 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
 
     Optional<RoomParticipant> findByRoomIdAndUserId(Long roomId, Long userId);
 
+    Optional<RoomParticipant> findByRoomIdAndUserEmail(Long roomId, String email);
+
     Optional<RoomParticipant> findByRoomIdAndUserEmailAndLeftAtIsNull(Long roomId, String email);
+
+    Optional<RoomParticipant> findByIdAndRoomId(Long participantId, Long roomId);
 
     Optional<RoomParticipant> findByIdAndRoomIdAndLeftAtIsNull(Long participantId, Long roomId);
 

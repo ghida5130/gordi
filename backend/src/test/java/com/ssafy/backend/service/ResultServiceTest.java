@@ -177,11 +177,11 @@ class ResultServiceTest {
                 .isEqualTo("생성 이미지는 실제 핏과 다를 수 있습니다.");
         assertThat(response.createdAt())
                 .isEqualTo(createdAt.atZone(AppZone.KST).toInstant());
-        verify(roomAccessValidator).requireParticipant(31L, principal);
+        verify(roomAccessValidator).requireParticipantHistory(31L, principal);
     }
 
     @Test
-    void readRoomResultByAccessTokenValidatesMemberParticipation() {
+    void readRoomResultByAccessTokenValidatesHistoricalMemberParticipation() {
         Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
         Result result = Result.builder()
                 .id(51L)
@@ -196,7 +196,7 @@ class ResultServiceTest {
 
         resultService.readRoomResultByAccessToken("A7K9Q2", "member@example.com");
 
-        verify(roomAccessValidator).requireParticipant(31L, "member@example.com");
+        verify(roomAccessValidator).requireParticipantHistory(31L, "member@example.com");
     }
 
     @Test

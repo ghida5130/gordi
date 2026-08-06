@@ -92,6 +92,67 @@ class RoomAccessValidatorTest {
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
     }
 
+    @Test
+    void requireParticipantHistoryAllowsRoomTokenParticipantWhoAlreadyLeft() {
+        RoomPrincipal principal = principal(31L);
+        RoomParticipant participant = mock(RoomParticipant.class);
+        when(roomParticipantRepository.findByIdAndRoomId(42L, 31L))
+                .thenReturn(Optional.of(participant));
+
+        RoomParticipant result = roomAccessValidator.requireParticipantHistory(
+                31L,
+                principal
+        );
+
+        assertThat(result).isSameAs(participant);
+        verify(roomParticipantRepository, never())
+                .findByIdAndRoomIdAndLeftAtIsNull(42L, 31L);
+    }
+
+    @Test
+    void requireParticipantHistoryRejectsRoomTokenForAnotherRoom() {
+        RoomPrincipal principal = principal(31L);
+
+        assertThatThrownBy(() -> roomAccessValidator.requireParticipantHistory(
+                32L,
+                principal
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        verify(roomParticipantRepository, never()).findByIdAndRoomId(42L, 32L);
+    }
+
+    @Test
+    void requireParticipantHistoryAllowsMemberWhoAlreadyLeft() {
+        RoomParticipant participant = mock(RoomParticipant.class);
+        when(roomParticipantRepository.findByRoomIdAndUserEmail(
+                31L,
+                "member@example.com"
+        )).thenReturn(Optional.of(participant));
+
+        RoomParticipant result = roomAccessValidator.requireParticipantHistory(
+                31L,
+                "member@example.com"
+        );
+
+        assertThat(result).isSameAs(participant);
+        verify(roomParticipantRepository, never())
+                .findByRoomIdAndUserEmailAndLeftAtIsNull(31L, "member@example.com");
+    }
+
+    @Test
+    void requireParticipantHistoryRejectsNonParticipant() {
+        when(roomParticipantRepository.findByRoomIdAndUserEmail(
+                31L,
+                "non-member@example.com"
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomAccessValidator.requireParticipantHistory(
+                31L,
+                "non-member@example.com"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
     private RoomPrincipal principal(Long roomId) {
         return new RoomPrincipal(42L, roomId, "친구1", "PARTICIPANTS");
     }
