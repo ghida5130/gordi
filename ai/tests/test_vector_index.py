@@ -287,6 +287,49 @@ def test_load_rejects_unsafe_product_url(tmp_path: Path) -> None:
         CatalogVectorIndex.load(path)
 
 
+def _rewrite_image_url(path: Path, value: str) -> None:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["items"][0]["product"]["image_url"] = value
+    payload.pop("snapshot_sha256")
+    from app.recommendation.vector_index import _snapshot_sha256
+
+    payload["snapshot_sha256"] = _snapshot_sha256(payload)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_load_accepts_object_key_image_url(tmp_path: Path) -> None:
+    # 백엔드 규약(2026-08-04): DB 는 image_url 에 S3 객체 키만 저장.
+    path, _ = build_index(
+        tmp_path, [product(1)], {1: vector(1.0, 0.0)}
+    )
+    _rewrite_image_url(
+        path, "garments/musinsa/3000001/primary-abcd1234.jpg"
+    )
+
+    index = CatalogVectorIndex.load(path)
+
+    assert index.product_by_id(1)["image_url"].startswith("garments/")
+
+
+@pytest.mark.parametrize(
+    "bad_url",
+    ["javascript:alert(1)", "//evil.example/x.jpg", "   "],
+)
+def test_load_rejects_unsafe_image_url(
+    tmp_path: Path,
+    bad_url: str,
+) -> None:
+    path, _ = build_index(
+        tmp_path, [product(1)], {1: vector(1.0, 0.0)}
+    )
+    _rewrite_image_url(path, bad_url)
+
+    # 공백뿐인 값은 필수 필드 검사("missing fields")에서, 나머지는
+    # URL 형식 검사("is invalid")에서 걸린다 — 둘 다 image_url 거부.
+    with pytest.raises(VectorIndexError, match="image_url"):
+        CatalogVectorIndex.load(path)
+
+
 @pytest.mark.parametrize(
     ("filters", "message"),
     [
