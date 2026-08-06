@@ -230,6 +230,14 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help="S3-enriched gordi-product-seed-v1 manifest",
     )
+    seed_db.add_argument(
+        "--store-object-key",
+        action="store_true",
+        help=(
+            "store the S3 object key as products.image_url instead of "
+            "the absolute URL (backend ImageUrlResolver convention)"
+        ),
+    )
     mode = seed_db.add_mutually_exclusive_group(required=True)
     mode.add_argument(
         "--dry-run",
@@ -622,6 +630,7 @@ def cmd_seed_db(args: argparse.Namespace) -> int:
             database=settings.database,
             apply=args.apply,
             backup_output=args.backup_output,
+            store_object_key=args.store_object_key,
         )
     except SeedError as exc:
         print(f"error: {exc}", file=sys.stderr)
