@@ -1,0 +1,329 @@
+{
+  "schema_version": "recommendation-tpo-comparison-v1",
+  "catalog_2k_baseline": {
+    "schema_version": "recommendation-tpo-summary-v1",
+    "query_count": 24,
+    "judged_query_count": 24,
+    "macro_fit_rate": 0.7723,
+    "micro_fit_rate": 0.7757,
+    "counts": {
+      "fit": 1065,
+      "unfit": 308,
+      "unsure": 67
+    },
+    "queries": [
+      {
+        "query_id": "tpo-interview-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.5389
+      },
+      {
+        "query_id": "tpo-interview-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.5907
+      },
+      {
+        "query_id": "tpo-wedding-guest-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7593
+      },
+      {
+        "query_id": "tpo-wedding-guest-female-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.55
+      },
+      {
+        "query_id": "tpo-first-workday-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.4944
+      },
+      {
+        "query_id": "tpo-presentation-male-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.9667
+      },
+      {
+        "query_id": "tpo-birthday-party-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7949
+      },
+      {
+        "query_id": "tpo-blind-date-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7185
+      },
+      {
+        "query_id": "tpo-date-night-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.75
+      },
+      {
+        "query_id": "tpo-campus-daily-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.95
+      },
+      {
+        "query_id": "tpo-campus-daily-female-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.8611
+      },
+      {
+        "query_id": "tpo-picnic-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.769
+      },
+      {
+        "query_id": "tpo-gym-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.9667
+      },
+      {
+        "query_id": "tpo-running-female-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.9833
+      },
+      {
+        "query_id": "tpo-summer-trip-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7653
+      },
+      {
+        "query_id": "tpo-summer-trip-male-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.9648
+      },
+      {
+        "query_id": "tpo-winter-date-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.4958
+      },
+      {
+        "query_id": "tpo-rainy-commute-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.8
+      },
+      {
+        "query_id": "tpo-autumn-outing-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7857
+      },
+      {
+        "query_id": "tpo-mt-camping-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.9315
+      },
+      {
+        "query_id": "tpo-exhibition-female-bottom",
+        "evaluator_count": 6,
+        "fit_rate": 0.9595
+      },
+      {
+        "query_id": "tpo-festival-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7148
+      },
+      {
+        "query_id": "tpo-family-holiday-female-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.6333
+      },
+      {
+        "query_id": "tpo-networking-male-top",
+        "evaluator_count": 6,
+        "fit_rate": 0.7917
+      }
+    ],
+    "evaluators": {
+      "김수경": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "박성수": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "이정민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "임효민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "최보경": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "한승민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      }
+    },
+    "index_version_prefix": "3d282547"
+  },
+  "catalog_15k_tpo_tags": {
+    "schema_version": "recommendation-tpo-summary-v1",
+    "query_count": 24,
+    "judged_query_count": 24,
+    "macro_fit_rate": 0.9267,
+    "micro_fit_rate": 0.927,
+    "counts": {
+      "fit": 1537,
+      "unfit": 121,
+      "unsure": 22
+    },
+    "queries": [
+      {
+        "query_id": "tpo-interview-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9857
+      },
+      {
+        "query_id": "tpo-interview-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.8698
+      },
+      {
+        "query_id": "tpo-wedding-guest-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.8857
+      },
+      {
+        "query_id": "tpo-wedding-guest-female-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 0.8714
+      },
+      {
+        "query_id": "tpo-first-workday-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9714
+      },
+      {
+        "query_id": "tpo-presentation-male-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 0.9286
+      },
+      {
+        "query_id": "tpo-birthday-party-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9571
+      },
+      {
+        "query_id": "tpo-blind-date-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9
+      },
+      {
+        "query_id": "tpo-date-night-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.7286
+      },
+      {
+        "query_id": "tpo-campus-daily-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 1.0
+      },
+      {
+        "query_id": "tpo-campus-daily-female-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 1.0
+      },
+      {
+        "query_id": "tpo-picnic-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9429
+      },
+      {
+        "query_id": "tpo-gym-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 1.0
+      },
+      {
+        "query_id": "tpo-running-female-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 1.0
+      },
+      {
+        "query_id": "tpo-summer-trip-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 1.0
+      },
+      {
+        "query_id": "tpo-summer-trip-male-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 0.9857
+      },
+      {
+        "query_id": "tpo-winter-date-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9286
+      },
+      {
+        "query_id": "tpo-rainy-commute-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.7714
+      },
+      {
+        "query_id": "tpo-autumn-outing-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.8714
+      },
+      {
+        "query_id": "tpo-mt-camping-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.8857
+      },
+      {
+        "query_id": "tpo-exhibition-female-bottom",
+        "evaluator_count": 7,
+        "fit_rate": 0.9714
+      },
+      {
+        "query_id": "tpo-festival-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9429
+      },
+      {
+        "query_id": "tpo-family-holiday-female-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.8714
+      },
+      {
+        "query_id": "tpo-networking-male-top",
+        "evaluator_count": 7,
+        "fit_rate": 0.9714
+      }
+    ],
+    "evaluators": {
+      "김수경": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "박성수": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "이정민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "임효민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "채지현": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "최보경": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      },
+      "한승민": {
+        "judged_queries": 24,
+        "remaining_queries": 0
+      }
+    },
+    "index_version_prefix": "c7ab35b8"
+  }
+}

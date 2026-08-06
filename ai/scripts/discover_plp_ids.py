@@ -299,6 +299,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Also append already-normalized IDs into batch files (collect will skip)",
     )
+    parser.add_argument(
+        "--plan",
+        type=Path,
+        default=None,
+        help=(
+            "TPO/session plan JSON with buckets[{name,outfile,current_ready,"
+            "target_ready,sources:[[gf,category,note],...]}]. "
+            "When set, ignores CELL_SOURCES gender×slot mode."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.page_delay < 1.0:
@@ -312,21 +322,34 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = args.out_dir.resolve()
     existing = load_existing_ids(dataset_root)
 
-    # Current per-cell counts from normalized JSON (best-effort).
+    plan: dict[str, Any] | None = None
+    if args.plan is not None:
+        plan_path = args.plan if args.plan.is_absolute() else (Path.cwd() / args.plan)
+        if not plan_path.is_file():
+            # also try relative to out-dir parent / batches
+            alt = out_dir / args.plan.name
+            plan_path = alt if alt.is_file() else plan_path
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        if args.oversample == 1.6 and isinstance(plan.get("oversample"), (int, float)):
+            # plan default wins unless user overrode CLI from non-default — keep plan
+            args.oversample = float(plan["oversample"])
+
+    # Current per-cell counts from normalized JSON (legacy mode only).
     current_cells: dict[str, int] = {k: 0 for k in CELL_SOURCES}
-    for path in (dataset_root / "normalized").rglob("*.json") if (
-        dataset_root / "normalized"
-    ).is_dir() else []:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        product = data.get("product") or {}
-        gender = str(product.get("gender") or "").upper()
-        backend = str(product.get("backend_category") or "").upper()
-        key = f"{gender}/{backend}"
-        if key in current_cells:
-            current_cells[key] += 1
+    if plan is None:
+        for path in (dataset_root / "normalized").rglob("*.json") if (
+            dataset_root / "normalized"
+        ).is_dir() else []:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            product = data.get("product") or {}
+            gender = str(product.get("gender") or "").upper()
+            backend = str(product.get("backend_category") or "").upper()
+            key = f"{gender}/{backend}"
+            if key in current_cells:
+                current_cells[key] += 1
 
     report = DiscoverReport(
         started_at=_now_iso(),
@@ -342,36 +365,62 @@ def main(argv: list[str] | None = None) -> int:
         "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
     }
 
-    all_new: list[str] = []
     all_for_overnight: list[str] = []
     seen_global: set[str] = set()
+    combined_name = "overnight_all.txt"
+    if plan is not None:
+        combined_name = str(plan.get("combined_outfile") or "overnight_all.txt")
+
+    work_items: list[tuple[str, str, int, int, list[tuple[str, str, str]]]] = []
+    # (name, outfile, have, need, sources)
+    if plan is not None:
+        for bucket in plan.get("buckets") or []:
+            name = str(bucket["name"])
+            outfile = str(bucket["outfile"])
+            have = int(bucket.get("current_ready") or 0)
+            target = int(bucket["target_ready"])
+            gap = max(0, target - have)
+            need = int(gap * args.oversample + 0.999) if gap else 0
+            sources = [
+                (str(g), str(c), str(n))
+                for g, c, n in bucket.get("sources") or []
+            ]
+            work_items.append((name, outfile, have, need, sources))
+    else:
+        for cell, sources in CELL_SOURCES.items():
+            have = current_cells.get(cell, 0)
+            gap = max(0, args.target_per_cell - have)
+            need = int(gap * args.oversample + 0.999) if gap else 0
+            work_items.append((cell, CELL_FILE[cell], have, need, sources))
 
     try:
         with httpx.Client(headers=headers, timeout=30.0, follow_redirects=True) as client:
-            for cell, sources in CELL_SOURCES.items():
-                have = current_cells.get(cell, 0)
-                gap = max(0, args.target_per_cell - have)
-                need = int(gap * args.oversample + 0.999) if gap else 0
-                # Always discover at least a small top-up if gap is 0 but user wants full re-list
+            for name, outfile, have, need, sources in work_items:
+                gap = need  # already gap*oversample
+                # recompute gap for logging
+                if plan is not None:
+                    # recover target from need/oversample approx
+                    raw_gap = int(need / args.oversample + 0.001) if need else 0
+                else:
+                    raw_gap = max(0, args.target_per_cell - have)
                 print(
-                    f"[{cell}] have={have} target={args.target_per_cell} "
-                    f"gap={gap} discover_need={need}",
+                    f"[{name}] have={have} discover_need={need} "
+                    f"(ready_gap≈{raw_gap}, oversample={args.oversample})",
                     flush=True,
                 )
-                if need == 0:
-                    report.cells[cell] = {
+                if need == 0 or not sources:
+                    report.cells[name] = {
                         "have": have,
-                        "gap": 0,
                         "requested_new": 0,
                         "discovered_new": 0,
-                        "ids": [],
+                        "id_count": 0,
                         "sources": [],
                     }
                     continue
 
                 cell_result = discover_cell(
                     client,
-                    cell=cell,
+                    cell=name,
                     sources=sources,
                     existing=existing | seen_global,
                     need=need,
@@ -380,40 +429,34 @@ def main(argv: list[str] | None = None) -> int:
                     max_pages_per_source=args.max_pages_per_source,
                 )
                 cell_result["have"] = have
-                cell_result["gap"] = gap
-                report.cells[cell] = {
+                report.cells[name] = {
                     k: v for k, v in cell_result.items() if k != "ids"
                 }
-                report.cells[cell]["id_count"] = len(cell_result["ids"])
+                report.cells[name]["id_count"] = len(cell_result["ids"])
 
                 ids = cell_result["ids"]
                 for pid in ids:
                     seen_global.add(pid)
-                    all_new.append(pid)
 
-                file_name = CELL_FILE[cell]
-                out_path = out_dir / file_name
-                batch_ids = list(ids)
-                if args.include_existing_in_batch:
-                    # optional: not used by default
-                    pass
+                out_path = out_dir / outfile
                 write_ids_file(
                     out_path,
-                    cell,
-                    batch_ids,
-                    f"gap={gap} oversample={args.oversample} have={have}",
+                    name,
+                    list(ids),
+                    f"have={have} need={need} oversample={args.oversample}",
                 )
                 print(
-                    f"  wrote {out_path.name}: {len(batch_ids)} new ids",
+                    f"  wrote {out_path.name}: {len(ids)} new ids",
                     flush=True,
                 )
-                all_for_overnight.extend(batch_ids)
+                all_for_overnight.extend(ids)
 
     except RuntimeError as exc:
         report.stopped = True
         report.stop_reason = str(exc)
         print(f"STOPPED: {exc}", file=sys.stderr)
         report.finished_at = _now_iso()
+        out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "discover-report.json").write_text(
             json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -431,27 +474,34 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 3
 
-    # overnight combined (new IDs only; collect --skip-existing handles rest)
-    overnight = out_dir / "overnight_all.txt"
+    overnight = out_dir / combined_name
     write_ids_file(
         overnight,
         "ALL",
         all_for_overnight,
-        f"combined new ids for overnight collect; unique={len(all_for_overnight)}",
+        f"combined new ids; unique={len(all_for_overnight)} plan={args.plan}",
     )
 
     report.finished_at = _now_iso()
-    report_path = out_dir / "discover-report.json"
-    # attach full id lists in a sidecar (can be large)
+    report_path = out_dir / (
+        f"discover-report-{plan.get('session')}.json"
+        if plan and plan.get("session")
+        else "discover-report.json"
+    )
     full = report.to_dict()
     full["overnight_new_count"] = len(all_for_overnight)
-    full["current_cells"] = current_cells
+    full["combined_outfile"] = combined_name
+    if plan is not None:
+        full["session"] = plan.get("session")
+        full["plan_description"] = plan.get("description")
+    else:
+        full["current_cells"] = current_cells
     report_path.write_text(
         json.dumps(full, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print(
-        f"done: overnight_all={len(all_for_overnight)} report={report_path}",
+        f"done: {combined_name}={len(all_for_overnight)} report={report_path}",
         flush=True,
     )
     return 0

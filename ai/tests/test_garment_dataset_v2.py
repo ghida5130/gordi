@@ -59,6 +59,22 @@ def _actual_size_payload() -> dict:
     }
 
 
+def _actual_size_payload_without_shoulder() -> dict:
+    return {
+        "data": {
+            "sizes": [
+                {
+                    "name": "M",
+                    "items": [
+                        {"name": "총장", "value": 70.005},
+                        {"name": "가슴단면", "value": 55},
+                    ],
+                }
+            ]
+        }
+    }
+
+
 def _jpeg_bytes() -> bytes:
     output = io.BytesIO()
     Image.new("RGB", (600, 800), "white").save(output, format="JPEG")
@@ -244,3 +260,94 @@ def test_export_seed_requires_ready_and_rounds_half_up(
         == "70.01"
     )
     assert output.is_file()
+
+
+def test_missing_shoulder_width_is_optional_and_exports_null(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "source"
+    dataset_root = tmp_path / "dataset-v2"
+    raw_dir = source_root / "raw" / "musinsa" / "123"
+    image_dir = source_root / "images" / "musinsa" / "123"
+    normalized_dir = source_root / "normalized" / "musinsa"
+    raw_dir.mkdir(parents=True)
+    image_dir.mkdir(parents=True)
+    normalized_dir.mkdir(parents=True)
+    bundle = {
+        "detail": _detail_payload(),
+        "actual_size": _actual_size_payload_without_shoulder(),
+        "options": None,
+    }
+    (raw_dir / "source.json").write_text(
+        json.dumps(bundle, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (image_dir / "primary.jpg").write_bytes(_jpeg_bytes())
+    (normalized_dir / "123.json").write_text(
+        json.dumps(
+            {
+                "source": {
+                    "product_url": "https://www.musinsa.com/products/123",
+                    "collection_method": "public-html-slow-fetch",
+                    "collected_at": "2026-07-30T00:00:00+09:00",
+                    "last_seen_at": "2026-07-30T00:00:00+09:00",
+                    "rights_status": (
+                        "internal-evaluation-only-unverified"
+                    ),
+                    "policy_exception": "mvp-internal-eval-v1",
+                },
+                "product": {},
+                "images": [
+                    {
+                        "role": "PRIMARY",
+                        "local_path": "images/musinsa/123/primary.jpg",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    reprocess_dataset(source_root, dataset_root)
+
+    record_path = dataset_root / "normalized" / "musinsa" / "123.json"
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    # 어깨너비 결측은 더 이상 INVALID 사유도, 사이즈 경고도 아니다.
+    assert record["validation"]["status"] == "REVIEW_REQUIRED"
+    assert not any(
+        "shoulder" in warning
+        for warning in record["validation"]["warnings"]
+    )
+
+    record["images"][0].update(
+        {
+            "view": "FRONT",
+            "reference_type": "product-only",
+            "model_present": False,
+            "other_garments_present": False,
+        }
+    )
+    record["validation"].update(
+        {"status": "READY", "reviewer": "test-reviewer", "warnings": []}
+    )
+    record_path.write_text(
+        json.dumps(record, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    selection = tmp_path / "selection.json"
+    selection.write_text(
+        json.dumps({"ids": {"MALE/TOP": ["123"]}}),
+        encoding="utf-8",
+    )
+    output = tmp_path / "seed.json"
+
+    manifest = export_seed_manifest(
+        dataset_root,
+        selection,
+        output,
+        expected_group_counts={"MALE/TOP": 1},
+        expected_size_rows=1,
+    )
+
+    measurements = manifest["products"][0]["sizes"][0]["measurements_cm"]
+    assert measurements["total_length"] == "70.01"
+    assert measurements.get("shoulder_width") is None

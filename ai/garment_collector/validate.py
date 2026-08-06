@@ -239,12 +239,15 @@ def _check_required_measurements(
     for size in record.sizes:
         m = size.measurements_cm
         # DRESS is legacy; team maps one-piece → TOP for backend storage.
+        # shoulder_width/hip_width는 무신사 표에서 자주 빠져 필수에서
+        # 제외한다(팀 결정 2026-08-05): 결측 시 DB에 NULL로 적재되고
+        # 착장 생성 단계가 "실측 수치 없음" 주의로 처리한다.
         if slot in (Slot.TOP, Slot.OUTER, Slot.DRESS):
-            required = (m.total_length, m.shoulder_width, m.chest_width)
-            labels = ("total_length", "shoulder_width", "chest_width")
+            required = (m.total_length, m.chest_width)
+            labels = ("total_length", "chest_width")
         elif slot == Slot.BOTTOM:
-            required = (m.total_length, m.waist_width, m.hip_width)
-            labels = ("total_length", "waist_width", "hip_width")
+            required = (m.total_length, m.waist_width)
+            labels = ("total_length", "waist_width")
         else:
             required = (m.total_length,)
             labels = ("total_length",)

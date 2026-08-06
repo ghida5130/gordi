@@ -1,0 +1,161 @@
+{
+  "session": "tpo_day4_shortfall",
+  "description": "4일차 부족 셀 재수집 (코튼·숏·드레스·스포츠상의·민소매 등 READY gap × 1.45)",
+  "oversample": 1.45,
+  "combined_outfile": "tpo_day4_shortfall_all.txt",
+  "buckets": [
+    {
+      "name": "MALE/cotton",
+      "outfile": "tpo_day4_male_cotton.txt",
+      "current_ready": 88,
+      "target_ready": 300,
+      "sources": [
+        ["M", "003006", "코튼/워크 팬츠"]
+      ]
+    },
+    {
+      "name": "FEMALE/cotton",
+      "outfile": "tpo_day4_female_cotton.txt",
+      "current_ready": 52,
+      "target_ready": 250,
+      "sources": [
+        ["F", "003006", "코튼/워크 팬츠"]
+      ]
+    },
+    {
+      "name": "MALE/shorts",
+      "outfile": "tpo_day4_male_shorts.txt",
+      "current_ready": 106,
+      "target_ready": 200,
+      "sources": [
+        ["M", "003005", "쇼츠"],
+        ["M", "003009", "버뮤다/숏"]
+      ]
+    },
+    {
+      "name": "FEMALE/shorts",
+      "outfile": "tpo_day4_female_shorts.txt",
+      "current_ready": 105,
+      "target_ready": 150,
+      "sources": [
+        ["F", "003005", "쇼츠"],
+        ["F", "003009", "버뮤다/숏"]
+      ]
+    },
+    {
+      "name": "FEMALE/dress",
+      "outfile": "tpo_day4_female_dress.txt",
+      "current_ready": 235,
+      "target_ready": 300,
+      "sources": [
+        ["F", "100001", "원피스"],
+        ["F", "100002", "미니 드레스"],
+        ["F", "100003", "롱/미디 원피스"]
+      ]
+    },
+    {
+      "name": "FEMALE/sports_top",
+      "outfile": "tpo_day4_female_sports_top.txt",
+      "current_ready": 87,
+      "target_ready": 150,
+      "sources": [
+        ["F", "017016", "스포츠 상의"]
+      ]
+    },
+    {
+      "name": "MALE/sleeveless",
+      "outfile": "tpo_day4_male_sleeveless.txt",
+      "current_ready": 74,
+      "target_ready": 100,
+      "sources": [
+        ["M", "001011", "민소매"]
+      ]
+    },
+    {
+      "name": "FEMALE/sleeveless",
+      "outfile": "tpo_day4_female_sleeveless.txt",
+      "current_ready": 107,
+      "target_ready": 150,
+      "sources": [
+        ["F", "001011", "민소매"]
+      ]
+    },
+    {
+      "name": "MALE/jogger",
+      "outfile": "tpo_day4_male_jogger.txt",
+      "current_ready": 279,
+      "target_ready": 300,
+      "sources": [
+        ["M", "003004", "트레이닝/조거"]
+      ]
+    },
+    {
+      "name": "MALE/slacks",
+      "outfile": "tpo_day4_male_slacks.txt",
+      "current_ready": 334,
+      "target_ready": 350,
+      "sources": [
+        ["M", "003008", "슬랙스"]
+      ]
+    },
+    {
+      "name": "FEMALE/knit",
+      "outfile": "tpo_day4_female_knit.txt",
+      "current_ready": 390,
+      "target_ready": 400,
+      "sources": [
+        ["F", "001006", "니트/스웨터"]
+      ]
+    },
+    {
+      "name": "MALE/coat",
+      "outfile": "tpo_day4_male_coat.txt",
+      "current_ready": 196,
+      "target_ready": 200,
+      "sources": [
+        ["M", "002007", "코트"],
+        ["M", "002008", "트렌치"]
+      ]
+    },
+    {
+      "name": "FEMALE/coat",
+      "outfile": "tpo_day4_female_coat.txt",
+      "current_ready": 234,
+      "target_ready": 250,
+      "sources": [
+        ["F", "002007", "코트"],
+        ["F", "002008", "트렌치"],
+        ["F", "002009", "후드코트"]
+      ]
+    },
+    {
+      "name": "MALE/padding",
+      "outfile": "tpo_day4_male_padding.txt",
+      "current_ready": 187,
+      "target_ready": 200,
+      "sources": [
+        ["M", "002012", "패딩"],
+        ["M", "002027", "라이트 패딩"]
+      ]
+    },
+    {
+      "name": "FEMALE/padding",
+      "outfile": "tpo_day4_female_padding.txt",
+      "current_ready": 144,
+      "target_ready": 150,
+      "sources": [
+        ["F", "002012", "패딩"],
+        ["F", "002027", "라이트 패딩"]
+      ]
+    },
+    {
+      "name": "MALE/long_sleeve",
+      "outfile": "tpo_day4_male_long_sleeve.txt",
+      "current_ready": 296,
+      "target_ready": 300,
+      "sources": [
+        ["M", "001010", "긴소매"]
+      ]
+    }
+  ]
+}

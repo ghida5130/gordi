@@ -1,0 +1,169 @@
+{
+  "started_at": "2026-08-05T09:02:34.607773+09:00",
+  "finished_at": "2026-08-05T09:04:42.373704+09:00",
+  "target_per_cell": 500,
+  "oversample": 1.45,
+  "page_delay_sec": 1.5,
+  "existing_ids": 6558,
+  "stopped": false,
+  "stop_reason": null,
+  "cells": {
+    "MALE/shirt": {
+      "cell": "MALE/shirt",
+      "requested_new": 449,
+      "discovered_new": 449,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001002",
+          "note": "셔츠/블라우스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 10,
+          "new_ids": 449
+        }
+      ],
+      "have": 91,
+      "id_count": 449
+    },
+    "MALE/knit": {
+      "cell": "MALE/knit",
+      "requested_new": 538,
+      "discovered_new": 538,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001006",
+          "note": "니트/스웨터",
+          "sort_code": "POPULAR",
+          "pages_fetched": 10,
+          "new_ids": 538
+        }
+      ],
+      "have": 29,
+      "id_count": 538
+    },
+    "MALE/slacks": {
+      "cell": "MALE/slacks",
+      "requested_new": 438,
+      "discovered_new": 438,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003008",
+          "note": "슬랙스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 438
+        }
+      ],
+      "have": 48,
+      "id_count": 438
+    },
+    "FEMALE/shirt": {
+      "cell": "FEMALE/shirt",
+      "requested_new": 464,
+      "discovered_new": 464,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001002",
+          "note": "셔츠/블라우스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 12,
+          "new_ids": 464
+        }
+      ],
+      "have": 80,
+      "id_count": 464
+    },
+    "FEMALE/knit": {
+      "cell": "FEMALE/knit",
+      "requested_new": 536,
+      "discovered_new": 536,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001006",
+          "note": "니트/스웨터",
+          "sort_code": "POPULAR",
+          "pages_fetched": 12,
+          "new_ids": 536
+        }
+      ],
+      "have": 31,
+      "id_count": 536
+    },
+    "FEMALE/slacks": {
+      "cell": "FEMALE/slacks",
+      "requested_new": 406,
+      "discovered_new": 406,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003008",
+          "note": "슬랙스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 406
+        }
+      ],
+      "have": 20,
+      "id_count": 406
+    },
+    "FEMALE/skirt_mini": {
+      "cell": "FEMALE/skirt_mini",
+      "requested_new": 195,
+      "discovered_new": 195,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "100004",
+          "note": "미니 스커트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 4,
+          "new_ids": 195
+        }
+      ],
+      "have": 16,
+      "id_count": 195
+    },
+    "FEMALE/skirt_midi_long": {
+      "cell": "FEMALE/skirt_midi_long",
+      "requested_new": 363,
+      "discovered_new": 363,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "100005",
+          "note": "미디 스커트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 363
+        }
+      ],
+      "have": 0,
+      "id_count": 363
+    },
+    "FEMALE/dress": {
+      "cell": "FEMALE/dress",
+      "requested_new": 428,
+      "discovered_new": 428,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "100001",
+          "note": "원피스1",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 428
+        }
+      ],
+      "have": 5,
+      "id_count": 428
+    }
+  },
+  "overnight_new_count": 3817,
+  "combined_outfile": "tpo_day2_formal_all.txt",
+  "session": "tpo_day2_formal",
+  "plan_description": "2일차 포멀·니트·스커트/원피스 (셔츠·니트·슬랙스·스커트·원피스)"
+}

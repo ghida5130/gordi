@@ -19,6 +19,7 @@ from app.recommendation.catalog_embeddings import (
     HttpProductImageResolver,
     OpenRouterEmbeddingProvider,
     build_catalog_embeddings,
+    load_tpo_sidecar,
 )
 
 
@@ -48,6 +49,16 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Embed only the first N products for a pilot run",
     )
+    parser.add_argument(
+        "--tpo-tags",
+        type=Path,
+        help=(
+            "tag-tpo sidecar JSONL; adds the Korean TPO rendering to "
+            "each embedding document (changes input hashes — tagged "
+            "products are re-embedded) and stores tags in snapshot "
+            "product metadata"
+        ),
+    )
     return parser
 
 
@@ -55,6 +66,13 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     connection = None
     try:
+        tpo_sidecar = None
+        if args.tpo_tags is not None:
+            tpo_sidecar = load_tpo_sidecar(args.tpo_tags)
+            print(
+                f"TPO sidecar: {len(tpo_sidecar)} tagged products",
+                file=sys.stderr,
+            )
         database_settings = CatalogDatabaseSettings.from_env()
         embedding_settings = EmbeddingSettings.from_env()
         connection = connect_catalog_database(database_settings)
@@ -71,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
                 provider,
                 args.output,
                 limit=args.limit,
+                tpo_sidecar=tpo_sidecar,
             )
     except (CatalogError, CatalogEmbeddingError) as exc:
         print(f"error: {exc}", file=sys.stderr)

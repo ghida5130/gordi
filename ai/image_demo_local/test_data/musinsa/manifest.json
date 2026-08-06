@@ -1,0 +1,187 @@
+{
+  "source": "MUSINSA",
+  "collected_at": "2026-07-22",
+  "usage_notice": "팀 내부 이미지 모델 비교 데모에만 사용하고, 외부 배포·학습 데이터 전환 전에는 이미지 권리를 별도로 확인하세요.",
+  "cases": [
+    {
+      "id": "mens-graphic-straight-black",
+      "name": "남성 · 오버핏 그래픽 + 레귤러 스트레이트",
+      "audience": "MEN",
+      "summary": "그래픽 보존과 오버핏 상의·일자 하의의 실루엣 재현을 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "3106567",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/3106567.jpg",
+          "file_name": "3106567-top.jpg",
+          "caption": "블랙 바탕에 오렌지·화이트 타원 그래픽이 있는 반소매 티셔츠",
+          "fit_tags": ["오버핏", "드롭숄더", "롱기장"],
+          "source_url": "https://www.musinsa.com/products/3106567",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230224/3106567/3106567_16777487348048_big.jpg?w=1200",
+          "reference_type": "product-only"
+        },
+        {
+          "product_id": "6334302",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/6334302.jpg",
+          "file_name": "6334302-bottom.jpg",
+          "caption": "워시드 블랙 색상의 5포켓 셀비지 데님 팬츠",
+          "fit_tags": ["레귤러핏", "스트레이트", "풀렝스"],
+          "source_url": "https://www.musinsa.com/products/6334302",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260417/6334302/6334302_17764260892752_big.jpg?w=1200",
+          "reference_type": "product-only"
+        }
+      ]
+    },
+    {
+      "id": "mens-smart-regular-semiwide",
+      "name": "남성 · 레귤러 린넨 셔츠 + 세미 와이드 슬랙스",
+      "audience": "MEN",
+      "summary": "셔츠 소재감과 단정한 레귤러·세미 와이드 조합을 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "6359276",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/6359276.jpg",
+          "file_name": "6359276-top.jpg",
+          "caption": "밝은 스카이 블루 색상의 100% 린넨 버튼다운 긴소매 셔츠",
+          "fit_tags": ["레귤러핏", "힙기장", "스트레이트실루엣"],
+          "source_url": "https://www.musinsa.com/products/6359276",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260422/6359276/6359276_17768555137505_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        },
+        {
+          "product_id": "1149329",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/1149329.jpg",
+          "file_name": "1149329-bottom.jpg",
+          "caption": "블랙 색상의 히든 밴딩 슈트 슬랙스",
+          "fit_tags": ["세미와이드", "스트레이트", "풀렝스"],
+          "source_url": "https://www.musinsa.com/products/1149329",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20190910/1149329/1149329_17775152531848_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        }
+      ]
+    },
+    {
+      "id": "mens-relaxed-polo-tapered",
+      "name": "남성 · 세미 오버핏 피케 + 루즈 테이퍼드 데님",
+      "audience": "MEN",
+      "summary": "카라와 레이어드 밑단, 여유로운 테이퍼드 하의를 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "6015507",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/6015507.jpg",
+          "file_name": "6015507-top.jpg",
+          "caption": "아이보리 배색 카라와 버튼 여밈이 있는 블랙 피케 티셔츠",
+          "fit_tags": ["세미오버핏", "드롭숄더", "힙기장"],
+          "source_url": "https://www.musinsa.com/products/6015507",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260212/6015507/6015507_17708586980017_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        },
+        {
+          "product_id": "4664338",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/4664338.jpg",
+          "file_name": "4664338-bottom.jpg",
+          "caption": "라이트 인디고 색상의 밴딩 데님 팬츠",
+          "fit_tags": ["루즈핏", "테이퍼드", "앵클기장"],
+          "source_url": "https://www.musinsa.com/products/4664338",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20241213/4664338/4664338_17453848059456_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        }
+      ]
+    },
+    {
+      "id": "womens-slim-bootcut-light",
+      "name": "여성 · 슬림핏 아이보리 티 + 카고 부츠컷",
+      "audience": "WOMEN",
+      "summary": "슬림 상의와 카고 포켓·부츠컷 같은 구조적 디테일을 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "6495953",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/6495953.jpg",
+          "file_name": "6495953-top.jpg",
+          "caption": "등판 상단에 작은 레드 하트 그래픽이 있는 아이보리 반소매 티셔츠",
+          "fit_tags": ["슬림핏", "허리선기장", "짧은소매"],
+          "source_url": "https://www.musinsa.com/products/6495953",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260517/6495953/6495953_17789510291281_big.jpg?w=1200",
+          "reference_type": "product-only"
+        },
+        {
+          "product_id": "5984505",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/5984505.jpg",
+          "file_name": "5984505-bottom.jpg",
+          "caption": "아이스 그레이 색상의 비대칭 카고 포켓 팬츠",
+          "fit_tags": ["부츠컷", "하이라이즈", "풀렝스"],
+          "source_url": "https://www.musinsa.com/products/5984505",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260205/5984505/5984505_17702596131603_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        }
+      ]
+    },
+    {
+      "id": "womens-graphic-loose-straight",
+      "name": "여성 · 슬림 그래픽 티 + 루즈 스트레이트 데님",
+      "audience": "WOMEN",
+      "summary": "밀착 상의의 프린트와 하이웨이스트 루즈 스트레이트 하의를 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "5158829",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/5158829.jpg",
+          "file_name": "5158829-top.jpg",
+          "caption": "화이트 레터링과 별 그래픽이 배치된 블랙 반소매 티셔츠",
+          "fit_tags": ["슬림핏", "허리선기장", "캡소매"],
+          "source_url": "https://www.musinsa.com/products/5158829",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250530/5158829/5158829_17762491951948_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        },
+        {
+          "product_id": "4519754",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/4519754.jpg",
+          "file_name": "4519754-bottom.jpg",
+          "caption": "블랙 색상의 하이웨이스트 데님 팬츠",
+          "fit_tags": ["루즈핏", "스트레이트", "하이라이즈"],
+          "source_url": "https://www.musinsa.com/products/4519754",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20241015/4519754/4519754_17343325322070_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        }
+      ]
+    },
+    {
+      "id": "womens-crop-wide-ivory",
+      "name": "여성 · 크롭 티 + 아이보리 와이드 팬츠",
+      "audience": "WOMEN",
+      "summary": "짧은 상의 기장과 밝은색 와이드 하의의 경계·비율을 확인하는 케이스",
+      "garments": [
+        {
+          "product_id": "5230413",
+          "slot": "TOP",
+          "image_url": "/test-data/musinsa/images/5230413.jpg",
+          "file_name": "5230413-top.jpg",
+          "caption": "장식이 없는 오프 화이트 색상의 반소매 티셔츠",
+          "fit_tags": ["크롭핏", "레귤러숄더", "허리선기장"],
+          "source_url": "https://www.musinsa.com/products/5230413",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250707/5230413/5230413_17520205546632_big.jpg?w=1200",
+          "reference_type": "product-only"
+        },
+        {
+          "product_id": "3304101",
+          "slot": "BOTTOM",
+          "image_url": "/test-data/musinsa/images/3304101.jpg",
+          "file_name": "3304101-bottom.jpg",
+          "caption": "아이보리 색상의 드로스트링 밴딩 팬츠",
+          "fit_tags": ["와이드핏", "미드라이즈", "풀렝스"],
+          "source_url": "https://www.musinsa.com/products/3304101",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230518/3304101/3304101_17665602846763_big.jpg?w=1200",
+          "reference_type": "worn-reference"
+        }
+      ]
+    }
+  ]
+}

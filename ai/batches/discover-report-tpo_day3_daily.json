@@ -1,0 +1,424 @@
+{
+  "started_at": "2026-08-05T12:57:45.283267+09:00",
+  "finished_at": "2026-08-05T13:01:54.236011+09:00",
+  "target_per_cell": 500,
+  "oversample": 1.45,
+  "page_delay_sec": 1.5,
+  "existing_ids": 10375,
+  "stopped": false,
+  "stop_reason": null,
+  "cells": {
+    "MALE/tee_ss": {
+      "cell": "MALE/tee_ss",
+      "requested_new": 244,
+      "discovered_new": 244,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001001",
+          "note": "반소매 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 244
+        }
+      ],
+      "have": 332,
+      "id_count": 244
+    },
+    "MALE/tee_ls": {
+      "cell": "MALE/tee_ls",
+      "requested_new": 393,
+      "discovered_new": 393,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001010",
+          "note": "긴소매 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 393
+        }
+      ],
+      "have": 29,
+      "id_count": 393
+    },
+    "MALE/sweat": {
+      "cell": "MALE/sweat",
+      "requested_new": 420,
+      "discovered_new": 420,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001005",
+          "note": "맨투맨/스웨트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 420
+        }
+      ],
+      "have": 11,
+      "id_count": 420
+    },
+    "MALE/hoodie": {
+      "cell": "MALE/hoodie",
+      "requested_new": 348,
+      "discovered_new": 348,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001004",
+          "note": "후드 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 348
+        }
+      ],
+      "have": 10,
+      "id_count": 348
+    },
+    "MALE/pique": {
+      "cell": "MALE/pique",
+      "requested_new": 270,
+      "discovered_new": 270,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001003",
+          "note": "피케/카라",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 270
+        }
+      ],
+      "have": 14,
+      "id_count": 270
+    },
+    "MALE/sleeveless": {
+      "cell": "MALE/sleeveless",
+      "requested_new": 105,
+      "discovered_new": 105,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001011",
+          "note": "민소매",
+          "sort_code": "POPULAR",
+          "pages_fetched": 3,
+          "new_ids": 105
+        }
+      ],
+      "have": 28,
+      "id_count": 105
+    },
+    "MALE/denim": {
+      "cell": "MALE/denim",
+      "requested_new": 386,
+      "discovered_new": 386,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003002",
+          "note": "데님 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 386
+        }
+      ],
+      "have": 84,
+      "id_count": 386
+    },
+    "MALE/cotton": {
+      "cell": "MALE/cotton",
+      "requested_new": 308,
+      "discovered_new": 308,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003006",
+          "note": "코튼/워크 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 308
+        }
+      ],
+      "have": 88,
+      "id_count": 308
+    },
+    "MALE/jogger": {
+      "cell": "MALE/jogger",
+      "requested_new": 340,
+      "discovered_new": 340,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003004",
+          "note": "트레이닝/조거",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 340
+        }
+      ],
+      "have": 66,
+      "id_count": 340
+    },
+    "MALE/shorts": {
+      "cell": "MALE/shorts",
+      "requested_new": 137,
+      "discovered_new": 137,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003005",
+          "note": "쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 3,
+          "new_ids": 137
+        }
+      ],
+      "have": 106,
+      "id_count": 137
+    },
+    "MALE/sports_top": {
+      "cell": "MALE/sports_top",
+      "requested_new": 151,
+      "discovered_new": 151,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "017016",
+          "note": "스포츠 상의",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 151
+        }
+      ],
+      "have": 46,
+      "id_count": 151
+    },
+    "MALE/sports_bottom": {
+      "cell": "MALE/sports_bottom",
+      "requested_new": 173,
+      "discovered_new": 173,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "017020",
+          "note": "스포츠 하의/쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 173
+        }
+      ],
+      "have": 31,
+      "id_count": 173
+    },
+    "FEMALE/tee_ss": {
+      "cell": "FEMALE/tee_ss",
+      "requested_new": 218,
+      "discovered_new": 218,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001001",
+          "note": "반소매 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 10,
+          "new_ids": 218
+        }
+      ],
+      "have": 250,
+      "id_count": 218
+    },
+    "FEMALE/tee_ls": {
+      "cell": "FEMALE/tee_ls",
+      "requested_new": 363,
+      "discovered_new": 363,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001010",
+          "note": "긴소매 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 363
+        }
+      ],
+      "have": 50,
+      "id_count": 363
+    },
+    "FEMALE/sweat": {
+      "cell": "FEMALE/sweat",
+      "requested_new": 362,
+      "discovered_new": 362,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001005",
+          "note": "맨투맨/스웨트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 10,
+          "new_ids": 362
+        }
+      ],
+      "have": 1,
+      "id_count": 362
+    },
+    "FEMALE/hoodie": {
+      "cell": "FEMALE/hoodie",
+      "requested_new": 280,
+      "discovered_new": 280,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001004",
+          "note": "후드 티셔츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 280
+        }
+      ],
+      "have": 7,
+      "id_count": 280
+    },
+    "FEMALE/pique": {
+      "cell": "FEMALE/pique",
+      "requested_new": 135,
+      "discovered_new": 135,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001003",
+          "note": "피케/카라",
+          "sort_code": "POPULAR",
+          "pages_fetched": 4,
+          "new_ids": 135
+        }
+      ],
+      "have": 7,
+      "id_count": 135
+    },
+    "FEMALE/sleeveless": {
+      "cell": "FEMALE/sleeveless",
+      "requested_new": 144,
+      "discovered_new": 144,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001011",
+          "note": "민소매",
+          "sort_code": "POPULAR",
+          "pages_fetched": 4,
+          "new_ids": 144
+        }
+      ],
+      "have": 51,
+      "id_count": 144
+    },
+    "FEMALE/denim": {
+      "cell": "FEMALE/denim",
+      "requested_new": 327,
+      "discovered_new": 327,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003002",
+          "note": "데님 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 10,
+          "new_ids": 327
+        }
+      ],
+      "have": 75,
+      "id_count": 327
+    },
+    "FEMALE/cotton": {
+      "cell": "FEMALE/cotton",
+      "requested_new": 288,
+      "discovered_new": 288,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003006",
+          "note": "코튼/워크 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 288
+        }
+      ],
+      "have": 52,
+      "id_count": 288
+    },
+    "FEMALE/jogger": {
+      "cell": "FEMALE/jogger",
+      "requested_new": 224,
+      "discovered_new": 224,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003004",
+          "note": "트레이닝/조거",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 224
+        }
+      ],
+      "have": 96,
+      "id_count": 224
+    },
+    "FEMALE/shorts": {
+      "cell": "FEMALE/shorts",
+      "requested_new": 66,
+      "discovered_new": 66,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003005",
+          "note": "쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 2,
+          "new_ids": 66
+        }
+      ],
+      "have": 105,
+      "id_count": 66
+    },
+    "FEMALE/sports_top": {
+      "cell": "FEMALE/sports_top",
+      "requested_new": 196,
+      "discovered_new": 196,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "017016",
+          "note": "스포츠 상의",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 196
+        }
+      ],
+      "have": 15,
+      "id_count": 196
+    },
+    "FEMALE/sports_bottom": {
+      "cell": "FEMALE/sports_bottom",
+      "requested_new": 130,
+      "discovered_new": 130,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "017020",
+          "note": "스포츠 하의/쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 130
+        }
+      ],
+      "have": 61,
+      "id_count": 130
+    }
+  },
+  "overnight_new_count": 6008,
+  "combined_outfile": "tpo_day3_daily_all.txt",
+  "session": "tpo_day3_daily",
+  "plan_description": "3일차 데일리·스포티 (맨투맨·후드·긴소매·피케·데님·코튼·조거·숏·스포츠레저, 반소매/민소매 소폭)"
+}

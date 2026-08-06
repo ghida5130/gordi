@@ -1,0 +1,94 @@
+{
+  "session": "tpo_day2_formal",
+  "description": "2일차 포멀·니트·스커트/원피스 (셔츠·니트·슬랙스·스커트·원피스)",
+  "oversample": 1.45,
+  "combined_outfile": "tpo_day2_formal_all.txt",
+  "buckets": [
+    {
+      "name": "MALE/shirt",
+      "outfile": "tpo_day2_male_shirt.txt",
+      "current_ready": 91,
+      "target_ready": 400,
+      "sources": [
+        ["M", "001002", "셔츠/블라우스"]
+      ]
+    },
+    {
+      "name": "MALE/knit",
+      "outfile": "tpo_day2_male_knit.txt",
+      "current_ready": 29,
+      "target_ready": 400,
+      "sources": [
+        ["M", "001006", "니트/스웨터"]
+      ]
+    },
+    {
+      "name": "MALE/slacks",
+      "outfile": "tpo_day2_male_slacks.txt",
+      "current_ready": 48,
+      "target_ready": 350,
+      "sources": [
+        ["M", "003008", "슬랙스"],
+        ["M", "003007", "워크/유틸 팬츠"]
+      ]
+    },
+    {
+      "name": "FEMALE/shirt",
+      "outfile": "tpo_day2_female_shirt.txt",
+      "current_ready": 80,
+      "target_ready": 400,
+      "sources": [
+        ["F", "001002", "셔츠/블라우스"]
+      ]
+    },
+    {
+      "name": "FEMALE/knit",
+      "outfile": "tpo_day2_female_knit.txt",
+      "current_ready": 31,
+      "target_ready": 400,
+      "sources": [
+        ["F", "001006", "니트/스웨터"]
+      ]
+    },
+    {
+      "name": "FEMALE/slacks",
+      "outfile": "tpo_day2_female_slacks.txt",
+      "current_ready": 20,
+      "target_ready": 300,
+      "sources": [
+        ["F", "003008", "슬랙스"],
+        ["F", "003007", "워크/유틸 팬츠"]
+      ]
+    },
+    {
+      "name": "FEMALE/skirt_mini",
+      "outfile": "tpo_day2_female_skirt_mini.txt",
+      "current_ready": 16,
+      "target_ready": 150,
+      "sources": [
+        ["F", "100004", "미니 스커트"]
+      ]
+    },
+    {
+      "name": "FEMALE/skirt_midi_long",
+      "outfile": "tpo_day2_female_skirt_midi.txt",
+      "current_ready": 0,
+      "target_ready": 250,
+      "sources": [
+        ["F", "100005", "미디 스커트"],
+        ["F", "100", "원피스/스커트 전체(보조)"]
+      ]
+    },
+    {
+      "name": "FEMALE/dress",
+      "outfile": "tpo_day2_female_dress.txt",
+      "current_ready": 5,
+      "target_ready": 300,
+      "sources": [
+        ["F", "100001", "원피스1"],
+        ["F", "100002", "미니 드레스"],
+        ["F", "100003", "롱/미디 원피스"]
+      ]
+    }
+  ]
+}

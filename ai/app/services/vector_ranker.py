@@ -27,6 +27,7 @@ from app.recommendation.pipeline import (
     GarmentTags,
     RecommendationIntent,
     RuleBasedCompatibilityModel,
+    parse_recommendation_intent,
 )
 from app.recommendation.vlm_reranker import PairwiseCompatibilityModel
 from app.recommendation.vector_index import (
@@ -113,13 +114,20 @@ class VectorRecommendationRanker:
         except (CatalogEmbeddingError, VectorIndexError) as exc:
             raise VectorRankError(str(exc)) from exc
 
+        # TPO 문장이 포함된 질의에서 색상·계절·스타일 태그를 추론해
+        # ("여름 결혼식" → SUMMER 등) 무드 스타일과 병합한다. VLM
+        # 리랭크 프롬프트도 intent.query_text 를 그대로 쓰므로 TPO 는
+        # 임베딩·규칙 궁합·pairwise 판정 세 단계 모두에 반영된다.
+        inferred = parse_recommendation_intent(query_text).tags
         intent = RecommendationIntent(
             query_text=query_text,
-            tags=GarmentTags(
-                styles=frozenset(
-                    _MOOD_STYLE_TAGS[mood]
-                    for mood in condition.moods
-                    if mood in _MOOD_STYLE_TAGS
+            tags=inferred.merge(
+                GarmentTags(
+                    styles=frozenset(
+                        _MOOD_STYLE_TAGS[mood]
+                        for mood in condition.moods
+                        if mood in _MOOD_STYLE_TAGS
+                    )
                 )
             ),
         )
@@ -301,7 +309,13 @@ def _query_text(condition: RankCondition) -> str:
     words.append(
         _CATEGORY_LABELS.get(condition.category, condition.category)
     )
-    return " ".join(words) + " 코디"
+    base = " ".join(words) + " 코디"
+    # TPO 자유 텍스트는 문장으로 덧붙인다 — 임베딩 모델은 라벨
+    # 나열보다 자연어 문맥에서 상황(격식·장소·계절)을 잘 싣는다.
+    tpo = (condition.tpo or "").strip()
+    if tpo:
+        return f"{base}. 상황: {tpo}"
+    return base
 
 
 __all__ = [

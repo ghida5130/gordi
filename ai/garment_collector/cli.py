@@ -300,6 +300,65 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     review_images.add_argument(
+        "--max-tokens",
+        type=int,
+        default=256,
+        help=(
+            "per-call output token cap; hidden reasoning draws from "
+            "the same cap, so raise this together with effort"
+        ),
+    )
+    review_images.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Count target records without VLM calls or writes",
+    )
+
+    tag_tpo = sub.add_parser(
+        "tag-tpo",
+        help=(
+            "Tag READY records with TPO occasions/formality/caption "
+            "into an AI-internal sidecar JSONL"
+        ),
+    )
+    tag_tpo.add_argument("--dataset-root", type=Path, required=True)
+    tag_tpo.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Sidecar JSONL path; existing external_ids are skipped",
+    )
+    tag_tpo.add_argument(
+        "--model",
+        default=os.environ.get(
+            "RECOMMENDATION_VLM_MODEL",
+            "openai/gpt-5.6-luna",
+        ),
+    )
+    tag_tpo.add_argument(
+        "--endpoint",
+        default="https://openrouter.ai/api/v1/chat/completions",
+    )
+    tag_tpo.add_argument("--limit", type=int, default=None)
+    tag_tpo.add_argument("--concurrency", type=int, default=8)
+    tag_tpo.add_argument(
+        "--reasoning-effort",
+        default="medium",
+        help=(
+            "reasoning effort for tagging calls; pass 'none' for "
+            "models that reject the field"
+        ),
+    )
+    tag_tpo.add_argument(
+        "--max-tokens",
+        type=int,
+        default=2048,
+        help=(
+            "per-call output token cap; hidden reasoning draws from "
+            "the same cap, so raise this together with effort"
+        ),
+    )
+    tag_tpo.add_argument(
         "--dry-run",
         action="store_true",
         help="Count target records without VLM calls or writes",
@@ -630,8 +689,62 @@ def cmd_review_images(args: argparse.Namespace) -> int:
             reasoning_effort=(
                 None if effort in {"", "none"} else effort
             ),
+            max_tokens=args.max_tokens,
         )
     except ImageReviewError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    payload = report.to_dict()
+    payload["errors"] = payload["errors"][:20]
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0 if report.failed == 0 else 1
+
+
+def cmd_tag_tpo(args: argparse.Namespace) -> int:
+    from garment_collector.tpo_tagging import (
+        TpoTaggingError,
+        tag_dataset_tpo,
+    )
+
+    try:
+        if args.dry_run:
+            client = None
+        else:
+            from app.recommendation.vlm import (
+                OpenAICompatibleVLMClient,
+                VLMSettings,
+            )
+
+            api_key = (
+                os.environ.get("RECOMMENDATION_VLM_API_KEY", "").strip()
+                or os.environ.get("OPENROUTER_API_KEY", "").strip()
+            )
+            if "openrouter.ai" in args.endpoint and not api_key:
+                raise TpoTaggingError(
+                    "OPENROUTER_API_KEY (or RECOMMENDATION_VLM_API_KEY) "
+                    "is required"
+                )
+            client = OpenAICompatibleVLMClient(
+                VLMSettings(
+                    model=args.model,
+                    endpoint=args.endpoint,
+                    api_key=api_key,
+                )
+            )
+        effort = args.reasoning_effort.strip().lower()
+        report = tag_dataset_tpo(
+            args.dataset_root,
+            client,
+            output_path=args.output,
+            limit=args.limit,
+            concurrency=args.concurrency,
+            dry_run=args.dry_run,
+            reasoning_effort=(
+                None if effort in {"", "none"} else effort
+            ),
+            max_tokens=args.max_tokens,
+        )
+    except TpoTaggingError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     payload = report.to_dict()
@@ -661,6 +774,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_seed_db(args)
     if args.command == "review-images":
         return cmd_review_images(args)
+    if args.command == "tag-tpo":
+        return cmd_tag_tpo(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
