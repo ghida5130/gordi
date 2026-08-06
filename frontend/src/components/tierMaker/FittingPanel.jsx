@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 
 import ClothingArtwork from '@/components/tierMaker/ClothingArtwork'
@@ -118,12 +119,17 @@ function FittingPanel({
   useEffect(() => {
     if (!isImagePreviewOpen) return undefined
 
+    const previousBodyOverflow = document.body.style.overflow
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') setIsImagePreviewOpen(false)
     }
 
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [isImagePreviewOpen])
 
   const handleDrop = (event) => {
@@ -417,43 +423,45 @@ function FittingPanel({
         </button>
       </div>
       </aside>
-      <AnimatePresence>
-        {isImagePreviewOpen && previewImageUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onMouseDown={() => setIsImagePreviewOpen(false)}
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${previewImageAlt} 크게 보기`}
-          >
-            <motion.section
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              onMouseDown={(event) => event.stopPropagation()}
-              className="relative flex max-h-full w-full max-w-4xl items-center justify-center"
+      {createPortal(
+        <AnimatePresence>
+          {isImagePreviewOpen && previewImageUrl && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsImagePreviewOpen(false)}
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm sm:px-6 sm:py-8"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${previewImageAlt} 크게 보기`}
             >
-              <img
-                src={previewImageUrl}
-                alt={previewImageAlt}
-                className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
-              />
-              <button
-                type="button"
-                onClick={() => setIsImagePreviewOpen(false)}
-                className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-full bg-slate-950/75 text-white shadow-lg backdrop-blur transition hover:bg-slate-950"
-                aria-label="크게 보기 닫기"
+              <motion.section
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="relative flex h-[calc(100dvh-3rem)] w-[calc(100vw-2rem)] items-center justify-center sm:h-[calc(100dvh-4rem)] sm:w-[calc(100vw-3rem)]"
               >
-                <TierMakerIcon name="close" size={20} />
-              </button>
-            </motion.section>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <img
+                  src={previewImageUrl}
+                  alt={previewImageAlt}
+                  className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsImagePreviewOpen(false)}
+                  className="absolute right-2 top-2 flex size-11 items-center justify-center rounded-full border border-white/20 bg-slate-950/75 text-white shadow-lg backdrop-blur transition hover:bg-slate-950 sm:right-3 sm:top-3"
+                  aria-label="크게 보기 닫기"
+                >
+                  <TierMakerIcon name="close" size={21} />
+                </button>
+              </motion.section>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   )
 }

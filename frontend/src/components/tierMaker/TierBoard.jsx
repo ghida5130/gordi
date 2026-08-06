@@ -222,7 +222,7 @@ function WaitingItem({
   return (
     <div
       data-tier-maker-cursor-anchor={`${cursorAnchor}:container`}
-      className={`shrink-0 transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      className={`mx-auto shrink-0 transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isExpanded ? 'w-[182px]' : 'w-[100px]'
       }`}
     >
@@ -582,9 +582,12 @@ function TierBoard({
               </div>
               <div
                 data-tier-maker-cursor-anchor="waiting-items"
-                className={`mt-2 flex flex-wrap items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`mt-2 grid content-start items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                   isExpanded ? 'min-h-[158px] gap-3' : 'min-h-[116px] gap-2'
                 }`}
+                style={{
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                }}
               >
                 {waitingClothes.length > 0 ? (
                   waitingClothes.map((item) => (

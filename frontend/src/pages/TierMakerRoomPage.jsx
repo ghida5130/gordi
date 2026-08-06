@@ -166,8 +166,8 @@ const emptyTryOn = {
 };
 const BOARD_WIDTH = 1530;
 const BOARD_MIN_HEIGHT = 720;
-const DEFAULT_TIER_COLUMN_LEFT = 300;
-const DEFAULT_TIER_COLUMN_WIDTH = 900;
+const DEFAULT_TIER_COLUMN_LEFT = 280;
+const DEFAULT_TIER_COLUMN_WIDTH = 940;
 const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 
 const compareRoomItemId = (left, right) =>
@@ -389,7 +389,6 @@ function TierMakerRoomPage() {
   const isBoardReady =
     roomEvents.hasSnapshot &&
     !roomStatusQuery.isPending &&
-    !productQueries.some((query) => query.isPending) &&
     !(roomEvents.status === "IN_PROGRESS" && candidateQuery.isPending);
   const cursorStructureKey = `${tiers
     .map((tier) => `${tier.id}:${tier.itemIds.join(",")}`)
@@ -1263,8 +1262,8 @@ function TierMakerRoomPage() {
                   animate={{
                     gridTemplateColumns: isTierFocusMode
                       ? `0px ${BOARD_WIDTH}px 0px`
-                      : "280px 900px 310px",
-                    columnGap: isTierFocusMode ? 0 : 20,
+                      : "280px 940px 310px",
+                    columnGap: 0,
                   }}
                   transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                   className="tier-maker-cursor-surface relative grid min-h-[720px] cursor-none items-start [&_*]:cursor-none"
