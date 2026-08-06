@@ -15,34 +15,44 @@ const EMPTY_FILTERS = {
 };
 
 const SUBCATEGORY_OPTIONS = {
-  BOTTOM: [
-    "COTTON_PANTS",
-    "DENIM_PANTS",
-    "JOGGER_PANTS",
-    "OTHER_BOTTOM",
-    "SHORTS",
-    "SKIRT",
-    "SLACKS",
-    "SPORTS_BOTTOM",
-  ],
   TOP: [
-    "DRESS",
-    "HOODIE",
-    "JACKET",
-    "KNIT",
-    "LONG_SLEEVE",
-    "OTHER_TOP",
-    "SHIRT",
-    "SHORT_SLEEVE",
-    "SLEEVELESS",
-    "SPORTS_TOP",
+    { value: "SHORT_SLEEVE", label: "반팔" },
+    { value: "SPORTS_TOP", label: "스포츠 상의" },
+    { value: "SHIRT", label: "셔츠" },
+    { value: "SLEEVELESS", label: "민소매" },
+    { value: "KNIT", label: "니트" },
+    { value: "HOODIE", label: "후드" },
+    { value: "JACKET", label: "재킷" },
+    { value: "DRESS", label: "원피스" },
+    { value: "LONG_SLEEVE", label: "긴팔" },
+    { value: "COAT", label: "코트" },
+    { value: "CARDIGAN", label: "가디건" },
+    { value: "PADDING", label: "패딩" },
+    { value: "OTHER_TOP", label: "기타 상의" },
+  ],
+  BOTTOM: [
+    { value: "SLACKS", label: "슬랙스" },
+    { value: "DENIM_PANTS", label: "데님 팬츠" },
+    { value: "JOGGER_PANTS", label: "조거 팬츠" },
+    { value: "COTTON_PANTS", label: "코튼 팬츠" },
+    { value: "SPORTS_BOTTOM", label: "스포츠 하의" },
+    { value: "SHORTS", label: "반바지" },
+    { value: "SKIRT", label: "스커트" },
+    { value: "OTHER_BOTTOM", label: "기타 하의" },
   ],
 };
+
+const SUBCATEGORY_LABELS = Object.fromEntries(
+  Object.values(SUBCATEGORY_OPTIONS)
+    .flat()
+    .map((option) => [option.value, option.label]),
+);
 
 function createSearchParams(filters, page) {
   const params = {};
 
   if (filters.category) params.category = filters.category;
+  if (filters.subcategory) params.subcategory = filters.subcategory;
   if (filters.minPrice !== "") params.minPrice = Number(filters.minPrice);
   if (filters.maxPrice !== "") params.maxPrice = Number(filters.maxPrice);
   if (filters.keyword.trim()) params.keyword = filters.keyword.trim();
@@ -87,16 +97,9 @@ function ClothingAddModal({
   });
   const result = getProductSearchResult(productsQuery.data);
   const products = Array.isArray(result.products) ? result.products : [];
-  const filteredProducts = appliedFilters.subcategory
-    ? products.filter(
-        (product) =>
-          normalizeTierMakerSubcategory(product.subcategory) ===
-          normalizeTierMakerSubcategory(appliedFilters.subcategory),
-      )
-    : products;
   const currentPage = Number(result.page ?? page);
   const pageSize = Number(result.size ?? 20);
-  const totalElements = Number(result.totalElements ?? filteredProducts.length);
+  const totalElements = Number(result.totalElements ?? products.length);
   const hasNextPage = (currentPage + 1) * pageSize < totalElements;
 
   const handleSubmit = (event) => {
@@ -172,8 +175,8 @@ function ClothingAddModal({
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
           >
             <option value="">전체 카테고리</option>
-            <option value="TOP">TOP</option>
-            <option value="BOTTOM">BOTTOM</option>
+            <option value="TOP">상의</option>
+            <option value="BOTTOM">하의</option>
           </select>
           <select
             value={filters.subcategory}
@@ -187,8 +190,8 @@ function ClothingAddModal({
           >
             <option value="">전체 상세 카테고리</option>
             {availableSubcategories.map((subcategory) => (
-              <option key={subcategory} value={subcategory}>
-                {subcategory}
+              <option key={subcategory.value} value={subcategory.value}>
+                {subcategory.label}
               </option>
             ))}
           </select>
@@ -269,7 +272,7 @@ function ClothingAddModal({
           )}
           {!productsQuery.isPending &&
             !productsQuery.isError &&
-            filteredProducts.map((product) => {
+            products.map((product) => {
               const productDetails =
                 product.product ?? product.productInfo ?? product.item ?? {};
               const productId =
@@ -298,10 +301,13 @@ function ClothingAddModal({
                 priceValue == null
                   ? "가격 정보 없음"
                   : `${Number(priceValue).toLocaleString()}원`;
-              const subcategory =
-                product.subcategory ??
-                productDetails.subcategory ??
-                "상세 카테고리 정보 없음";
+              const subcategoryValue =
+                product.subcategory ?? productDetails.subcategory;
+              const subcategory = subcategoryValue
+                ? (SUBCATEGORY_LABELS[
+                    normalizeTierMakerSubcategory(subcategoryValue)
+                  ] ?? subcategoryValue)
+                : "상세 카테고리 정보 없음";
               const imageUrl =
                 product.imageUrl ??
                 product.thumbnailUrl ??
@@ -376,7 +382,7 @@ function ClothingAddModal({
             })}
           {!productsQuery.isPending &&
             !productsQuery.isError &&
-            filteredProducts.length === 0 && (
+            products.length === 0 && (
               <p className="col-span-full py-24 text-center text-sm text-slate-400">
                 조건에 맞는 의상이 없습니다.
               </p>

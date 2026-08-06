@@ -162,7 +162,7 @@ PLP `003006`(코튼 의도)·쇼츠 카테고리 상품이 파서에서 **`OTHER
 | 배치·플랜 | `ai/batches/tpo_*` | plan JSON + id txt + discover-report |
 | 스크립트 | `ai/scripts/discover_plp_ids.py`, `start_collect_detached.ps1`, `watch_collect_and_postprocess.ps1`, `summarize_dataset_cells.py` | 재현용 |
 | 야간 로그 | `ai/garment_dataset-v2/reports/overnight/` | collect/watch/session summary |
-| 정책·핸드오버 | `docs/garment-data-collection-policy-v1.md`, `docs/GROK_HANDOVER_TPO_EXPANSION_2026-08-04.md` | 변경 없음 (수집 종료 결정만 본 문서) |
+| 정책·핸드오버 | `docs/ai/garment-data-collection-policy-v1.md`, `docs/ai/GROK_HANDOVER_TPO_EXPANSION_2026-08-04.md` | 변경 없음 (수집 종료 결정만 본 문서) |
 
 ---
 

@@ -198,13 +198,13 @@ Seeder가 `CURRENT_TIMESTAMP`를 명시하도록 수정한 뒤 실제 적재와 
 
 | 산출물 | 경로·값 |
 |---|---|
-| Seed manifest | [`../ai/garment_dataset-v2/reports/gordi-product-seed-v1.json`](../ai/garment_dataset-v2/reports/gordi-product-seed-v1.json) |
+| Seed manifest | [`../ai/garment_dataset-v2/reports/gordi-product-seed-v1.json`](../../ai/garment_dataset-v2/reports/gordi-product-seed-v1.json) |
 | Manifest SHA-256 | `c51deaaf4a9667416830621f3b3e2388d53a4d00f18b9c31d3b96ec5c5b89855` |
-| EC2 전송 bundle | [`../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar`](../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar) |
+| EC2 전송 bundle | [`../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar`](../../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar) |
 | Bundle 크기 | 48,486,400 bytes |
 | Bundle 엔트리 | manifest 1개 + primary 198장 |
 | Bundle SHA-256 | `00f4bd1725b5a9ce1717b95dfefb5e59172c527e6fa12093db5dfa2b6bdaedfc` |
-| SHA 기록 파일 | [`../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar.sha256`](../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar.sha256) |
+| SHA 기록 파일 | [`../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar.sha256`](../../ai/garment_dataset-v2/reports/gordi-garment-seed-198.tar.sha256) |
 | EC2 실행 문서 | [`garment-seed-ec2-runbook.md`](garment-seed-ec2-runbook.md) |
 
 ## 8. 미진행 항목과 필요 입력

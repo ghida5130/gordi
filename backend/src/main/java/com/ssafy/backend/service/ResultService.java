@@ -6,6 +6,7 @@ import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.domain.Result;
 import com.ssafy.backend.domain.ResultBoardItem;
+import com.ssafy.backend.domain.ResultTier;
 import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.results.RoomResultResponseDTO;
 import com.ssafy.backend.repository.ResultBoardItemRepository;
@@ -119,9 +120,14 @@ public class ResultService {
         Long roomItemId = item.getSourceRoomItem() == null
                 ? null
                 : item.getSourceRoomItem().getId();
-        Long tierId = item.getResultTier().getSourceTier() == null
+        ResultTier resultTier = item.getResultTier();
+        Long tierId = resultTier.getSourceTier() == null
                 ? null
-                : item.getResultTier().getSourceTier().getId();
+                : resultTier.getSourceTier().getId();
+        RoomResultResponseDTO.TierInfo tier = new RoomResultResponseDTO.TierInfo(
+                tierId,
+                resultTier.getName()
+        );
 
         return new RoomResultResponseDTO.TopItem(
                 index + 1,
@@ -132,7 +138,7 @@ public class ResultService {
                 item.getProduct().getPrice(),
                 imageUrlResolver.resolve(item.getProduct().getImageUrl()),
                 item.getPosition(),
-                tierId
+                tier
         );
     }
 
