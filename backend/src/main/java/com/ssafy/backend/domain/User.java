@@ -40,6 +40,12 @@ public class User {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
+    @Column(name = "height")
+    private Integer height;
+
+    @Column(name = "weight")
+    private Integer weight;
+
     @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
 
@@ -65,5 +71,9 @@ public class User {
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+    public void updateBodyInfo(Integer height, Integer weight) {
+        this.height = height;
+        this.weight = weight;
     }
 }
