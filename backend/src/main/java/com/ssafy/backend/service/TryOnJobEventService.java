@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -83,8 +84,14 @@ public class TryOnJobEventService {
 
         switch (eventType) {
             case PROCESSING -> markRunning(job);
-            case SUCCEEDED -> markSucceeded(job, request);
-            case FAILED -> markFailed(job, request);
+            case SUCCEEDED -> {
+                markSucceeded(job, request);
+                logTotalDuration(job);
+            }
+            case FAILED -> {
+                markFailed(job, request);
+                logTotalDuration(job);
+            }
         }
     }
 
@@ -148,6 +155,32 @@ public class TryOnJobEventService {
     private boolean isStale(TryOnJob job, Long sequence) {
         Long last = job.getLastEventSequence();
         return last != null && sequence <= last;
+    }
+
+    private void logTotalDuration(TryOnJob job) {
+        LocalDateTime createdAt = job.getCreatedAt();
+        LocalDateTime completedAt = job.getCompletedAt();
+        if (createdAt == null || completedAt == null) {
+            log.warn(
+                    "tryOnJob 라이프사이클 jobId={} status={} totalDurationUnavailable=true",
+                    job.getId(), job.getStatus()
+            );
+            return;
+        }
+
+        long totalDurationMs = Duration.between(createdAt, completedAt).toMillis();
+        if (totalDurationMs < 0) {
+            log.warn(
+                    "tryOnJob 라이프사이클 jobId={} status={} totalDurationMs={} invalidTimestampOrder=true",
+                    job.getId(), job.getStatus(), totalDurationMs
+            );
+            return;
+        }
+
+        log.info(
+                "tryOnJob 라이프사이클 jobId={} status={} totalDurationMs={} attempt={} cacheHit={}",
+                job.getId(), job.getStatus(), totalDurationMs, job.getAttempt(), job.isCacheHit()
+        );
     }
 
     private void publishSucceededIfRoom(TryOnJob job) {
