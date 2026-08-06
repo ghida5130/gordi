@@ -67,7 +67,17 @@
   .item:last-child { border-bottom: 0; }
   .item img {
     width: 56px; height: 70px; object-fit: cover; border-radius: 8px;
-    background: var(--line); flex-shrink: 0;
+    background: var(--line); flex-shrink: 0; cursor: zoom-in;
+  }
+  #zoom-preview {
+    position: fixed; z-index: 50; pointer-events: none;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); padding: 6px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  }
+  #zoom-preview img {
+    width: 320px; height: 400px; object-fit: contain; display: block;
+    border-radius: 10px; background: #fff;
   }
   .item .name { font-size: 0.82rem; font-weight: 600; }
   .item .meta { font-size: 0.74rem; color: var(--sub); }
@@ -100,7 +110,7 @@
         <label for="evaluator">평가자 이름</label>
         <input id="evaluator" type="text" maxlength="40" placeholder="예) 임효민" />
       </div>
-      <button id="load-queries" class="primary">쿼리셋 불러오기 (6개)</button>
+      <button id="load-queries" class="primary">쿼리셋 불러오기 (12개)</button>
       <button id="show-summary">집계 보기</button>
     </div>
     <p id="top-status" class="status"></p>
@@ -129,6 +139,8 @@
       <p id="submit-status" class="status"></p>
     </div>
   </section>
+
+  <div id="zoom-preview" hidden><img alt="" /></div>
 
   <section id="summary-section" class="card" hidden>
     <label>집계</label>
@@ -256,6 +268,7 @@
       img.src = result.imageUrl;
       img.loading = "lazy";
       img.onerror = () => { img.style.visibility = "hidden"; };
+      attachZoom(img);
       const info = document.createElement("div");
       const name = document.createElement("div");
       name.className = "name";
@@ -267,6 +280,36 @@
       row.append(img, info);
       container.appendChild(row);
     }
+  }
+
+  const zoomPreview = $("zoom-preview");
+  const zoomImage = zoomPreview.querySelector("img");
+
+  function positionZoom(event) {
+    const previewWidth = 332;
+    const previewHeight = 412;
+    let x = event.clientX + 18;
+    let y = event.clientY - previewHeight / 2;
+    if (x + previewWidth > window.innerWidth - 8) {
+      x = event.clientX - previewWidth - 18;
+    }
+    y = Math.max(8, Math.min(y, window.innerHeight - previewHeight - 8));
+    zoomPreview.style.left = `${x}px`;
+    zoomPreview.style.top = `${y}px`;
+  }
+
+  function attachZoom(img) {
+    img.addEventListener("mouseenter", (event) => {
+      if (img.style.visibility === "hidden") return;
+      zoomImage.src = img.src;
+      zoomPreview.hidden = false;
+      positionZoom(event);
+    });
+    img.addEventListener("mousemove", positionZoom);
+    img.addEventListener("mouseleave", () => {
+      zoomPreview.hidden = true;
+      zoomImage.src = "";
+    });
   }
 
   for (const button of document.querySelectorAll("#vote-area button")) {
