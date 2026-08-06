@@ -358,12 +358,31 @@ def _validate_product_metadata(
         raise VectorIndexError(
             f"product {product_id} is not AVAILABLE"
         )
-    for field in ("image_url", "purchase_url"):
-        parsed = urlsplit(product[field])
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+    purchase_parsed = urlsplit(product["purchase_url"])
+    if (
+        purchase_parsed.scheme not in {"http", "https"}
+        or not purchase_parsed.hostname
+    ):
+        raise VectorIndexError(
+            f"product {product_id} purchase_url is invalid"
+        )
+    # image_url 은 절대 URL 또는 S3 객체 키(백엔드 규약: DB 에 키만
+    # 저장, base 는 리졸버가 조합) 둘 다 유효하다. scheme 이 있으면
+    # http(s) 여야 하고, 없으면 스킴 상대(//)가 아닌 경로여야 한다.
+    image_url = product["image_url"]
+    image_parsed = urlsplit(image_url)
+    if image_parsed.scheme:
+        if (
+            image_parsed.scheme not in {"http", "https"}
+            or not image_parsed.hostname
+        ):
             raise VectorIndexError(
-                f"product {product_id} {field} is invalid"
+                f"product {product_id} image_url is invalid"
             )
+    elif image_url.startswith("//") or not image_url.strip():
+        raise VectorIndexError(
+            f"product {product_id} image_url is invalid"
+        )
     price = product.get("price")
     if (
         not isinstance(price, int)
