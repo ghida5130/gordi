@@ -2,13 +2,10 @@ package com.ssafy.backend.service;
 
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.dto.avatar.*;
 import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.domain.Avatar;
 import com.ssafy.backend.domain.User;
-import com.ssafy.backend.dto.avatar.AvatarResponseDTO;
-import com.ssafy.backend.dto.avatar.AvatarTemplateListResponseDTO;
-import com.ssafy.backend.dto.avatar.AvatarTemplateRequestDTO;
-import com.ssafy.backend.dto.avatar.UserAvatarResponseDTO;
 import com.ssafy.backend.repository.AvatarRepository;
 import com.ssafy.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,22 +33,27 @@ public class AvatarService {
 
     /** 나의 아바타 조회 */
     @Transactional(readOnly = true)
-    public AvatarResponseDTO readMyAvatar(String email) {
+    public MyAvatarResponseDTO readMyAvatar(String email) {
+        User user = findUser(email);
         Avatar avatar = findUser(email).getAvatar();
         if (avatar == null) {
             throw new ApiException(ErrorCode.AVATAR_NOT_FOUND, "선택된 아바타가 없습니다.");
         }
-        return AvatarResponseDTO.from(avatar, imageUrlResolver::resolve);
+        return new MyAvatarResponseDTO(
+                AvatarResponseDTO.from(avatar, imageUrlResolver::resolve),
+                user.getHeight(),
+                user.getWeight());
     }
 
     /** 아바타 프리셋 선택·변경 */
     @Transactional
-    public UserAvatarResponseDTO selectAvatar(String email, Long avatarId) {
+    public UserAvatarResponseDTO selectAvatar(String email, Long avatarId, Integer height, Integer weight) {
         User user = findUser(email);
         Avatar avatar = avatarRepository.findById(avatarId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.AVATAR_NOT_FOUND, Map.of("avatarId", avatarId)));
         user.setAvatar(avatar);   // 더티 체킹으로 flush
+        user.updateBodyInfo(height, weight);
         return new UserAvatarResponseDTO(user.getId(), avatar.getId());
     }
 

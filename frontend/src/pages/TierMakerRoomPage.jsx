@@ -175,8 +175,12 @@ const compareRoomItemId = (left, right) =>
 
 function isOuterItem(item) {
   return (
-    String(item.subCategory ?? "").trim().toUpperCase() === "OUTER" ||
-    String(item.subcategory ?? "").trim().toUpperCase() === "OUTER" ||
+    String(item.subCategory ?? "")
+      .trim()
+      .toUpperCase() === "OUTER" ||
+    String(item.subcategory ?? "")
+      .trim()
+      .toUpperCase() === "OUTER" ||
     item.slot === "OUTER"
   );
 }
@@ -284,11 +288,7 @@ function TierMakerRoomPage() {
     return [...roomItemsById.values()].filter(
       (item) => !removedRoomItemIds.has(String(item.roomItemId)),
     );
-  }, [
-    candidateItems,
-    roomEvents.removedRoomItemIds,
-    roomEvents.roomItems,
-  ]);
+  }, [candidateItems, roomEvents.removedRoomItemIds, roomEvents.roomItems]);
 
   const productIds = useMemo(
     () => [
@@ -497,17 +497,22 @@ function TierMakerRoomPage() {
   useEffect(() => {
     if (!roomEvents.terminalEvent) return;
 
+    if (roomEvents.terminalEvent === "ROOM_FINISHED") {
+      toast.success("방이 종료되었습니다.");
+      navigate(`/rooms/${encodeURIComponent(roomSession.roomCode)}/result`, {
+        replace: true,
+      });
+      return;
+    }
+
     removeRoomSession();
     navigate("/rooms", {
       replace: true,
       state: {
-        roomNotice:
-          roomEvents.terminalEvent === "ROOM_EXPIRED"
-            ? "방 이용 시간이 만료되었습니다."
-            : "방이 종료되었습니다.",
+        roomNotice: "방 이용 시간이 만료되었습니다.",
       },
     });
-  }, [navigate, roomEvents.terminalEvent]);
+  }, [navigate, roomEvents.terminalEvent, roomSession.roomCode, toast]);
 
   useEffect(() => {
     const rejection = roomEvents.lockRejection;
@@ -540,8 +545,7 @@ function TierMakerRoomPage() {
     refetchCandidates();
 
     if (
-      String(removal.senderParticipantId) ===
-      String(roomSession.participantId)
+      String(removal.senderParticipantId) === String(roomSession.participantId)
     ) {
       return;
     }
@@ -653,9 +657,7 @@ function TierMakerRoomPage() {
           })),
           wearOptions: {
             ...wearOptions,
-            outerClosure: hasOuterCandidate
-              ? wearOptions.outerClosure
-              : null,
+            outerClosure: hasOuterCandidate ? wearOptions.outerClosure : null,
           },
           prompt: tryOnPrompt.trim() || null,
         },
@@ -1006,9 +1008,7 @@ function TierMakerRoomPage() {
         }
 
         return {
-          x:
-            (decodedCursor.rawPosition.x - tierStart) /
-            (tierEnd - tierStart),
+          x: (decodedCursor.rawPosition.x - tierStart) / (tierEnd - tierStart),
           y: decodedCursor.rawPosition.y,
         };
       }
@@ -1052,11 +1052,13 @@ function TierMakerRoomPage() {
       }
 
       const x =
-        (anchorBounds.left - boardBounds.left +
+        (anchorBounds.left -
+          boardBounds.left +
           decodedCursor.localPosition.x * anchorBounds.width) /
         boardBounds.width;
       const y =
-        (anchorBounds.top - boardBounds.top +
+        (anchorBounds.top -
+          boardBounds.top +
           decodedCursor.localPosition.y * anchorBounds.height) /
         boardBounds.height;
 
@@ -1130,76 +1132,88 @@ function TierMakerRoomPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-lg font-black text-white shadow-lg shadow-violet-200">
-              T
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-sm font-extrabold text-slate-900 sm:text-base">
-                  실시간 티어메이커
-                </h1>
-                <span
-                  className={`hidden rounded-full px-2 py-0.5 text-[10px] font-bold sm:inline-flex ${
-                    roomEvents.connectionState === "CONNECTED"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-amber-50 text-amber-700"
-                  }`}
-                >
-                  {roomEvents.connectionState === "CONNECTED"
-                    ? "참여 중"
-                    : "연결 중"}
-                </span>
+      <header className="pt-5">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={false}
+            animate={{ width: BOARD_WIDTH * boardScale }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto flex max-w-full flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)]"
+          >
+            <div className="flex min-w-0 items-center gap-3.5">
+              <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 text-lg font-black text-white shadow-lg shadow-violet-200/80">
+                <span className="absolute -right-3 -top-3 size-8 rounded-full bg-white/20" />
+                <span className="relative">T</span>
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-400">
-                <span>스타일 보드</span>
-                <TierMakerIcon name="chevron" size={11} />
-                <span className="font-medium text-slate-500">
-                  ROOM {roomSession.roomCode ?? roomId}
-                </span>
-                <span>· v{roomEvents.version}</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-base font-black tracking-tight text-slate-900 sm:text-lg">
+                    {roomSession.roomCode ?? roomId} Room
+                  </h1>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                      roomEvents.connectionState === "CONNECTED"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    <span
+                      className={`size-1.5 rounded-full ${
+                        roomEvents.connectionState === "CONNECTED"
+                          ? "bg-emerald-500"
+                          : "animate-pulse bg-amber-500"
+                      }`}
+                    />
+                    {roomEvents.connectionState === "CONNECTED"
+                      ? "참여 중"
+                      : "연결 중"}
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">
+                    v{roomEvents.version}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <motion.button
-              type="button"
-              layout
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setIsTierFocusMode((current) => !current)}
-              aria-pressed={isTierFocusMode}
-              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold shadow-sm transition ${
-                isTierFocusMode
-                  ? "border-violet-200 bg-violet-600 text-white hover:bg-violet-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:text-violet-700"
-              }`}
-            >
-              <TierMakerIcon
-                name={isTierFocusMode ? "columns" : "focus"}
-                size={16}
-              />
-              {isTierFocusMode ? "전체 패널 보기" : "티어 크게 보기"}
-            </motion.button>
-            {isHost && (
-              <button
+            <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
+              <motion.button
                 type="button"
-                onClick={handleFinishRoom}
-                disabled={
-                  roomEvents.connectionState !== "CONNECTED" ||
-                  !roomEvents.hasSnapshot ||
-                  roomEvents.status !== "IN_PROGRESS" ||
-                  finishRoomMutation.isPending
-                }
-                className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                layout
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setIsTierFocusMode((current) => !current)}
+                aria-pressed={isTierFocusMode}
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
+                  isTierFocusMode
+                    ? "bg-violet-600 text-white shadow-md shadow-violet-200 hover:bg-violet-700"
+                    : "bg-white text-slate-700 shadow-sm ring-1 ring-slate-200 hover:text-violet-700 hover:ring-violet-200"
+                }`}
               >
-                <TierMakerIcon name="door" size={16} />
-                {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
-              </button>
-            )}
-          </div>
+                <TierMakerIcon
+                  name={isTierFocusMode ? "columns" : "focus"}
+                  size={16}
+                />
+                {isTierFocusMode ? "전체 패널 보기" : "티어 크게 보기"}
+              </motion.button>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={handleFinishRoom}
+                  disabled={
+                    roomEvents.connectionState !== "CONNECTED" ||
+                    !roomEvents.hasSnapshot ||
+                    roomEvents.status !== "IN_PROGRESS" ||
+                    finishRoomMutation.isPending
+                  }
+                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <TierMakerIcon name="door" size={16} />
+                  {finishRoomMutation.isPending ? "종료 중..." : "보드 종료"}
+                </button>
+              )}
+            </div>
+          </motion.div>
         </div>
       </header>
 

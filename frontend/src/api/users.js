@@ -8,12 +8,23 @@ export function getMyActiveRoom() {
     return authApi.get("/v1/users/me/active-room");
 }
 
-export function getMyAvatar() {
-    return authApi.get("/v1/users/me/avatar");
+export async function getMyAvatar() {
+    const response = await authApi.get("/v1/users/me/avatar");
+    const payload = response?.data ?? response;
+    const avatar = payload?.avatar ?? payload;
+
+    return {
+        ...response,
+        data: {
+            ...avatar,
+            height: payload?.height ?? avatar?.height ?? null,
+            weight: payload?.weight ?? avatar?.weight ?? null,
+        },
+    };
 }
 
-export function updateMyAvatar({ avatarId }) {
-    return authApi.put("/v1/users/me/avatar", { avatarId });
+export function updateMyAvatar({ avatarId, height, weight }) {
+    return authApi.put("/v1/users/me/avatar", { avatarId, height, weight });
 }
 
 export function updateNickname({ nickname }) {

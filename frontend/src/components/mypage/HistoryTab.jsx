@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import { getMyResults } from "@/api/users";
 import { getApiErrorMessage } from "@/utils/apiError";
@@ -40,7 +41,12 @@ export default function HistoryTab() {
                                     <p className="text-xs font-bold text-slate-400">ROOM {result.roomCode}</p>
                                     <h2 className="mt-1 text-xl font-bold">{formatDate(result.createdAt)}</h2>
                                 </div>
-                                <button type="button" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white">자세히 보기</button>
+                                <Link
+                                    to={`/rooms/${encodeURIComponent(result.roomCode)}/result`}
+                                    className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white"
+                                >
+                                    자세히 보기
+                                </Link>
                             </div>
 
                             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

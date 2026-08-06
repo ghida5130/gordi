@@ -34,6 +34,20 @@ export function getRoomStatus({ roomCode, roomToken }) {
   });
 }
 
+export function getRoomResult({ roomCode, roomToken }) {
+  const path = `v1/rooms/${encodeURIComponent(roomCode)}/result`;
+
+  if (roomToken) {
+    return publicApi.get(path, {
+      headers: {
+        Authorization: `Bearer ${roomToken}`,
+      },
+    });
+  }
+
+  return authApi.get(path);
+}
+
 export function finishRoom({ roomCode, roomToken, expectedVersion }) {
   return publicApi.post(
     `v1/rooms/${encodeURIComponent(roomCode)}/finish`,

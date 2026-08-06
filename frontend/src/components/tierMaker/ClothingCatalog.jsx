@@ -103,7 +103,7 @@ function ClothingCatalog({
               className={`group relative overflow-hidden rounded-2xl border bg-white transition ${
                 isLockedByOther
                   ? 'cursor-not-allowed border-amber-300 opacity-60'
-                  : 'cursor-grab border-slate-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing'
+                  : 'origin-center transform-gpu cursor-grab border-slate-200 hover:-translate-y-1 hover:-rotate-1 hover:border-violet-300 hover:shadow-lg active:cursor-grabbing'
               }`}
             >
             {onDeleteItem && !lock && (

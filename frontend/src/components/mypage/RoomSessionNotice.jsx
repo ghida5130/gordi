@@ -3,7 +3,12 @@ import MyPageIcon from "@/components/mypage/MyPageIcon";
 
 const EXIT_DURATION = 260;
 
-export default function RoomSessionNotice({ activeRoom, onEnter, onClose }) {
+export default function RoomSessionNotice({
+  activeRoom,
+  onEnter,
+  onClose,
+  isEntering = false,
+}) {
   const [isExiting, setIsExiting] = useState(false);
   const isWaiting = activeRoom.status === "WAITING";
 
@@ -113,14 +118,15 @@ export default function RoomSessionNotice({ activeRoom, onEnter, onClose }) {
             <button
               type="button"
               onClick={onEnter}
-              className="shrink-0 rounded-full bg-gray-950 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-gray-800"
+              disabled={isEntering}
+              className="shrink-0 rounded-full bg-gray-950 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:cursor-wait disabled:opacity-60"
             >
-              입장
+              {isEntering ? "재입장 중..." : "입장"}
             </button>
             <button
               type="button"
               onClick={() => setIsExiting(true)}
-              disabled={isExiting}
+              disabled={isExiting || isEntering}
               aria-label="진행 중인 방 알림 닫기"
               className="flex size-8 shrink-0 items-center justify-center rounded-full text-xl leading-none text-gray-600 transition-colors hover:bg-white/40 hover:text-gray-950"
             >

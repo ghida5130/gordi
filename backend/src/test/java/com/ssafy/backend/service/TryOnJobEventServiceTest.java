@@ -1,7 +1,11 @@
 package com.ssafy.backend.service;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.ssafy.backend.common.error.ApiException;
 import com.ssafy.backend.common.error.ErrorCode;
+import com.ssafy.backend.common.time.AppZone;
 import com.ssafy.backend.config.enums.TryOnContextType;
 import com.ssafy.backend.config.enums.TryOnJobEventType;
 import com.ssafy.backend.config.enums.TryOnJobStatus;
@@ -20,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.slf4j.LoggerFactory;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -152,6 +157,50 @@ class TryOnJobEventServiceTest {
         assertThat(event.senderParticipantId()).isEqualTo(42L);
         assertThat(event.jobId()).isEqualTo(JOB_ID);
         assertThat(event.reason()).isEqualTo(job.getErrorMessage());
+    }
+
+    @Test
+    void succeededEventLogsTotalDurationWithoutSchemaChange() {
+        TryOnJob job = queuedJob();
+        job.setCreatedAt(LocalDateTime.ofInstant(OCCURRED_AT.minusMillis(18_813), AppZone.KST));
+        stubJob(job);
+
+        ListAppender<ILoggingEvent> appender = startLogCapture();
+        try {
+            tryOnJobEventService.apply(JOB_ID, succeededEvent(2L));
+
+            assertThat(appender.list)
+                    .extracting(ILoggingEvent::getFormattedMessage)
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("tryOnJobLifecycle jobId=71")
+                            .contains("status=SUCCEEDED")
+                            .contains("totalDurationMs=18813")
+                            .contains("attempt=1")
+                            .contains("cacheHit=false"));
+        } finally {
+            stopLogCapture(appender);
+        }
+    }
+
+    @Test
+    void failedEventAlsoLogsTotalDuration() {
+        TryOnJob job = queuedJob();
+        job.setCreatedAt(LocalDateTime.ofInstant(OCCURRED_AT.minusMillis(5_250), AppZone.KST));
+        stubJob(job);
+
+        ListAppender<ILoggingEvent> appender = startLogCapture();
+        try {
+            tryOnJobEventService.apply(JOB_ID, failedEvent(2L, true));
+
+            assertThat(appender.list)
+                    .extracting(ILoggingEvent::getFormattedMessage)
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("tryOnJob 라이프사이클 jobId=71")
+                            .contains("status=FAILED")
+                            .contains("totalDurationMs=5250"));
+        } finally {
+            stopLogCapture(appender);
+        }
     }
 
     @Test
@@ -295,6 +344,20 @@ class TryOnJobEventServiceTest {
     private void stubJob(TryOnJob job) {
         when(tryOnJobRepository.findById(JOB_ID)).thenReturn(Optional.of(job));
         when(tryOnJobEventRepository.existsByTryOnJobIdAndEventId(anyLong(), anyString())).thenReturn(false);
+    }
+
+    private ListAppender<ILoggingEvent> startLogCapture() {
+        Logger logger = (Logger) LoggerFactory.getLogger(TryOnJobEventService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        return appender;
+    }
+
+    private void stopLogCapture(ListAppender<ILoggingEvent> appender) {
+        Logger logger = (Logger) LoggerFactory.getLogger(TryOnJobEventService.class);
+        logger.detachAppender(appender);
+        appender.stop();
     }
 
     private TryOnJob queuedJob() {

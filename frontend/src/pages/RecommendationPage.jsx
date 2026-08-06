@@ -681,6 +681,9 @@ function RecommendationResults({
   onReplaceSelected,
   onCreateRoom,
 }) {
+  const [isSelectionGuideDismissed, setIsSelectionGuideDismissed] =
+    useState(false);
+
   if (isPending && items.length > 0) {
     return (
       <RecommendationLoading
@@ -740,9 +743,6 @@ function RecommendationResults({
             <h1 className="mt-2 text-2xl font-black">
               {items.length}개 추천 아이템
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              다시 추천받을 의상을 복수로 선택할 수 있습니다.
-            </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <AnimatePresence initial={false}>
@@ -782,6 +782,30 @@ function RecommendationResults({
             {replacementNotice}
           </p>
         )}
+        {!isPending &&
+          items.length > 0 &&
+          !isSelectionGuideDismissed && (
+            <motion.p
+              initial={{ opacity: 0, height: 0, marginBottom: 0, y: -6 }}
+              animate={{
+                opacity: [0, 1, 1, 0],
+                height: [0, 40, 40, 0],
+                marginBottom: [0, 16, 16, 0],
+                y: [-6, 0, 0, -6],
+              }}
+              transition={{
+                duration: 4,
+                times: [0, 0.12, 0.8, 1],
+                ease: "easeInOut",
+              }}
+              onAnimationComplete={() => setIsSelectionGuideDismissed(true)}
+              className="flex overflow-hidden rounded-xl bg-red-50 px-4 text-sm font-semibold text-red-600"
+            >
+              <span className="my-auto">
+                마음에 들지 않는 의상을 선택하고 다시 추천받아보세요
+              </span>
+            </motion.p>
+          )}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {isPending
             ? Array.from({ length: 10 }, (_, index) => (
