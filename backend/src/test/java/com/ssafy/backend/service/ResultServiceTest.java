@@ -43,7 +43,7 @@ class ResultServiceTest {
     );
 
     @Test
-    void readMyResultsReturnsOnlyHighestNonEmptyTierAsTopItems() {
+    void readMyResultsReturnsOnlyTopThreeItemsFromHighestNonEmptyTier() {
         Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
         TryOnJob tryOnJob = TryOnJob.builder()
                 .id(71L)
@@ -71,23 +71,25 @@ class ResultServiceTest {
                 .build();
         ResultBoardItem first = boardItem(result, tierS, product(101L), 1);
         ResultBoardItem second = boardItem(result, tierS, product(102L), 2);
+        ResultBoardItem third = boardItem(result, tierS, product(103L), 3);
+        ResultBoardItem fourth = boardItem(result, tierS, product(104L), 4);
         ResultBoardItem lowerTier = boardItem(result, tierA, product(105L), 1);
 
         when(resultRepository.findAllByOwnerEmail("host@example.com"))
                 .thenReturn(List.of(result));
         when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
-                .thenReturn(List.of(lowerTier, second, first));
+                .thenReturn(List.of(lowerTier, fourth, second, third, first));
 
         MyResultListResponseDTO response = resultService.readMyResults("host@example.com");
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).topItems())
                 .extracting(MyResultListResponseDTO.TopItem::productId)
-                .containsExactly(101L, 102L);
+                .containsExactly(101L, 102L, 103L);
     }
 
     @Test
-    void readRoomResultReturnsRankedItemsFromHighestNonEmptyTier() {
+    void readRoomResultReturnsAllTieredItemsInTierAndItemPositionOrder() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 7, 23, 11, 0);
         Room room = Room.builder().id(31L).roomCode("A7K9Q2").build();
         TryOnJob tryOnJob = TryOnJob.builder()
@@ -158,6 +160,14 @@ class ResultServiceTest {
                         org.assertj.core.groups.Tuple.tuple(
                                 3, 303L, 103L, "product-103", "brand", 10_000,
                                 "https://example.com/103.png", 3, 1L
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                4, 304L, 104L, "product-104", "brand", 10_000,
+                                "https://example.com/104.png", 4, 1L
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                5, 305L, 105L, "product-105", "brand", 10_000,
+                                "https://example.com/105.png", 1, 2L
                         )
                 );
         assertThat(response.snapshotImageUrl())
