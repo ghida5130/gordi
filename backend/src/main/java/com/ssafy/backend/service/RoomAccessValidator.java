@@ -53,6 +53,37 @@ public class RoomAccessValidator {
                 .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
     }
 
+    /** 방 결과 조회를 위해 퇴장 여부와 무관하게 참여 이력을 검증한다. */
+    public RoomParticipant requireParticipantHistory(
+            Long requestedRoomId,
+            RoomPrincipal principal
+    ) {
+        if (principal == null) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (!Objects.equals(requestedRoomId, principal.roomId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        return roomParticipantRepository
+                .findByIdAndRoomId(principal.participantId(), requestedRoomId)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+    }
+
+    public RoomParticipant requireParticipantHistory(
+            Long requestedRoomId,
+            String email
+    ) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED);
+        }
+
+        return roomParticipantRepository
+                .findByRoomIdAndUserEmail(requestedRoomId, email)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+    }
+
     /** HOST 전용 동작 검증 */
     public void requireHost(RoomParticipant participant) {
         if (!RoomRole.HOST.matches(participant.getRole())) {

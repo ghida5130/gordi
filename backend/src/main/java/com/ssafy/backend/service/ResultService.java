@@ -64,7 +64,7 @@ public class ResultService {
             RoomPrincipal principal
     ) {
         Result result = findByRoomCode(rawRoomCode);
-        roomAccessValidator.requireParticipant(result.getRoom().getId(), principal);
+        roomAccessValidator.requireParticipantHistory(result.getRoom().getId(), principal);
         return toRoomResultResponse(result);
     }
 
@@ -73,7 +73,7 @@ public class ResultService {
             String email
     ) {
         Result result = findByRoomCode(rawRoomCode);
-        roomAccessValidator.requireParticipant(result.getRoom().getId(), email);
+        roomAccessValidator.requireParticipantHistory(result.getRoom().getId(), email);
         return toRoomResultResponse(result);
     }
 
