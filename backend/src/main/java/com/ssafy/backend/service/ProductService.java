@@ -59,15 +59,16 @@ public class ProductService {
                 topSizes, bottomSizes);
     }
 
-    public ProductSearchResponseDTO search(String category, Integer minPrice,
+    public ProductSearchResponseDTO search(String category, String subcategory, Integer minPrice,
                                            Integer maxPrice, String keyword,
                                            int page, int size, RoomPrincipal principal) {
         roomAccessValidator.requireParticipant(principal.roomId(), principal);
 
-        if (keyword != null && keyword.isBlank()) keyword = null;  // 빈 문자열 방어
+        if (keyword != null && keyword.isBlank()) keyword = null;
+        if (subcategory != null && subcategory.isBlank()) subcategory = null;
 
         Page<Product> result = productRepository.search(
-                category, minPrice, maxPrice, keyword, PageRequest.of(page, size));
+                category, subcategory, minPrice, maxPrice, keyword, PageRequest.of(page, size));
 
         return new ProductSearchResponseDTO(
                 result.getContent().stream()
