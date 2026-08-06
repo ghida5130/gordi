@@ -13,7 +13,7 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 const clientConfig = {
   baseURL: apiBaseUrl,
-  timeout: 10_000,
+  timeout: 30_000,
 };
 
 // 인증 정보 없이 사용하는 공개 요청용 클라이언트
@@ -57,7 +57,7 @@ authHttpClient.interceptors.response.use(
           {},
           {
             withCredentials: true,
-          }
+          },
         );
 
         // 2. 응답에서 새 Access Token 추출 (명세서의 response.data.data 구조 반영)
@@ -91,5 +91,5 @@ authHttpClient.interceptors.response.use(
 
     // 401 에러가 아니거나, 재시도 로직에 해당하지 않는 에러는 그대로 반환
     return Promise.reject(error);
-  }
+  },
 );

@@ -18,11 +18,23 @@ import SignupCompletePage from "@/pages/SignupCompletePage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import TierMakerRoomPage from "@/pages/TierMakerRoomPage";
 import TierMakerDesignPage from "@/pages/TierMakerDesignPage";
+import TierMakerRedesignPage from "@/pages/TierMakerRedesignPage";
+import TierMakerRedesignV2Page from "@/pages/TierMakerRedesignV2Page";
 import RecommendationPage from "@/pages/RecommendationPage";
 import MyPage from "@/pages/MyPage";
 
 // 화면과 URL의 대응 관계를 한곳에서 관리
 export const router = createBrowserRouter([
+    {
+        path: "/tier-maker-redesign",
+        element: <TierMakerRedesignPage />,
+        errorElement: <RouteErrorPage />,
+    },
+    {
+        path: "/tier-maker-redesign-v2",
+        element: <TierMakerRedesignV2Page />,
+        errorElement: <RouteErrorPage />,
+    },
     {
         path: "/",
         element: <RootLayout />,
