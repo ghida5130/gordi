@@ -1,4 +1,4 @@
-"""Policy-enforced defaults from docs/garment-data-collection-policy-v1.md v1.1.0."""
+"""Policy-enforced defaults from docs/ai/garment-data-collection-policy-v1.md v1.1.0."""
 
 from __future__ import annotations
 

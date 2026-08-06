@@ -65,7 +65,7 @@ EOF
 
 ### 2. EC2 DB 시드
 
-runbook(`docs/garment-seed-ec2-runbook.md`) 절차를 따르되:
+runbook(`docs/ai/garment-seed-ec2-runbook.md`) 절차를 따르되:
 
 - SSH 터널 경유 시 **타임아웃을 40분 이상**으로 잡을 것. 이전
   1,991+6.5k행이 약 14,500 statement/5분이었고, 이번엔 15,192+44,775행으로
