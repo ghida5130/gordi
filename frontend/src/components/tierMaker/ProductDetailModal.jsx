@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'motion/react'
 
 import { getProduct } from '@/api/products'
 import { getApiErrorMessage } from '@/utils/apiError'
@@ -63,13 +64,19 @@ function ProductDetailModal({ productId, roomToken, onClose }) {
   }, [onClose])
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
     >
-      <section
+      <motion.section
+        initial={{ opacity: 0, y: 18, scale: 0.975 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.98 }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="tier-maker-product-detail-title"
@@ -212,8 +219,8 @@ function ProductDetailModal({ productId, roomToken, onClose }) {
             </div>
           </div>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   )
 }
 

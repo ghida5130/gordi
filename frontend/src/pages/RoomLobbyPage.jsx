@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import PageContainer from "@/components/common/PageContainer";
@@ -50,25 +51,33 @@ function RoomLobbyPage() {
           </p>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            <button
+            <motion.button
               type="button"
               onClick={() => navigate("/recommendation")}
-              className="rounded-2xl bg-brand-600 px-6 py-8 text-lg font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:-translate-y-0.5 hover:bg-brand-500"
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              className="rounded-2xl bg-brand-600 px-6 py-8 text-lg font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-500"
             >
               의상 추천받고 티어메이커 시작하기
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               type="button"
               onClick={() => setIsJoinFormOpen((current) => !current)}
-              className="rounded-2xl border bg-white px-6 py-8 text-lg font-semibold text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-500 hover:text-brand-600"
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              className="rounded-2xl border bg-white px-6 py-8 text-lg font-semibold text-slate-900 shadow-sm transition-colors hover:border-brand-500 hover:text-brand-600"
             >
               방 참여
-            </button>
+            </motion.button>
           </div>
 
+          <AnimatePresence>
           {isJoinFormOpen && (
-            <form
+            <motion.form
               onSubmit={handleJoin}
+              initial={{ opacity: 0, y: -10, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.985 }}
               className="mt-6 rounded-3xl border bg-white p-6 text-left shadow-sm"
             >
               <h2 className="text-xl font-bold">방 코드로 참여하기</h2>
@@ -120,8 +129,9 @@ function RoomLobbyPage() {
               >
                 {joinRoomMutation.isPending ? "참여하는 중..." : "방 참여하기"}
               </button>
-            </form>
+            </motion.form>
           )}
+          </AnimatePresence>
         </section>
       </PageContainer>
     </main>

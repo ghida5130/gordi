@@ -17,7 +17,7 @@ const CONTENT_DISPLAY_DELAY_MS = 160;
 const DESCRIPTION_DISPLAY_DELAY_MS = 100;
 const TEXT_STAGGER_DELAY_MS = 90;
 
-export default function Header() {
+export default function Header({ isHidden = false }) {
     const navigate = useNavigate();
     const toast = useToast();
     const { isLogin, clearUser } = useUserStore();
@@ -105,8 +105,19 @@ export default function Header() {
 
     return (
         <>
-            <div aria-hidden="true" className={`pointer-events-none fixed inset-0 z-40 bg-slate-950/20 transition-opacity duration-500 ${hoveredMenu ? "opacity-100" : "opacity-0"}`} />
-            <div className="fixed inset-x-0 top-0 z-50">
+            <div aria-hidden="true" className={`pointer-events-none fixed inset-0 z-40 bg-slate-950/20 transition-opacity duration-500 ${hoveredMenu && !isHidden ? "opacity-100" : "opacity-0"}`} />
+            <div
+                onTransitionEnd={(event) => {
+                    if (
+                        isHidden &&
+                        event.target === event.currentTarget &&
+                        event.propertyName === "transform"
+                    ) {
+                        closeMenu();
+                    }
+                }}
+                className={`fixed inset-x-0 top-0 z-50 transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${isHidden ? "pointer-events-none -translate-y-full" : "translate-y-0"}`}
+            >
                 <div
                     className={`relative mx-auto w-full transition-[height,margin-top] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${hoveredMenu ? "mt-0 h-[510px]" : "mt-3 h-[72px]"}`}
                     onMouseLeave={closeMenu}

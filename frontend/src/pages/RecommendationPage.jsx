@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -313,36 +314,41 @@ function RecommendationPage() {
 
   if (step === "results")
     return (
-      <RecommendationResults
-        items={recommendedItems}
-        emptyReason={recommendationResult?.emptyReason}
-        isPending={
-          createMutation.isPending ||
-          (!recommendationResult && !createMutation.isError)
-        }
-        isReplacing={replaceMutation.isPending}
-        isCreatingRoom={createRoomMutation.isPending}
-        error={createMutation.error}
-        actionError={
-          replaceMutation.isError
-            ? getReplaceErrorMessage(replaceMutation.error)
-            : createRoomMutation.isError
-              ? getApiErrorMessage(
-                  createRoomMutation.error,
-                  "티어메이커 방을 만들지 못했습니다.",
-                )
-              : ""
-        }
-        replacementNotice={replacementNotice}
-        selectedProductIds={selectedProductIds}
-        canRequestActions={Boolean(
-          recommendationId && recommendationResult?.version,
-        )}
-        onBack={() => setStep("analysis")}
-        onToggleProduct={toggleSelectedProduct}
-        onReplaceSelected={handleReplaceSelected}
-        onCreateRoom={handleCreateRoom}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <RecommendationResults
+          items={recommendedItems}
+          emptyReason={recommendationResult?.emptyReason}
+          isPending={
+            createMutation.isPending ||
+            (!recommendationResult && !createMutation.isError)
+          }
+          isReplacing={replaceMutation.isPending}
+          isCreatingRoom={createRoomMutation.isPending}
+          error={createMutation.error}
+          actionError={
+            replaceMutation.isError
+              ? getReplaceErrorMessage(replaceMutation.error)
+              : createRoomMutation.isError
+                ? getApiErrorMessage(
+                    createRoomMutation.error,
+                    "티어메이커 방을 만들지 못했습니다.",
+                  )
+                : ""
+          }
+          replacementNotice={replacementNotice}
+          selectedProductIds={selectedProductIds}
+          canRequestActions={Boolean(
+            recommendationId && recommendationResult?.version,
+          )}
+          onBack={() => setStep("analysis")}
+          onToggleProduct={toggleSelectedProduct}
+          onReplaceSelected={handleReplaceSelected}
+          onCreateRoom={handleCreateRoom}
+        />
+      </motion.div>
     );
 
   return (
@@ -367,25 +373,34 @@ function RecommendationPage() {
             <i className="size-2 rounded-full bg-slate-300" />
           </div>
         </header>
-        {step === "form" ? (
-          <RecommendationForm
-            form={recommendationForm}
-            categories={categories}
-            moods={moods}
-            budgetPolicy={budgetPolicy}
-            optionsQuery={optionsQuery}
-            onChange={setForm}
-            onCategory={setCategory}
-            onMood={toggleMood}
-            onSubmit={handleSubmit}
-          />
-        ) : (
-          <AnalysisCard
-            fallbackConditions={submittedConditions}
-            onRetry={() => setStep("form")}
-            onResults={handleRecommend}
-          />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 14 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+          >
+            {step === "form" ? (
+              <RecommendationForm
+                form={recommendationForm}
+                categories={categories}
+                moods={moods}
+                budgetPolicy={budgetPolicy}
+                optionsQuery={optionsQuery}
+                onChange={setForm}
+                onCategory={setCategory}
+                onMood={toggleMood}
+                onSubmit={handleSubmit}
+              />
+            ) : (
+              <AnalysisCard
+                fallbackConditions={submittedConditions}
+                onRetry={() => setStep("form")}
+                onResults={handleRecommend}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </section>
     </main>
   );
@@ -513,8 +528,14 @@ function RecommendationForm({
       >
         추가 정보 입력하기
       </button>
+      <AnimatePresence>
       {isAdditionalInfoOpen && (
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
+        <motion.section
+          initial={{ opacity: 0, height: 0, y: -8 }}
+          animate={{ opacity: 1, height: "auto", y: 0 }}
+          exit={{ opacity: 0, height: 0, y: -8 }}
+          className="overflow-hidden rounded-3xl bg-white p-6 shadow-sm"
+        >
           <label className="block text-sm font-semibold">
             TPO 입력
             <textarea
@@ -530,8 +551,9 @@ function RecommendationForm({
           <p className="mt-2 text-right text-xs text-slate-400">
             {form.additionalInfo.length} / 300자
           </p>
-        </section>
+        </motion.section>
       )}
+      </AnimatePresence>
       <button
         disabled={
           !form.category ||
@@ -733,8 +755,11 @@ function RecommendationResults({
             const image = item.imageUrl ?? item.thumbnailUrl ?? item.image;
             const isSelected = selectedProductIds.includes(productId);
             return (
-              <article
+              <motion.article
                 key={productId ?? index}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.045, 0.36) }}
                 className={`relative overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition ${
                   isSelected
                     ? "border-violet-600 ring-4 ring-violet-100"
@@ -798,7 +823,7 @@ function RecommendationResults({
                     상품 보러가기
                   </a>
                 )}
-              </article>
+              </motion.article>
             );
           })}
         </div>
