@@ -39,8 +39,12 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
         where rp.user.email = :email
           and rp.leftAt is null
           and rp.room.status = 'IN_PROGRESS'
+          and rp.room.expiresAt > :now
         order by rp.joinedAt desc
         """)
-    List<RoomParticipant> findActiveByUserEmail(String email);
+    List<RoomParticipant> findActiveByUserEmail(
+            @Param("email") String email,
+            @Param("now") LocalDateTime now
+    );
 
 }
