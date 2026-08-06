@@ -1,8 +1,47 @@
 # 수집 배치 ID 목록
 
-확장 목표: 셀당 **500** (MALE/FEMALE × TOP/BOTTOM, 총 2000).
+## TPO 확장 — 핸드오버 `docs/GROK_HANDOVER_TPO_EXPANSION_2026-08-04.md`
 
-## 현재 목록 (PLP discover, 2026-08-01)
+### 1일차 아우터 (완료 2026-08-05)
+
+| 파일 | 내용 |
+|---|---|
+| `tpo_session1_outer_plan.json` | 버킷 목표·카테고리 코드 |
+| `tpo_day1_outer_all.txt` | 3615 IDs (oversample 1.45) |
+| `discover-report-tpo_day1_outer.json` | discover 메타 |
+
+### 2일차 포멀·니트·스커트/원피스 (완료)
+
+| 파일 | 내용 |
+|---|---|
+| `tpo_session2_formal_plan.json` | 셔츠·니트·슬랙스·스커트·원피스 |
+| `tpo_day2_formal_all.txt` | 3817 unique new IDs |
+| `discover-report-tpo_day2_formal.json` | discover 메타 |
+
+### 3일차 데일리·스포티 (완료)
+
+| 파일 | 내용 |
+|---|---|
+| `tpo_session3_daily_plan.json` | 맨투맨·후드·긴소매·피케·데님·코튼·조거·숏·스포츠 |
+| `tpo_day3_daily_all.txt` | 6008 unique new IDs |
+
+### 4일차 부족 셀 재수집 (완료) → **수집 종료**
+
+| 파일 | 내용 |
+|---|---|
+| `tpo_session4_shortfall_plan.json` | 코튼·숏·드레스·스포츠상의·민소매·조거·코트·패딩 등 |
+| `tpo_day4_shortfall_all.txt` | 1221 unique new IDs |
+| `discover-report-tpo_day4_shortfall.json` | discover 메타 |
+
+종료 보고: `docs/GROK_COLLECTION_COMPLETION_REPORT_TPO_2026-08-05.md`
+
+---
+
+## 이전 목록 (PLP discover, 2026-08-01)
+
+확장 목표(구): 셀당 **500** (MALE/FEMALE × TOP/BOTTOM, 총 2000).
+
+### 목록 (2026-08-01)
 
 무신사 공개 PLP API (`api2/dp/v1/plp/goods`)로 확보.  
 이미 `garment_dataset-v2/normalized` 에 있는 ID는 제외.  

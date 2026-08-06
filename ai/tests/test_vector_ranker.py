@@ -261,6 +261,47 @@ def rank_payload() -> dict:
     }
 
 
+def test_tpo_text_flows_into_embedding_query(
+    tmp_path: Path,
+) -> None:
+    provider = QueryProvider(vector(1.0, 0.0))
+    products = [product(1), product(2), product(3)]
+    vectors = {1: vector(1.0, 0.0), 2: vector(0.7, 0.7), 3: vector(0.0, 1.0)}
+    _, index = build_index(tmp_path, products, vectors)
+    ranker = VectorRecommendationRanker(index, provider)
+
+    ranker.rank(
+        condition(tpo="  여름 결혼식 하객으로 참석해요  "),
+        [candidate(1)],
+        limit=1,
+    )
+    ranker.rank(condition(tpo=""), [candidate(1)], limit=1)
+
+    with_tpo = provider.calls[0]["text"]
+    without_tpo = provider.calls[1]["text"]
+    assert "상황: 여름 결혼식 하객으로 참석해요" in with_tpo
+    assert "캐주얼" in with_tpo
+    assert "상황:" not in without_tpo
+
+
+def test_rank_endpoint_accepts_tpo_field(tmp_path: Path) -> None:
+    # Spring(b8bb526)은 미입력 시 tpo="" 를 보낸다 — 계약상 422 가
+    # 나면 추천 생성·교체가 전부 실패하므로 빈 값·실값 모두 수용 확인.
+    ranker = make_ranker(tmp_path, vector(1.0, 0.0))
+    app.dependency_overrides[get_vector_ranker] = lambda: ranker
+    try:
+        for tpo in ("", "다음 주 면접이 있어 단정하게 입고 싶어요"):
+            payload = rank_payload()
+            payload["condition"]["tpo"] = tpo
+            response = client.post(
+                "/internal/v1/recommendations/rank",
+                json=payload,
+            )
+            assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_rank_endpoint_uses_vector_ranker_when_available(
     tmp_path: Path,
 ) -> None:

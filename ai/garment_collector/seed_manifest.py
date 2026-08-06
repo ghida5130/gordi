@@ -76,6 +76,7 @@ def export_seed_manifest(
     products: list[dict[str, Any]] = []
     seen_keys: set[tuple[str, str]] = set()
     size_row_count = 0
+    dropped_size_rows = 0
 
     for declared_group, external_id in _iter_grouped_ids(grouped_ids):
         path = (
@@ -134,16 +135,27 @@ def export_seed_manifest(
             )
 
         primary = _validate_primary(record, dataset_root)
-        sizes = [
-            _export_size(
-                external_id,
-                product.backend_category,
-                size.model_dump(mode="python"),
-            )
-            for size in record.sizes
-        ]
+        # validate 는 "완전한 행 1개 이상"만 요구하므로 불완전 행이
+        # 섞인 상품이 READY 일 수 있다. 그런 행은 상품째 실패시키지
+        # 않고 조용히 제외한다 — DB에는 완화된 필수 실측을 갖춘
+        # 행만 들어가고, 드롭 수는 manifest 요약에 남는다.
+        sizes = []
+        for size in record.sizes:
+            payload = size.model_dump(mode="python")
+            try:
+                sizes.append(
+                    _export_size(
+                        external_id,
+                        product.backend_category,
+                        payload,
+                    )
+                )
+            except ManifestError:
+                dropped_size_rows += 1
         if not sizes:
-            raise ManifestError(f"{external_id}: sizes empty")
+            raise ManifestError(
+                f"{external_id}: no size row with required measurements"
+            )
         size_row_count += len(sizes)
 
         products.append(
@@ -200,6 +212,7 @@ def export_seed_manifest(
         "selection_sha256": DatasetStorage.sha256_json(grouped_ids),
         "product_count": len(products),
         "size_row_count": size_row_count,
+        "dropped_size_row_count": dropped_size_rows,
         "group_counts": dict(actual_groups),
         "products": products,
     }
@@ -304,10 +317,12 @@ def _export_size(
         raise ManifestError(f"{external_id}: measurements_cm missing")
     if not str(size.get("size_name") or "").strip():
         raise ManifestError(f"{external_id}: size_name missing")
+    # validate.py의 완화된 필수 세트와 일치해야 한다:
+    # shoulder_width/hip_width는 optional (결측 → DB NULL).
     required = (
-        ("total_length", "shoulder_width", "chest_width")
+        ("total_length", "chest_width")
         if category == BackendCategory.TOP
-        else ("total_length", "waist_width", "hip_width")
+        else ("total_length", "waist_width")
     )
     missing = [field for field in required if measurements.get(field) is None]
     if missing:

@@ -486,10 +486,12 @@ def _validate_product(product: Any, image_url_prefix: str) -> None:
     sizes = product.get("sizes")
     if not isinstance(sizes, list) or not sizes:
         raise SeedError(f"{external_id}: sizes missing")
+    # validate/export의 완화된 필수 세트와 일치해야 한다:
+    # shoulder_width/hip_width는 optional (결측 → DB NULL).
     required = (
-        ("total_length", "shoulder_width", "chest_width")
+        ("total_length", "chest_width")
         if category == BackendCategory.TOP
-        else ("total_length", "waist_width", "hip_width")
+        else ("total_length", "waist_width")
     )
     size_names: set[str] = set()
     for size in sizes:

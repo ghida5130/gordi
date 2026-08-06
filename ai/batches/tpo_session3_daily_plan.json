@@ -1,0 +1,182 @@
+{
+  "session": "tpo_day3_daily",
+  "description": "3일차 데일리·스포티 (맨투맨·후드·긴소매·피케·데님·코튼·조거·숏·스포츠레저, 반소매/민소매 소폭)",
+  "oversample": 1.45,
+  "combined_outfile": "tpo_day3_daily_all.txt",
+  "buckets": [
+    {
+      "name": "MALE/tee_ss",
+      "outfile": "tpo_day3_male_tee_ss.txt",
+      "current_ready": 332,
+      "target_ready": 500,
+      "sources": [["M", "001001", "반소매 티셔츠"]]
+    },
+    {
+      "name": "MALE/tee_ls",
+      "outfile": "tpo_day3_male_tee_ls.txt",
+      "current_ready": 29,
+      "target_ready": 300,
+      "sources": [["M", "001010", "긴소매 티셔츠"]]
+    },
+    {
+      "name": "MALE/sweat",
+      "outfile": "tpo_day3_male_sweat.txt",
+      "current_ready": 11,
+      "target_ready": 300,
+      "sources": [["M", "001005", "맨투맨/스웨트"]]
+    },
+    {
+      "name": "MALE/hoodie",
+      "outfile": "tpo_day3_male_hoodie.txt",
+      "current_ready": 10,
+      "target_ready": 250,
+      "sources": [["M", "001004", "후드 티셔츠"]]
+    },
+    {
+      "name": "MALE/pique",
+      "outfile": "tpo_day3_male_pique.txt",
+      "current_ready": 14,
+      "target_ready": 200,
+      "sources": [["M", "001003", "피케/카라"]]
+    },
+    {
+      "name": "MALE/sleeveless",
+      "outfile": "tpo_day3_male_sleeveless.txt",
+      "current_ready": 28,
+      "target_ready": 100,
+      "sources": [["M", "001011", "민소매"]]
+    },
+    {
+      "name": "MALE/denim",
+      "outfile": "tpo_day3_male_denim.txt",
+      "current_ready": 84,
+      "target_ready": 350,
+      "sources": [["M", "003002", "데님 팬츠"]]
+    },
+    {
+      "name": "MALE/cotton",
+      "outfile": "tpo_day3_male_cotton.txt",
+      "current_ready": 88,
+      "target_ready": 300,
+      "sources": [["M", "003006", "코튼/워크 팬츠"]]
+    },
+    {
+      "name": "MALE/jogger",
+      "outfile": "tpo_day3_male_jogger.txt",
+      "current_ready": 66,
+      "target_ready": 300,
+      "sources": [["M", "003004", "트레이닝/조거"]]
+    },
+    {
+      "name": "MALE/shorts",
+      "outfile": "tpo_day3_male_shorts.txt",
+      "current_ready": 106,
+      "target_ready": 200,
+      "sources": [
+        ["M", "003005", "쇼츠"],
+        ["M", "003009", "버뮤다/숏"]
+      ]
+    },
+    {
+      "name": "MALE/sports_top",
+      "outfile": "tpo_day3_male_sports_top.txt",
+      "current_ready": 46,
+      "target_ready": 150,
+      "sources": [["M", "017016", "스포츠 상의"]]
+    },
+    {
+      "name": "MALE/sports_bottom",
+      "outfile": "tpo_day3_male_sports_bottom.txt",
+      "current_ready": 31,
+      "target_ready": 150,
+      "sources": [["M", "017020", "스포츠 하의/쇼츠"]]
+    },
+    {
+      "name": "FEMALE/tee_ss",
+      "outfile": "tpo_day3_female_tee_ss.txt",
+      "current_ready": 250,
+      "target_ready": 400,
+      "sources": [["F", "001001", "반소매 티셔츠"]]
+    },
+    {
+      "name": "FEMALE/tee_ls",
+      "outfile": "tpo_day3_female_tee_ls.txt",
+      "current_ready": 50,
+      "target_ready": 300,
+      "sources": [["F", "001010", "긴소매 티셔츠"]]
+    },
+    {
+      "name": "FEMALE/sweat",
+      "outfile": "tpo_day3_female_sweat.txt",
+      "current_ready": 1,
+      "target_ready": 250,
+      "sources": [["F", "001005", "맨투맨/스웨트"]]
+    },
+    {
+      "name": "FEMALE/hoodie",
+      "outfile": "tpo_day3_female_hoodie.txt",
+      "current_ready": 7,
+      "target_ready": 200,
+      "sources": [["F", "001004", "후드 티셔츠"]]
+    },
+    {
+      "name": "FEMALE/pique",
+      "outfile": "tpo_day3_female_pique.txt",
+      "current_ready": 7,
+      "target_ready": 100,
+      "sources": [["F", "001003", "피케/카라"]]
+    },
+    {
+      "name": "FEMALE/sleeveless",
+      "outfile": "tpo_day3_female_sleeveless.txt",
+      "current_ready": 51,
+      "target_ready": 150,
+      "sources": [["F", "001011", "민소매"]]
+    },
+    {
+      "name": "FEMALE/denim",
+      "outfile": "tpo_day3_female_denim.txt",
+      "current_ready": 75,
+      "target_ready": 300,
+      "sources": [["F", "003002", "데님 팬츠"]]
+    },
+    {
+      "name": "FEMALE/cotton",
+      "outfile": "tpo_day3_female_cotton.txt",
+      "current_ready": 52,
+      "target_ready": 250,
+      "sources": [["F", "003006", "코튼/워크 팬츠"]]
+    },
+    {
+      "name": "FEMALE/jogger",
+      "outfile": "tpo_day3_female_jogger.txt",
+      "current_ready": 96,
+      "target_ready": 250,
+      "sources": [["F", "003004", "트레이닝/조거"]]
+    },
+    {
+      "name": "FEMALE/shorts",
+      "outfile": "tpo_day3_female_shorts.txt",
+      "current_ready": 105,
+      "target_ready": 150,
+      "sources": [
+        ["F", "003005", "쇼츠"],
+        ["F", "003009", "버뮤다/숏"]
+      ]
+    },
+    {
+      "name": "FEMALE/sports_top",
+      "outfile": "tpo_day3_female_sports_top.txt",
+      "current_ready": 15,
+      "target_ready": 150,
+      "sources": [["F", "017016", "스포츠 상의"]]
+    },
+    {
+      "name": "FEMALE/sports_bottom",
+      "outfile": "tpo_day3_female_sports_bottom.txt",
+      "current_ready": 61,
+      "target_ready": 150,
+      "sources": [["F", "017020", "스포츠 하의/쇼츠"]]
+    }
+  ]
+}

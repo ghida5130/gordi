@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TPO 적합 평가</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --ink: #0f172a; --sub: #64748b;
+    --line: #e2e8f0; --accent: #0f172a; --fit: #16a34a; --unfit: #dc2626;
+    --unsure: #d97706;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220; --card: #101a2e; --ink: #e2e8f0; --sub: #94a3b8;
+      --line: #1e293b; --accent: #e2e8f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--sub); font-size: 0.9rem; margin: 0 0 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; font-size: 0.95rem; background: var(--bg); color: var(--ink);
+  }
+  button {
+    border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700;
+    cursor: pointer; font-size: 0.9rem;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .primary { background: var(--accent); color: var(--bg); }
+  .query-list { display: grid; gap: 8px; }
+  .query-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+  }
+  .query-item:hover { border-color: var(--sub); }
+  .query-item.active { border-color: var(--accent); border-width: 2px; }
+  .query-item .meta { color: var(--sub); font-size: 0.78rem; white-space: nowrap; }
+  .query-item .text { flex: 1; font-size: 0.88rem; }
+  .badge {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+    background: var(--line); color: var(--sub); white-space: nowrap;
+  }
+  .badge.done { background: #dcfce7; color: #166534; }
+  .result {
+    display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line);
+    align-items: flex-start;
+  }
+  .result:last-child { border-bottom: 0; }
+  .result img {
+    width: 84px; height: 104px; object-fit: cover; border-radius: 10px;
+    background: var(--line); flex-shrink: 0;
+  }
+  .result .info { flex: 1; min-width: 0; }
+  .result .name { font-weight: 700; font-size: 0.92rem; }
+  .result .detail { color: var(--sub); font-size: 0.8rem; margin-top: 2px; }
+  .result .reason { font-size: 0.8rem; margin-top: 6px; color: var(--sub); }
+  .fit-buttons { display: flex; gap: 6px; flex-shrink: 0; }
+  .fit-buttons button {
+    padding: 8px 12px; font-size: 0.82rem; background: var(--bg);
+    border: 1.5px solid var(--line); color: var(--sub);
+  }
+  .fit-buttons button.sel-FIT { background: var(--fit); border-color: var(--fit); color: #fff; }
+  .fit-buttons button.sel-UNFIT { background: var(--unfit); border-color: var(--unfit); color: #fff; }
+  .fit-buttons button.sel-UNSURE { background: var(--unsure); border-color: var(--unsure); color: #fff; }
+  .status { font-size: 0.85rem; color: var(--sub); margin-top: 10px; min-height: 1.2em; }
+  .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .summary-table th, .summary-table td {
+    text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line);
+  }
+  .kpi { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .kpi .box {
+    flex: 1; min-width: 140px; border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px;
+  }
+  .kpi .num { font-size: 1.4rem; font-weight: 800; }
+  .kpi .cap { font-size: 0.75rem; color: var(--sub); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TPO 적합 평가</h1>
+  <p class="sub">고정 TPO 쿼리셋으로 추천 파이프라인을 실행하고, 결과 각각이 해당 TPO에 어울리는지 판정합니다. 판정은 저장 즉시 집계에 반영됩니다.</p>
+
+  <section class="card">
+    <div class="row">
+      <div>
+        <label for="evaluator">평가자 이름</label>
+        <input id="evaluator" type="text" maxlength="40" placeholder="예) 임효민" />
+      </div>
+      <button id="load-queries" class="primary">쿼리셋 불러오기</button>
+      <button id="show-summary">집계 보기</button>
+    </div>
+    <p id="top-status" class="status"></p>
+  </section>
+
+  <section id="query-section" class="card" hidden>
+    <label>평가할 TPO 쿼리 (완료: <span id="done-count">0</span>/<span id="total-count">0</span>)</label>
+    <div id="query-list" class="query-list"></div>
+  </section>
+
+  <section id="run-section" class="card" hidden>
+    <div id="run-query-text" style="font-weight:700; margin-bottom:4px;"></div>
+    <div id="run-query-meta" class="sub" style="margin-bottom:12px;"></div>
+    <button id="run-pipeline" class="primary">추천 실행</button>
+    <p id="run-status" class="status"></p>
+    <div id="results"></div>
+    <div id="submit-area" hidden style="margin-top:16px;">
+      <button id="submit-judgments" class="primary">판정 저장 (<span id="judged-count">0</span>/<span id="result-count">0</span>)</button>
+      <p id="submit-status" class="status"></p>
+    </div>
+  </section>
+
+  <section id="summary-section" class="card" hidden>
+    <label>TPO 적합률 집계</label>
+    <div class="kpi">
+      <div class="box"><div id="kpi-macro" class="num">–</div><div class="cap">macro 적합률 (쿼리 평균)</div></div>
+      <div class="box"><div id="kpi-micro" class="num">–</div><div class="cap">micro 적합률 (전체 판정)</div></div>
+      <div class="box"><div id="kpi-coverage" class="num">–</div><div class="cap">판정된 쿼리</div></div>
+    </div>
+    <table class="summary-table">
+      <thead><tr><th>쿼리</th><th>평가자 수</th><th>적합률</th></tr></thead>
+      <tbody id="summary-rows"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const QUERIES_URL = "/api/v1/demo/tpo-eval/queries";
+  const JUDGMENTS_URL = "/api/v1/demo/tpo-eval/judgments";
+  const SUMMARY_URL = "/api/v1/demo/tpo-eval/summary";
+  const PIPELINE_URL = "/api/v1/demo/recommendations";
+
+  const state = {
+    queries: [],
+    activeQuery: null,
+    results: [],
+    indexVersion: null,
+    judgments: new Map(),
+    completed: new Set(JSON.parse(localStorage.getItem("tpoEvalDone") || "[]")),
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const evaluatorName = () => $("evaluator").value.trim();
+
+  $("evaluator").value = localStorage.getItem("tpoEvalEvaluator") || "";
+  $("evaluator").addEventListener("change", () => {
+    localStorage.setItem("tpoEvalEvaluator", evaluatorName());
+  });
+
+  $("load-queries").addEventListener("click", async () => {
+    if (!evaluatorName()) {
+      $("top-status").textContent = "평가자 이름을 먼저 입력해 주세요.";
+      return;
+    }
+    $("top-status").textContent = "쿼리셋 불러오는 중...";
+    try {
+      const response = await fetch(QUERIES_URL);
+      if (!response.ok) throw new Error(await response.text());
+      const data = await response.json();
+      state.queries = data.queries;
+      renderQueryList();
+      $("query-section").hidden = false;
+      $("summary-section").hidden = true;
+      $("top-status").textContent = `쿼리 ${state.queries.length}개 로드 완료. 하나를 선택해 평가를 시작하세요.`;
+    } catch (error) {
+      $("top-status").textContent = `쿼리셋 로드 실패: ${error.message}`;
+    }
+  });
+
+  function renderQueryList() {
+    const list = $("query-list");
+    list.replaceChildren();
+    $("total-count").textContent = state.queries.length;
+    $("done-count").textContent = state.queries.filter((q) => state.completed.has(q.queryId)).length;
+    for (const query of state.queries) {
+      const item = document.createElement("div");
+      item.className = "query-item" + (state.activeQuery?.queryId === query.queryId ? " active" : "");
+      const badge = document.createElement("span");
+      badge.className = "badge" + (state.completed.has(query.queryId) ? " done" : "");
+      badge.textContent = state.completed.has(query.queryId) ? "완료" : "대기";
+      const text = document.createElement("span");
+      text.className = "text";
+      text.textContent = query.text;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = `${query.gender === "MALE" ? "남" : "여"} · ${query.category ?? "전체"}`;
+      item.append(badge, text, meta);
+      item.addEventListener("click", () => selectQuery(query));
+      list.appendChild(item);
+    }
+  }
+
+  function selectQuery(query) {
+    state.activeQuery = query;
+    state.results = [];
+    state.judgments = new Map();
+    renderQueryList();
+    $("run-section").hidden = false;
+    $("run-query-text").textContent = query.text;
+    const budget = query.budgetMax ? `예산 ~${Number(query.budgetMax).toLocaleString()}원` : "예산 제한 없음";
+    $("run-query-meta").textContent =
+      `${query.gender === "MALE" ? "남성" : "여성"} · ${query.category ?? "전체"} · ${budget}` +
+      (query.moods.length ? ` · 무드: ${query.moods.join(", ")}` : "");
+    $("results").replaceChildren();
+    $("submit-area").hidden = true;
+    $("run-status").textContent = "";
+    $("run-section").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("run-pipeline").addEventListener("click", async () => {
+    const query = state.activeQuery;
+    if (!query) return;
+    $("run-pipeline").disabled = true;
+    $("run-status").textContent = "파이프라인 실행 중... (VLM 리랭크 포함 시 ~10초)";
+    $("results").replaceChildren();
+    $("submit-area").hidden = true;
+    try {
+      const form = new FormData();
+      form.set("text", query.text);
+      form.set("gender", query.gender);
+      if (query.category) form.set("category", query.category);
+      if (query.subcategory) form.set("subcategory", query.subcategory);
+      form.set("budget_min", query.budgetMin ?? 0);
+      if (query.budgetMax != null) form.set("budget_max", query.budgetMax);
+      const response = await fetch(PIPELINE_URL, { method: "POST", body: form });
+      if (!response.ok) throw new Error((await response.json()).detail ?? response.statusText);
+      const data = await response.json();
+      state.results = data.results;
+      state.indexVersion = data.indexVersion;
+      state.judgments = new Map();
+      renderResults();
+      $("run-status").textContent = `결과 ${data.results.length}건. 각 상품이 이 TPO에 어울리는지 판정해 주세요.`;
+    } catch (error) {
+      $("run-status").textContent = `실행 실패: ${error.message}`;
+    } finally {
+      $("run-pipeline").disabled = false;
+    }
+  });
+
+  function renderResults() {
+    const container = $("results");
+    container.replaceChildren();
+    for (const result of state.results) {
+      const row = document.createElement("div");
+      row.className = "result";
+      const img = document.createElement("img");
+      img.src = result.imageUrl;
+      img.alt = result.name;
+      img.loading = "lazy";
+      img.onerror = () => { img.style.visibility = "hidden"; };
+      const info = document.createElement("div");
+      info.className = "info";
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = `${result.rank}. ${result.name}`;
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      detail.textContent = `${result.brand} · ${Number(result.price).toLocaleString()}원 · ${result.subcategory}`;
+      const reason = document.createElement("div");
+      reason.className = "reason";
+      reason.textContent = result.reason;
+      info.append(name, detail, reason);
+      const buttons = document.createElement("div");
+      buttons.className = "fit-buttons";
+      for (const [value, label] of [["FIT", "적합"], ["UNFIT", "부적합"], ["UNSURE", "모름"]]) {
+        const button = document.createElement("button");
+        button.textContent = label;
+        button.dataset.productId = result.productId;
+        button.dataset.fit = value;
+        button.addEventListener("click", () => {
+          state.judgments.set(result.productId, { productId: result.productId, rank: result.rank, fit: value });
+          for (const sibling of buttons.querySelectorAll("button")) {
+            sibling.className = sibling.dataset.fit === value ? `sel-${value}` : "";
+          }
+          updateSubmitState();
+        });
+        buttons.appendChild(button);
+      }
+      row.append(img, info, buttons);
+      container.appendChild(row);
+    }
+    $("result-count").textContent = state.results.length;
+    $("judged-count").textContent = 0;
+    $("submit-area").hidden = state.results.length === 0;
+    updateSubmitState();
+  }
+
+  function updateSubmitState() {
+    $("judged-count").textContent = state.judgments.size;
+    $("submit-judgments").disabled = state.judgments.size !== state.results.length || state.results.length === 0;
+  }
+
+  $("submit-judgments").addEventListener("click", async () => {
+    if (!state.activeQuery || !evaluatorName()) return;
+    $("submit-judgments").disabled = true;
+    $("submit-status").textContent = "저장 중...";
+    try {
+      const response = await fetch(JUDGMENTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          evaluator: evaluatorName(),
+          queryId: state.activeQuery.queryId,
+          indexVersion: state.indexVersion,
+          judgments: [...state.judgments.values()],
+        }),
+      });
+      if (!response.ok) throw new Error((await response.json()).detail ?? response.statusText);
+      const data = await response.json();
+      state.completed.add(state.activeQuery.queryId);
+      localStorage.setItem("tpoEvalDone", JSON.stringify([...state.completed]));
+      renderQueryList();
+      $("submit-status").textContent = `판정 ${data.saved}건 저장 완료. 다음 쿼리를 선택하세요.`;
+    } catch (error) {
+      $("submit-status").textContent = `저장 실패: ${error.message}`;
+      $("submit-judgments").disabled = false;
+    }
+  });
+
+  $("show-summary").addEventListener("click", async () => {
+    $("top-status").textContent = "집계 불러오는 중...";
+    try {
+      const response = await fetch(SUMMARY_URL);
+      if (!response.ok) throw new Error(await response.text());
+      const summary = await response.json();
+      $("kpi-macro").textContent = summary.macro_fit_rate != null ? `${(summary.macro_fit_rate * 100).toFixed(1)}%` : "–";
+      $("kpi-micro").textContent = summary.micro_fit_rate != null ? `${(summary.micro_fit_rate * 100).toFixed(1)}%` : "–";
+      $("kpi-coverage").textContent = `${summary.judged_query_count}/${summary.query_count}`;
+      const rows = $("summary-rows");
+      rows.replaceChildren();
+      const textById = new Map(state.queries.map((q) => [q.queryId, q.text]));
+      for (const entry of summary.queries) {
+        const tr = document.createElement("tr");
+        const label = textById.get(entry.query_id) ?? entry.query_id;
+        const rate = entry.fit_rate != null ? `${(entry.fit_rate * 100).toFixed(1)}%` : "–";
+        for (const value of [label, String(entry.evaluator_count), rate]) {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        }
+        rows.appendChild(tr);
+      }
+      $("summary-section").hidden = false;
+      $("top-status").textContent = "";
+      $("summary-section").scrollIntoView({ behavior: "smooth" });
+    } catch (error) {
+      $("top-status").textContent = `집계 로드 실패: ${error.message}`;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+{
+  "started_at": "2026-08-05T20:38:15.299371+09:00",
+  "finished_at": "2026-08-05T20:41:02.361765+09:00",
+  "target_per_cell": 500,
+  "oversample": 1.45,
+  "page_delay_sec": 1.5,
+  "existing_ids": 16383,
+  "stopped": false,
+  "stop_reason": null,
+  "cells": {
+    "MALE/cotton": {
+      "cell": "MALE/cotton",
+      "requested_new": 308,
+      "discovered_new": 308,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003006",
+          "note": "코튼/워크 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 11,
+          "new_ids": 308
+        }
+      ],
+      "have": 88,
+      "id_count": 308
+    },
+    "FEMALE/cotton": {
+      "cell": "FEMALE/cotton",
+      "requested_new": 288,
+      "discovered_new": 288,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003006",
+          "note": "코튼/워크 팬츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 13,
+          "new_ids": 288
+        }
+      ],
+      "have": 52,
+      "id_count": 288
+    },
+    "MALE/shorts": {
+      "cell": "MALE/shorts",
+      "requested_new": 137,
+      "discovered_new": 137,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003005",
+          "note": "쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 137
+        }
+      ],
+      "have": 106,
+      "id_count": 137
+    },
+    "FEMALE/shorts": {
+      "cell": "FEMALE/shorts",
+      "requested_new": 66,
+      "discovered_new": 66,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "003005",
+          "note": "쇼츠",
+          "sort_code": "POPULAR",
+          "pages_fetched": 3,
+          "new_ids": 66
+        }
+      ],
+      "have": 105,
+      "id_count": 66
+    },
+    "FEMALE/dress": {
+      "cell": "FEMALE/dress",
+      "requested_new": 95,
+      "discovered_new": 95,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "100001",
+          "note": "원피스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 95
+        }
+      ],
+      "have": 235,
+      "id_count": 95
+    },
+    "FEMALE/sports_top": {
+      "cell": "FEMALE/sports_top",
+      "requested_new": 92,
+      "discovered_new": 92,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "017016",
+          "note": "스포츠 상의",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 92
+        }
+      ],
+      "have": 87,
+      "id_count": 92
+    },
+    "MALE/sleeveless": {
+      "cell": "MALE/sleeveless",
+      "requested_new": 38,
+      "discovered_new": 38,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001011",
+          "note": "민소매",
+          "sort_code": "POPULAR",
+          "pages_fetched": 3,
+          "new_ids": 38
+        }
+      ],
+      "have": 74,
+      "id_count": 38
+    },
+    "FEMALE/sleeveless": {
+      "cell": "FEMALE/sleeveless",
+      "requested_new": 63,
+      "discovered_new": 63,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001011",
+          "note": "민소매",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 63
+        }
+      ],
+      "have": 107,
+      "id_count": 63
+    },
+    "MALE/jogger": {
+      "cell": "MALE/jogger",
+      "requested_new": 31,
+      "discovered_new": 31,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003004",
+          "note": "트레이닝/조거",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 31
+        }
+      ],
+      "have": 279,
+      "id_count": 31
+    },
+    "MALE/slacks": {
+      "cell": "MALE/slacks",
+      "requested_new": 24,
+      "discovered_new": 24,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "003008",
+          "note": "슬랙스",
+          "sort_code": "POPULAR",
+          "pages_fetched": 9,
+          "new_ids": 24
+        }
+      ],
+      "have": 334,
+      "id_count": 24
+    },
+    "FEMALE/knit": {
+      "cell": "FEMALE/knit",
+      "requested_new": 15,
+      "discovered_new": 15,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "001006",
+          "note": "니트/스웨터",
+          "sort_code": "POPULAR",
+          "pages_fetched": 12,
+          "new_ids": 15
+        }
+      ],
+      "have": 390,
+      "id_count": 15
+    },
+    "MALE/coat": {
+      "cell": "MALE/coat",
+      "requested_new": 6,
+      "discovered_new": 6,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002007",
+          "note": "코트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 2,
+          "new_ids": 6
+        }
+      ],
+      "have": 196,
+      "id_count": 6
+    },
+    "FEMALE/coat": {
+      "cell": "FEMALE/coat",
+      "requested_new": 24,
+      "discovered_new": 24,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002007",
+          "note": "코트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 24
+        }
+      ],
+      "have": 234,
+      "id_count": 24
+    },
+    "MALE/padding": {
+      "cell": "MALE/padding",
+      "requested_new": 19,
+      "discovered_new": 19,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002012",
+          "note": "패딩",
+          "sort_code": "POPULAR",
+          "pages_fetched": 2,
+          "new_ids": 19
+        }
+      ],
+      "have": 187,
+      "id_count": 19
+    },
+    "FEMALE/padding": {
+      "cell": "FEMALE/padding",
+      "requested_new": 9,
+      "discovered_new": 9,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002012",
+          "note": "패딩",
+          "sort_code": "POPULAR",
+          "pages_fetched": 2,
+          "new_ids": 9
+        }
+      ],
+      "have": 144,
+      "id_count": 9
+    },
+    "MALE/long_sleeve": {
+      "cell": "MALE/long_sleeve",
+      "requested_new": 6,
+      "discovered_new": 6,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "001010",
+          "note": "긴소매",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 6
+        }
+      ],
+      "have": 296,
+      "id_count": 6
+    }
+  },
+  "overnight_new_count": 1221,
+  "combined_outfile": "tpo_day4_shortfall_all.txt",
+  "session": "tpo_day4_shortfall",
+  "plan_description": "4일차 부족 셀 재수집 (코튼·숏·드레스·스포츠상의·민소매 등 READY gap × 1.45)"
+}

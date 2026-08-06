@@ -401,6 +401,7 @@ def build_catalog_embeddings(
     output_path: Path,
     *,
     limit: int | None = None,
+    tpo_sidecar: dict[str, dict[str, Any]] | None = None,
 ) -> BuildReport:
     """Build a complete snapshot, checkpointing paid calls atomically."""
     _validate_embedding_contract(provider.model, provider.dimensions)
@@ -424,7 +425,17 @@ def build_catalog_embeddings(
 
     for product in products:
         resolved = image_resolver.resolve(product)
-        document = format_catalog_document(product)
+        tpo_entry = (
+            tpo_sidecar.get(product.external_id)
+            if tpo_sidecar
+            else None
+        )
+        document = format_catalog_document(
+            product,
+            tpo_text=(
+                tpo_entry["embedding_text"] if tpo_entry else None
+            ),
+        )
         input_sha256 = _embedding_input_sha256(
             provider.model,
             provider.dimensions,
@@ -450,9 +461,16 @@ def build_catalog_embeddings(
             embedded_count += 1
             paid_since_checkpoint += 1
 
+        product_metadata = product.metadata()
+        if tpo_entry is not None:
+            product_metadata["tpo"] = {
+                "occasions": tpo_entry["occasions"],
+                "formality": tpo_entry["formality"],
+                "caption": tpo_entry["caption"],
+            }
         items.append(
             {
-                "product": product.metadata(),
+                "product": product_metadata,
                 "document": document,
                 "image_sha256": resolved.sha256,
                 "image_mime_type": resolved.mime_type,
@@ -498,19 +516,67 @@ def build_catalog_embeddings(
     )
 
 
-def format_catalog_document(product: CatalogProduct) -> str:
-    """Create the retrieval-document side of Gemini's asymmetric format."""
+def format_catalog_document(
+    product: CatalogProduct,
+    *,
+    tpo_text: str | None = None,
+) -> str:
+    """Create the retrieval-document side of Gemini's asymmetric format.
+
+    ``tpo_text`` is the Korean natural-language TPO rendering from the
+    tagging sidecar (occasion labels + formality + caption). Korean
+    phrases — not enum strings — because enums carry almost no meaning
+    in the embedding space. Including it changes the input hash, so
+    adding tags re-embeds the product (intended, one-time cost).
+    """
     description = (product.description or product.name).strip()
-    semantic_text = " | ".join(
-        [
-            f"brand: {product.brand}",
-            f"gender: {product.gender}",
-            f"category: {product.category}",
-            f"subcategory: {product.subcategory}",
-            f"description: {description}",
-        ]
-    )
+    parts = [
+        f"brand: {product.brand}",
+        f"gender: {product.gender}",
+        f"category: {product.category}",
+        f"subcategory: {product.subcategory}",
+        f"description: {description}",
+    ]
+    if tpo_text:
+        parts.append(f"tpo: {tpo_text}")
+    semantic_text = " | ".join(parts)
     return f"title: {product.name} | text: {semantic_text}"
+
+
+def load_tpo_sidecar(path: Path) -> dict[str, dict[str, Any]]:
+    """Load the tag-tpo sidecar JSONL keyed by external_id."""
+    entries: dict[str, dict[str, Any]] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise CatalogEmbeddingError(
+            f"cannot read TPO sidecar: {exc}"
+        ) from exc
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise CatalogEmbeddingError(
+                f"invalid TPO sidecar JSON on line {line_number}"
+            ) from exc
+        external_id = str(row.get("external_id") or "")
+        embedding_text = str(row.get("embedding_text") or "").strip()
+        if not external_id or not embedding_text:
+            raise CatalogEmbeddingError(
+                f"TPO sidecar line {line_number} missing "
+                "external_id or embedding_text"
+            )
+        entries[external_id] = {
+            "occasions": list(row.get("occasions") or []),
+            "formality": row.get("formality"),
+            "caption": str(row.get("caption") or ""),
+            "embedding_text": embedding_text,
+        }
+    if not entries:
+        raise CatalogEmbeddingError("TPO sidecar is empty")
+    return entries
 
 
 def _snapshot_payload(

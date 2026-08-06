@@ -1,0 +1,220 @@
+{
+  "started_at": "2026-08-04T21:35:10.248202+09:00",
+  "finished_at": "2026-08-04T21:37:05.712302+09:00",
+  "target_per_cell": 500,
+  "oversample": 1.45,
+  "page_delay_sec": 1.5,
+  "existing_ids": 2943,
+  "stopped": false,
+  "stop_reason": null,
+  "cells": {
+    "MALE/outer_blazer": {
+      "cell": "MALE/outer_blazer",
+      "requested_new": 363,
+      "discovered_new": 363,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002003",
+          "note": "블레이저",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 363
+        }
+      ],
+      "have": 0,
+      "id_count": 363
+    },
+    "MALE/outer_jacket": {
+      "cell": "MALE/outer_jacket",
+      "requested_new": 435,
+      "discovered_new": 435,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002001",
+          "note": "블루종/워크재킷",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 435
+        }
+      ],
+      "have": 0,
+      "id_count": 435
+    },
+    "MALE/outer_coat": {
+      "cell": "MALE/outer_coat",
+      "requested_new": 290,
+      "discovered_new": 290,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002007",
+          "note": "발마칸/싱글코트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 290
+        }
+      ],
+      "have": 0,
+      "id_count": 290
+    },
+    "MALE/outer_padding": {
+      "cell": "MALE/outer_padding",
+      "requested_new": 290,
+      "discovered_new": 290,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002012",
+          "note": "다운/패딩",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 290
+        }
+      ],
+      "have": 0,
+      "id_count": 290
+    },
+    "MALE/outer_cardigan": {
+      "cell": "MALE/outer_cardigan",
+      "requested_new": 205,
+      "discovered_new": 205,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002020",
+          "note": "가디건",
+          "sort_code": "POPULAR",
+          "pages_fetched": 4,
+          "new_ids": 205
+        }
+      ],
+      "have": 9,
+      "id_count": 205
+    },
+    "MALE/outer_fleece_wind": {
+      "cell": "MALE/outer_fleece_wind",
+      "requested_new": 290,
+      "discovered_new": 290,
+      "sources": [
+        {
+          "gf": "M",
+          "category": "002006",
+          "note": "윈드브레이커",
+          "sort_code": "POPULAR",
+          "pages_fetched": 5,
+          "new_ids": 290
+        }
+      ],
+      "have": 0,
+      "id_count": 290
+    },
+    "FEMALE/outer_blazer": {
+      "cell": "FEMALE/outer_blazer",
+      "requested_new": 290,
+      "discovered_new": 290,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002003",
+          "note": "블레이저",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 290
+        }
+      ],
+      "have": 0,
+      "id_count": 290
+    },
+    "FEMALE/outer_jacket": {
+      "cell": "FEMALE/outer_jacket",
+      "requested_new": 363,
+      "discovered_new": 363,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002001",
+          "note": "블루종/워크재킷",
+          "sort_code": "POPULAR",
+          "pages_fetched": 8,
+          "new_ids": 363
+        }
+      ],
+      "have": 0,
+      "id_count": 363
+    },
+    "FEMALE/outer_coat": {
+      "cell": "FEMALE/outer_coat",
+      "requested_new": 363,
+      "discovered_new": 363,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002007",
+          "note": "발마칸/싱글코트",
+          "sort_code": "POPULAR",
+          "pages_fetched": 7,
+          "new_ids": 363
+        }
+      ],
+      "have": 0,
+      "id_count": 363
+    },
+    "FEMALE/outer_padding": {
+      "cell": "FEMALE/outer_padding",
+      "requested_new": 218,
+      "discovered_new": 218,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002012",
+          "note": "다운/패딩",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 218
+        }
+      ],
+      "have": 0,
+      "id_count": 218
+    },
+    "FEMALE/outer_cardigan": {
+      "cell": "FEMALE/outer_cardigan",
+      "requested_new": 290,
+      "discovered_new": 290,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002020",
+          "note": "가디건",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 290
+        }
+      ],
+      "have": 0,
+      "id_count": 290
+    },
+    "FEMALE/outer_fleece_wind": {
+      "cell": "FEMALE/outer_fleece_wind",
+      "requested_new": 218,
+      "discovered_new": 218,
+      "sources": [
+        {
+          "gf": "F",
+          "category": "002006",
+          "note": "윈드브레이커",
+          "sort_code": "POPULAR",
+          "pages_fetched": 6,
+          "new_ids": 218
+        }
+      ],
+      "have": 0,
+      "id_count": 218
+    }
+  },
+  "overnight_new_count": 3615,
+  "combined_outfile": "tpo_day1_outer_all.txt",
+  "session": "tpo_day1_outer",
+  "plan_description": "1일차 아우터 전부 (남녀 블레이저·재킷·코트·패딩·카디건·플리스·바람막이)"
+}

@@ -1,0 +1,544 @@
+{
+  "source": "MUSINSA",
+  "collected_at": "2026-07-27",
+  "usage_notice": "팀 내부 이미지 생성 모델 비교에만 사용합니다. 외부 공개, 재배포, 학습 데이터 전환 전에는 무신사와 각 브랜드의 이미지 이용 권리를 별도로 확인해야 합니다.",
+  "rights_status": "internal-evaluation-only-unverified",
+  "measurement_unit": "cm",
+  "cases": [
+    {
+      "id": "fit-top-crop-m",
+      "axis": "SIZE_SENSITIVITY",
+      "name": "A1 · 여성 크롭 티셔츠 M",
+      "hypothesis": "여성 모래시계형 기준 M은 릴랙스핏으로 계산되고 아바타 정체성은 유지되어야 한다.",
+      "avatar": {
+        "preset_id": "female-hourglass",
+        "gender": "FEMALE",
+        "height_cm": 163,
+        "weight_kg": 57
+      },
+      "garment": {
+        "product_id": "4786321",
+        "slot": "TOP",
+        "caption": "블랙 바탕의 화이트 로고, 이중 소매 구조와 크롭 기장이 특징인 긴소매 티셔츠",
+        "image_url": "/test-data/musinsa/images/round2-4786321-worn.jpg",
+        "source_url": "https://www.musinsa.com/products/4786321",
+        "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250213/4786321/4786321_17394955476881_big.jpg?w=1200",
+        "reference_type": "worn-reference",
+        "model_present": true,
+        "other_garments_present": true,
+        "selected_size": "M",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 47,
+          "shoulder_width_cm": 51,
+          "chest_width_cm": 55,
+          "sleeve_length_cm": 61
+        },
+        "image_sha256": "62bdad9f096be5df50325eb572747bea50ca05f74ac77b1a26466425e3d8e706"
+      }
+    },
+    {
+      "id": "fit-top-crop-l",
+      "axis": "SIZE_SENSITIVITY",
+      "name": "A2 · 여성 크롭 티셔츠 L",
+      "hypothesis": "동일 이미지에서 L로 바꾸면 가슴 여유량이 증가해 오버핏으로 전환되어야 한다.",
+      "avatar": {
+        "preset_id": "female-hourglass",
+        "gender": "FEMALE",
+        "height_cm": 163,
+        "weight_kg": 57
+      },
+      "garment": {
+        "product_id": "4786321",
+        "slot": "TOP",
+        "caption": "블랙 바탕의 화이트 로고, 이중 소매 구조와 크롭 기장이 특징인 긴소매 티셔츠",
+        "image_url": "/test-data/musinsa/images/round2-4786321-worn.jpg",
+        "source_url": "https://www.musinsa.com/products/4786321",
+        "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250213/4786321/4786321_17394955476881_big.jpg?w=1200",
+        "reference_type": "worn-reference",
+        "model_present": true,
+        "other_garments_present": true,
+        "selected_size": "L",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 50,
+          "shoulder_width_cm": 52,
+          "chest_width_cm": 57.5,
+          "sleeve_length_cm": 62.5
+        },
+        "image_sha256": "62bdad9f096be5df50325eb572747bea50ca05f74ac77b1a26466425e3d8e706"
+      }
+    },
+    {
+      "id": "fit-bottom-denim-s",
+      "axis": "SIZE_SENSITIVITY",
+      "name": "B1 · 남성 와이드 데님 S",
+      "hypothesis": "남성 직선형 기준 S는 허리가 타이트하고 힙은 레귤러인 와이드 테이퍼드 실루엣이어야 한다.",
+      "avatar": {
+        "preset_id": "male-rectangle",
+        "gender": "MALE",
+        "height_cm": 173,
+        "weight_kg": 68
+      },
+      "garment": {
+        "product_id": "3254010",
+        "slot": "BOTTOM",
+        "caption": "인디고 색상의 투턱 와이드 테이퍼드 데님 팬츠",
+        "image_url": "/test-data/musinsa/images/round2-3254010-reference.jpg",
+        "source_url": "https://www.musinsa.com/products/3254010",
+        "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230422/3254010/3254010_16821393558342_big.jpg?w=1200",
+        "reference_type": "product-only",
+        "model_present": false,
+        "other_garments_present": false,
+        "selected_size": "S",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 100,
+          "waist_width_cm": 40,
+          "hip_width_cm": 51,
+          "thigh_width_cm": 35,
+          "rise_cm": 38,
+          "hem_width_cm": 23
+        },
+        "image_sha256": "31c01cb1bd6eebb9ccabc2d8b7e4144fed5b93de3bda0680cbd08ec1974631bf"
+      }
+    },
+    {
+      "id": "fit-bottom-denim-l",
+      "axis": "SIZE_SENSITIVITY",
+      "name": "B2 · 남성 와이드 데님 L",
+      "hypothesis": "동일 이미지에서 L로 바꾸면 허리·힙 여유량이 증가해 레귤러 이상으로 전환되어야 한다.",
+      "avatar": {
+        "preset_id": "male-rectangle",
+        "gender": "MALE",
+        "height_cm": 173,
+        "weight_kg": 68
+      },
+      "garment": {
+        "product_id": "3254010",
+        "slot": "BOTTOM",
+        "caption": "인디고 색상의 투턱 와이드 테이퍼드 데님 팬츠",
+        "image_url": "/test-data/musinsa/images/round2-3254010-reference.jpg",
+        "source_url": "https://www.musinsa.com/products/3254010",
+        "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230422/3254010/3254010_16821393558342_big.jpg?w=1200",
+        "reference_type": "product-only",
+        "model_present": false,
+        "other_garments_present": false,
+        "selected_size": "L",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 104,
+          "waist_width_cm": 45,
+          "hip_width_cm": 55,
+          "thigh_width_cm": 38,
+          "rise_cm": 40,
+          "hem_width_cm": 24
+        },
+        "image_sha256": "31c01cb1bd6eebb9ccabc2d8b7e4144fed5b93de3bda0680cbd08ec1974631bf"
+      }
+    },
+    {
+      "id": "reference-outer-product",
+      "axis": "REFERENCE_CONTAMINATION",
+      "name": "C1 · 남성 퀼팅 자켓 단독컷",
+      "hypothesis": "상품 단독컷에서는 선택한 남성 상체형 아바타가 인물 기준으로 유지되어야 한다.",
+      "avatar": {
+        "preset_id": "male-inverted-triangle",
+        "gender": "MALE",
+        "height_cm": 175,
+        "weight_kg": 72
+      },
+      "garment": {
+        "product_id": "2848666",
+        "slot": "OUTER",
+        "caption": "블랙 나일론 소재의 카라리스 퀼팅 자켓",
+        "image_url": "/test-data/musinsa/images/round2-2848666-product.jpg",
+        "source_url": "https://www.musinsa.com/products/2848666",
+        "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20221007/2848666/2848666_1_big.jpg?w=1200",
+        "reference_type": "product-only",
+        "model_present": false,
+        "other_garments_present": false,
+        "selected_size": "S",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 66,
+          "shoulder_width_cm": 52,
+          "chest_width_cm": 60,
+          "sleeve_length_cm": 62
+        },
+        "image_sha256": "81d7c9126a9078a452f5b716002aa13fa31600cac8bdc15c667c8fb260d54568"
+      }
+    },
+    {
+      "id": "reference-outer-worn",
+      "axis": "REFERENCE_CONTAMINATION",
+      "name": "C2 · 남성 퀼팅 자켓 인물 포함",
+      "hypothesis": "같은 상품·사이즈에서 인물 포함 레퍼런스를 사용해도 얼굴·체형·포즈를 복제하지 않아야 한다.",
+      "avatar": {
+        "preset_id": "male-inverted-triangle",
+        "gender": "MALE",
+        "height_cm": 175,
+        "weight_kg": 72
+      },
+      "garment": {
+        "product_id": "2848666",
+        "slot": "OUTER",
+        "caption": "블랙 나일론 소재의 카라리스 퀼팅 자켓",
+        "image_url": "/test-data/musinsa/images/round2-2848666-worn-sheet.jpg",
+        "source_url": "https://www.musinsa.com/products/2848666",
+        "source_image_url": "https://image.musinsa.com/thumbnails/images/prd_img/2022101114132800000080043.jpg?w=1200",
+        "reference_type": "worn-reference",
+        "model_present": true,
+        "other_garments_present": true,
+        "selected_size": "S",
+        "measurement_basis": "flat-width",
+        "measurements": {
+          "total_length_cm": 66,
+          "shoulder_width_cm": 52,
+          "chest_width_cm": 60,
+          "sleeve_length_cm": 62
+        },
+        "image_sha256": "5d39a1f3dd5ace267b6a26a537dc82095195baed695495ef673695d0188a9a06"
+      }
+    }
+  ],
+  "outfit_cases": [
+    {
+      "id": "outfit-female-crop-bootcut",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "D1 · 여성 크롭 티 + 부츠컷",
+      "hypothesis": "두 착용컷의 인물과 기존 코디는 무시하고, 크롭 상의와 부츠컷 하의의 길이·실루엣·장식만 선택한 여성 아바타에 함께 적용해야 한다.",
+      "avatar": {
+        "preset_id": "female-hourglass",
+        "gender": "FEMALE",
+        "height_cm": 163,
+        "weight_kg": 57
+      },
+      "garments": [
+        {
+          "product_id": "4786321",
+          "slot": "TOP",
+          "caption": "블랙 바탕의 화이트 로고, 이중 소매 구조와 크롭 기장이 특징인 긴소매 티셔츠",
+          "image_url": "/test-data/musinsa/images/round2-4786321-worn.jpg",
+          "source_url": "https://www.musinsa.com/products/4786321",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250213/4786321/4786321_17394955476881_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 47,
+            "shoulder_width_cm": 51,
+            "chest_width_cm": 55,
+            "sleeve_length_cm": 61
+          },
+          "image_sha256": "62bdad9f096be5df50325eb572747bea50ca05f74ac77b1a26466425e3d8e706"
+        },
+        {
+          "product_id": "5313017",
+          "slot": "BOTTOM",
+          "caption": "블랙 카고 포켓과 자수 장식이 있는 로우라이즈 부츠컷 팬츠",
+          "image_url": "/test-data/musinsa/images/round2-5313017-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/5313017",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250812/5313017/5313017_17554916382684_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "S",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 103,
+            "waist_width_cm": 36,
+            "hip_width_cm": 47,
+            "thigh_width_cm": 30,
+            "rise_cm": 26,
+            "hem_width_cm": 30
+          },
+          "image_sha256": "09cee60c86d8c2ae9ca4ab550a3fbb3f7701b6bcacf0be62bdfb4204cab74157"
+        }
+      ]
+    },
+    {
+      "id": "outfit-female-polo-parachute",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "D2 · 여성 슬림 폴로 + 파라슈트",
+      "hypothesis": "슬림한 크롭 폴로와 볼륨이 큰 파라슈트 팬츠의 상하 대비를 유지하되 레퍼런스 인물의 얼굴·체형·포즈를 복제하지 않아야 한다.",
+      "avatar": {
+        "preset_id": "female-rectangle",
+        "gender": "FEMALE",
+        "height_cm": 162,
+        "weight_kg": 54
+      },
+      "garments": [
+        {
+          "product_id": "3319956",
+          "slot": "TOP",
+          "caption": "라일락 컬러의 슬림 리브드 반소매 크롭 폴로 셔츠",
+          "image_url": "/test-data/musinsa/images/round2-3319956-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/3319956",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230524/3319956/3319956_16849973943294_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "FREE",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 41,
+            "shoulder_width_cm": 35,
+            "chest_width_cm": 38,
+            "sleeve_length_cm": 15,
+            "hem_width_cm": 30
+          },
+          "image_sha256": "d3811d8d688e0276a21d900eb8a48a00b823aa6180ec5e91829e3a7e07cd0bb5"
+        },
+        {
+          "product_id": "5313005",
+          "slot": "BOTTOM",
+          "caption": "블랙 컬러의 로우라이즈 와이드 파라슈트 카고 팬츠",
+          "image_url": "/test-data/musinsa/images/round2-5313005-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/5313005",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250812/5313005/5313005_17554918480895_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "S",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 104,
+            "waist_width_cm": 35,
+            "hip_width_cm": 49.5,
+            "thigh_width_cm": 34.5,
+            "rise_cm": 32,
+            "hem_width_cm": 26.5
+          },
+          "image_sha256": "e8f879473ac02c1a18e3cbf363d76b257ab00578c49c4714a2b71af5e0802a31"
+        }
+      ]
+    },
+    {
+      "id": "outfit-female-graphic-wide",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "D3 · 여성 그래픽 크롭 티 + 와이드 슬랙스",
+      "hypothesis": "그래픽의 배치와 크롭 기장, 하의의 깊은 턱과 긴 와이드 실루엣을 동시에 준수하면서 두 레퍼런스 속 인물과 다른 의상은 제거해야 한다.",
+      "avatar": {
+        "preset_id": "female-triangle",
+        "gender": "FEMALE",
+        "height_cm": 161,
+        "weight_kg": 56
+      },
+      "garments": [
+        {
+          "product_id": "5015497",
+          "slot": "TOP",
+          "caption": "검정 바탕에 달과 살쾡이 그래픽이 크게 배치된 반소매 크롭 티셔츠",
+          "image_url": "/test-data/musinsa/images/round2-5015497-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/5015497",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250411/5015497/5015497_17816736422371_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 46,
+            "shoulder_width_cm": 37,
+            "chest_width_cm": 42,
+            "sleeve_length_cm": 14
+          },
+          "image_sha256": "6e6f795f379cee6fa4b2bd5a58df45c6ada4e47301851a1b7fd2e3ef23229283"
+        },
+        {
+          "product_id": "4949223",
+          "slot": "BOTTOM",
+          "caption": "네이비 컬러의 깊은 턱과 긴 기장이 특징인 와이드 슬랙스",
+          "image_url": "/test-data/musinsa/images/round2-4949223-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/4949223",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20250326/4949223/4949223_17429756371485_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "S",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 109,
+            "waist_width_cm": 34,
+            "hip_width_cm": 48.5,
+            "thigh_width_cm": 32,
+            "rise_cm": 33,
+            "hem_width_cm": 29
+          },
+          "image_sha256": "7b8e574ee3bcbed4702021ac7225de8d61d9e635ba76b79defcaa5a17d637ece"
+        }
+      ]
+    },
+    {
+      "id": "outfit-male-tee-denim",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "E1 · 남성 로고 티 + 와이드 데님",
+      "hypothesis": "상품 단독컷 두 장에서 작은 가슴 로고와 투턱 데님의 구조를 함께 보존하고, 선택 사이즈 기준의 레귤러 상의와 와이드 하의를 구현해야 한다.",
+      "avatar": {
+        "preset_id": "male-rectangle",
+        "gender": "MALE",
+        "height_cm": 173,
+        "weight_kg": 68
+      },
+      "garments": [
+        {
+          "product_id": "4206792",
+          "slot": "TOP",
+          "caption": "블랙 바탕에 작은 컬러 로고가 가슴에 배치된 반소매 티셔츠",
+          "image_url": "/test-data/musinsa/images/round2-4206792-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/4206792",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20240619/4206792/4206792_17187785519546_big.jpg?w=1200",
+          "reference_type": "product-only",
+          "model_present": false,
+          "other_garments_present": false,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 74,
+            "shoulder_width_cm": 50,
+            "chest_width_cm": 54,
+            "sleeve_length_cm": 22.5
+          },
+          "image_sha256": "867d4519ca905b512a9df8b2d42c10b9cc77f8a352c8e66a722b7cf9ac7cf6c2"
+        },
+        {
+          "product_id": "3254010",
+          "slot": "BOTTOM",
+          "caption": "인디고 색상의 투턱 와이드 테이퍼드 데님 팬츠",
+          "image_url": "/test-data/musinsa/images/round2-3254010-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/3254010",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230422/3254010/3254010_16821393558342_big.jpg?w=1200",
+          "reference_type": "product-only",
+          "model_present": false,
+          "other_garments_present": false,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 102,
+            "waist_width_cm": 42.5,
+            "hip_width_cm": 53,
+            "thigh_width_cm": 36.5,
+            "rise_cm": 39,
+            "hem_width_cm": 23.5
+          },
+          "image_sha256": "31c01cb1bd6eebb9ccabc2d8b7e4144fed5b93de3bda0680cbd08ec1974631bf"
+        }
+      ]
+    },
+    {
+      "id": "outfit-male-graphic-parachute",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "E2 · 남성 그래픽 티 + 파라슈트",
+      "hypothesis": "착용 상의 레퍼런스의 인물은 무시하고 파란 플라워 그래픽만 보존하며, 볼륨이 큰 블랙 파라슈트 팬츠와 선택 아바타에 결합해야 한다.",
+      "avatar": {
+        "preset_id": "male-inverted-triangle",
+        "gender": "MALE",
+        "height_cm": 175,
+        "weight_kg": 72
+      },
+      "garments": [
+        {
+          "product_id": "3043587",
+          "slot": "TOP",
+          "caption": "화이트 바탕에 파란 꽃 캐릭터 그래픽이 크게 배치된 반소매 티셔츠",
+          "image_url": "/test-data/musinsa/images/round2-3043587-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/3043587",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20230127/3043587/3043587_16747971328082_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 72.4,
+            "shoulder_width_cm": 46.4,
+            "chest_width_cm": 55,
+            "sleeve_length_cm": 22.9
+          },
+          "image_sha256": "5bcece707d2cff57646068800dad9ff43655eb489a1c9f87bd7e73b5edb59964"
+        },
+        {
+          "product_id": "4316543",
+          "slot": "BOTTOM",
+          "caption": "블랙 컬러의 입체 카고 포켓과 넓은 통이 특징인 파라슈트 팬츠",
+          "image_url": "/test-data/musinsa/images/round2-4316543-reference.png",
+          "source_url": "https://www.musinsa.com/products/4316543",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20240809/4316543/4316543_17806327547310_big.png?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "S",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 105,
+            "waist_width_cm": 38.5,
+            "hip_width_cm": 56.5,
+            "thigh_width_cm": 39.6,
+            "rise_cm": 37.7,
+            "hem_width_cm": 28
+          },
+          "image_sha256": "54cd223ca69cb5183389f9c2eb34cf1359fd565452b024a66bae4126290ebcc8"
+        }
+      ]
+    },
+    {
+      "id": "outfit-male-shirt-slacks",
+      "axis": "OUTFIT_COMBINATION",
+      "name": "E3 · 남성 체크 셔츠 + 와이드 슬랙스",
+      "hypothesis": "착용컷의 레이어드 의상과 인물을 제거하고 체크 반소매 셔츠만 추출해, 상품 단독컷의 베이지 와이드 슬랙스와 자연스러운 한 벌로 생성해야 한다.",
+      "avatar": {
+        "preset_id": "male-triangle",
+        "gender": "MALE",
+        "height_cm": 172,
+        "weight_kg": 70
+      },
+      "garments": [
+        {
+          "product_id": "6118662",
+          "slot": "TOP",
+          "caption": "블랙 앤 화이트 미세 체크와 가슴 패치가 특징인 반소매 셔츠",
+          "image_url": "/test-data/musinsa/images/round2-6118662-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/6118662",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20260311/6118662/6118662_17758035685660_big.jpg?w=1200",
+          "reference_type": "worn-reference",
+          "model_present": true,
+          "other_garments_present": true,
+          "selected_size": "M",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 62,
+            "shoulder_width_cm": 50,
+            "chest_width_cm": 56,
+            "sleeve_length_cm": 22
+          },
+          "image_sha256": "2a9f356a4c04246025fbd2160efe65c71fd783a51177e39687bf152b4c48b696"
+        },
+        {
+          "product_id": "3874976",
+          "slot": "BOTTOM",
+          "caption": "베이지 컬러의 투턱과 사이드 어드저스터가 있는 와이드 슬랙스",
+          "image_url": "/test-data/musinsa/images/round2-3874976-reference.jpg",
+          "source_url": "https://www.musinsa.com/products/3874976",
+          "source_image_url": "https://image.msscdn.net/thumbnails/images/goods_img/20240215/3874976/3874976_17083160442518_big.jpg?w=1200",
+          "reference_type": "product-only",
+          "model_present": false,
+          "other_garments_present": false,
+          "selected_size": "30",
+          "measurement_basis": "flat-width",
+          "measurements": {
+            "total_length_cm": 105,
+            "waist_width_cm": 40,
+            "hip_width_cm": 58.5,
+            "thigh_width_cm": 34.5,
+            "rise_cm": 31,
+            "hem_width_cm": 24.5
+          },
+          "image_sha256": "89780721146aa15c94fa85a12550dd3f2f6b5c8d1cf2326d668c8ff8703b566d"
+        }
+      ]
+    }
+  ]
+}

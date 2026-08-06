@@ -138,6 +138,47 @@ def test_builds_normalized_aggregated_embedding_snapshot(
     assert not (tmp_path / "catalog.json.checkpoint").exists()
 
 
+def test_tpo_sidecar_enriches_document_and_metadata(
+    tmp_path: Path,
+) -> None:
+    repository = FakeRepository([product(1), product(2)])
+    provider = FakeProvider()
+    output = tmp_path / "catalog.json"
+    sidecar = {
+        product(1).external_id: {
+            "occasions": ["DAILY", "DATE_SOCIAL"],
+            "formality": 2,
+            "caption": "매일 입기 좋은 반팔",
+            "embedding_text": (
+                "TPO: 일상·데일리, 데이트·모임에 어울리는 "
+                "깔끔한 캐주얼. 매일 입기 좋은 반팔"
+            ),
+        }
+    }
+
+    build_catalog_embeddings(
+        repository,
+        FakeImageResolver(),
+        provider,
+        output,
+        tpo_sidecar=sidecar,
+    )
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    tagged, untagged = payload["items"]
+    assert "tpo: TPO: 일상·데일리" in tagged["document"]
+    assert tagged["product"]["tpo"] == {
+        "occasions": ["DAILY", "DATE_SOCIAL"],
+        "formality": 2,
+        "caption": "매일 입기 좋은 반팔",
+    }
+    # 태그 없는 상품은 문서·메타데이터 모두 기존과 동일 → 해시
+    # 재사용이 유지되어 무료로 재발행된다.
+    assert "tpo:" not in untagged["document"]
+    assert "tpo" not in untagged["product"]
+    assert untagged["document"] == format_catalog_document(product(2))
+
+
 def test_reuses_embedding_when_only_nonsemantic_price_changes(
     tmp_path: Path,
 ) -> None:
