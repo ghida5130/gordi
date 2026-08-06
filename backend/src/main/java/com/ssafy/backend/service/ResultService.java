@@ -84,15 +84,18 @@ public class ResultService {
     }
 
     private RoomResultResponseDTO toRoomResultResponse(Result result) {
-        List<ResultBoardItem> topBoardItems = selectTopBoardItems(
-                resultBoardItemRepository.findAllByResultIdInSnapshotOrder(
-                        List.of(result.getId())
-                )
-        );
+        List<ResultBoardItem> orderedBoardItems = resultBoardItemRepository
+                .findAllByResultIdInSnapshotOrder(List.of(result.getId())).stream()
+                .sorted(Comparator
+                        .comparing((ResultBoardItem item) ->
+                                item.getResultTier().getPosition())
+                        .thenComparing(ResultBoardItem::getPosition))
+                .toList();
 
         List<RoomResultResponseDTO.TopItem> topItems = IntStream
-                .range(0, topBoardItems.size())
-                .mapToObj(index -> toRoomResultTopItem(index, topBoardItems.get(index)))
+                .range(0, orderedBoardItems.size())
+                .mapToObj(index ->
+                        toRoomResultTopItem(index, orderedBoardItems.get(index)))
                 .toList();
 
         String snapshotImageUrl = getSnapshotImageUrl(result);
