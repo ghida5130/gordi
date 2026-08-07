@@ -53,6 +53,9 @@ public class Recommendation {
     @Column(name = "budget_max")
     private Integer budgetMax;
 
+    @Column(name = "tpo", length = 300)
+    private String tpo;
+
     @Builder.Default
     @Column(name = "status", nullable = false, length = 50)
     private String status = "READY"; // READY, EMPTY

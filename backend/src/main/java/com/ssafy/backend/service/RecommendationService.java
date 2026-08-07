@@ -139,6 +139,7 @@ public class RecommendationService {
                 .subcategory(subcategory)
                 .budgetMin(request.budgetMin())
                 .budgetMax(request.budgetMax())
+                .tpo(tpo)
                 .status(RecommendationStatus.READY.name())
                 .version(1L)
                 .build());
@@ -417,6 +418,8 @@ public class RecommendationService {
             int limit
     ) {
         List<String> moods = readMoodCodes(recommendation.getId());
+        // 최초 추천 때 저장한 TPO를 그대로 사용해 리롤에서도 조건이 유지되게 한다. (기존 행은 null 가능)
+        String tpo = recommendation.getTpo() == null ? "" : recommendation.getTpo();
         List<RankedProduct> ranked = rankClient.rank(new RankRequest(
                 recommendation.getId(),
                 new RankCondition(
@@ -426,7 +429,7 @@ public class RecommendationService {
                         recommendation.getBudgetMin(),
                         recommendation.getBudgetMax(),
                         moods,
-                        ""
+                        tpo
                 ),
                 limit,
                 candidates.stream().map(RankCandidate::from).toList()
