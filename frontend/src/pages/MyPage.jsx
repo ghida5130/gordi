@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import { useLocation } from "react-router-dom";
 
 import { getMyActiveRoom, getMyInfo } from "@/api/users";
@@ -64,12 +65,22 @@ function MyPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50 pb-20 text-slate-900">
+        <main className="min-h-[calc(100vh-6rem)] pb-20 text-slate-900">
             <MyPageTabs activeTab={activeTab} onChange={handleTabChange} />
             <PageContainer className="pt-10">
-                {activeTab === "profile" && <ProfileHome nickname={nickname} onHistory={() => handleTabChange("history")} />}
-                {activeTab === "avatar" && <AvatarTab />}
-                {activeTab === "history" && <HistoryTab />}
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                        {activeTab === "profile" && <ProfileHome nickname={nickname} onHistory={() => handleTabChange("history")} />}
+                        {activeTab === "avatar" && <AvatarTab />}
+                        {activeTab === "history" && <HistoryTab />}
+                    </motion.div>
+                </AnimatePresence>
             </PageContainer>
             {isRoomNoticeOpen && activeRoom?.roomId && (
                 <RoomSessionNotice

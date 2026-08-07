@@ -5,6 +5,9 @@ import ApiExamplePage from "@/pages/ApiExamplePage";
 import CreateRoomPage from "@/pages/CreateRoomPage";
 import HomePage from "@/pages/HomePage";
 import MainPage from "@/pages/MainPage"; // ⭐️ 새로 만든 MainPage 불러오기
+import MainHeroDesignPage from "@/pages/MainHeroDesignPage";
+import MainHeroCollaborationDesignPage from "@/pages/MainHeroCollaborationDesignPage";
+import MainHeroCollaborationDesignV2Page from "@/pages/MainHeroCollaborationDesignV2Page";
 import NotFoundPage from "@/pages/NotFoundPage";
 import RoomLobbyPage from "@/pages/RoomLobbyPage";
 import RoomInvitePage from "@/pages/RoomInvitePage";
@@ -50,6 +53,18 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <MainPage />,
+            },
+            {
+                path: "main-hero-design",
+                element: <MainHeroDesignPage />,
+            },
+            {
+                path: "main-hero-collaboration-design",
+                element: <MainHeroCollaborationDesignPage />,
+            },
+            {
+                path: "main-hero-collaboration-design-2",
+                element: <MainHeroCollaborationDesignV2Page />,
             },
             {
                 path: "home",

@@ -65,10 +65,10 @@ function groupItemsByTier(items) {
 function ResultSkeleton() {
   return (
     <div className="mx-auto max-w-[1600px] animate-pulse px-4 py-8 sm:px-6 lg:px-8">
-      <div className="h-28 rounded-3xl bg-slate-200" />
+      <div className="h-28 rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.05)]" />
       <div className="mt-5 grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="h-[520px] rounded-3xl bg-slate-200" />
-        <div className="space-y-3 rounded-3xl bg-white p-5">
+        <div className="h-[520px] rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.05)]" />
+        <div className="space-y-3 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
           {[0, 1, 2, 3].map((row) => <div key={row} className="h-32 rounded-2xl bg-slate-100" />)}
         </div>
       </div>
@@ -100,51 +100,102 @@ export default function TierMakerResultPage() {
 
   if (resultQuery.isError) {
     return (
-      <main className="min-h-[calc(100vh-6rem)] px-4 py-16">
-        <section className="mx-auto max-w-lg rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/60">
-          <p className="text-sm font-bold text-red-500">RESULT ERROR</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950">결과를 확인할 수 없습니다</h1>
+      <main className="relative min-h-[calc(100vh-6rem)] overflow-hidden px-4 py-16">
+        <motion.section
+          initial={{ opacity: 0, y: 12, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mx-auto max-w-lg rounded-[28px] border border-red-100 bg-white p-9 text-center shadow-[0_22px_65px_rgba(15,23,42,0.1)]"
+        >
+          <span className="mx-auto flex size-13 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-6"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="m15 9-6 6M9 9l6 6" />
+            </svg>
+          </span>
+          <h1 className="mt-5 text-2xl font-black text-slate-950">결과를 확인할 수 없습니다</h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
             {getApiErrorMessage(resultQuery.error, "티어메이커 결과를 불러오지 못했습니다.")}
           </p>
-          <Link to="/mypage" state={{ activeTab: "history" }} className="mt-6 inline-flex rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">
+          <Link to="/mypage" state={{ activeTab: "history" }} className="mt-7 inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:bg-slate-800">
             내 결과로 돌아가기
+            <span aria-hidden="true">→</span>
           </Link>
-        </section>
+        </motion.section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-16 text-slate-950">
-      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-5 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+    <main className="relative min-h-[calc(100vh-6rem)] overflow-hidden pb-16 text-slate-950">
+
+      <div className="relative mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
+        <motion.header
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-wrap items-center justify-between gap-5 rounded-[28px] border border-slate-200 bg-white px-7 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)]"
+        >
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">완료된 보드</span>
-              <span className="text-xs font-bold text-slate-400">VERSION {result?.boardVersion ?? "-"}</span>
+              <span className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                완료된 보드
+              </span>
             </div>
             <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">공동 티어메이커 결과</h1>
             <p className="mt-1 text-sm text-slate-500">ROOM {result?.roomCode ?? roomCode} · {formatDate(result?.createdAt)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/mypage" state={{ activeTab: "history" }} className="rounded-full border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50">
+            <Link to="/mypage" state={{ activeTab: "history" }} className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50">
               내 결과 보기
             </Link>
-            <Link to="/" className="rounded-full bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
+            <Link to="/" className="flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-slate-800">
               메인으로 돌아가기
+              <span aria-hidden="true">→</span>
             </Link>
           </div>
-        </header>
+        </motion.header>
 
         <div className="mt-5 grid items-start gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)] xl:sticky xl:top-24">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <p className="text-xs font-bold text-violet-600">AI VIRTUAL FITTING</p>
-              <h2 className="mt-1 font-black">최종 가상 피팅</h2>
+          <motion.aside
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)] xl:sticky xl:top-24"
+          >
+            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-5"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+                  <path d="m5.64 5.64 2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <div>
+              <h2 className="font-black">최종 가상 피팅</h2>
+              </div>
             </div>
             <div className="p-4">
-              <div className="overflow-hidden rounded-2xl bg-slate-100">
+              <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-slate-100 shadow-inner">
                 {result?.snapshotImageUrl ? (
                   <img src={result.snapshotImageUrl} alt="최종 가상 피팅 결과" className="max-h-[560px] w-full object-contain" />
                 ) : (
@@ -154,41 +205,65 @@ export default function TierMakerResultPage() {
                 )}
               </div>
               {Array.isArray(result?.fitSummary) && result.fitSummary.length > 0 && (
-                <ul className="mt-4 space-y-2 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-600">
+                <ul className="mt-4 space-y-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
                   {result.fitSummary.map((summary, index) => <li key={`${summary}-${index}`}>• {summary}</li>)}
                 </ul>
               )}
               {result?.disclaimer && <p className="mt-3 text-[11px] leading-5 text-slate-400">{result.disclaimer}</p>}
             </div>
-          </aside>
+          </motion.aside>
 
-          <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            className="min-w-0 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-              <div>
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="size-5"
+                    aria-hidden="true"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M9 3v18M9 9h12M9 15h12" />
+                  </svg>
+                </span>
+                <div>
                 <h2 className="font-black text-slate-900">오늘의 티어</h2>
                 <p className="mt-1 text-xs text-slate-500">최종 확정된 의상 배치입니다.</p>
+                </div>
               </div>
-              <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">총 {result?.topItems?.length ?? 0}개</span>
+              <span className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">총 {result?.topItems?.length ?? 0}개</span>
             </div>
 
             <div className="p-4">
               {tierGroups.length > 0 ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200">
                   {tierGroups.map((tier, tierIndex) => (
-                    <div key={tier.tierId ?? tier.tierName} className="flex min-h-[148px] border-b border-slate-200 bg-slate-50/70 last:border-b-0">
+                    <div key={tier.tierId ?? tier.tierName} className="flex min-h-[148px] border-b border-slate-200 bg-slate-50/60 last:border-b-0">
                       <div className={`flex w-28 shrink-0 items-center justify-center px-3 text-center text-base font-black leading-5 sm:w-32 ${TIER_STYLES[tierIndex % TIER_STYLES.length]}`}>
                         <span className="break-all">{tier.tierName}</span>
                       </div>
                       <div className="grid min-w-0 flex-1 grid-cols-3 content-center gap-2 p-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-                        {tier.items.map((item) => (
+                        {tier.items.map((item, itemIndex) => (
                           <motion.article
                             key={item.roomItemId ?? item.productId}
-                            initial={{ opacity: 0, scale: 0.96 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="group relative mx-auto aspect-square w-full max-w-[118px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+                            initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ delay: Math.min((tierIndex * 3 + itemIndex) * 0.025, 0.28), duration: 0.24 }}
+                            whileHover={{ y: -3, rotate: 0.35 }}
+                            className="group relative mx-auto aspect-square w-full max-w-[118px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-violet-300 hover:shadow-md"
                           >
                             <ClothingArtwork item={item} className="size-full" />
-                            <span className="absolute left-1.5 top-1.5 rounded-full bg-slate-950/85 px-2 py-0.5 text-[9px] font-black text-white">{item.rank}위</span>
+                            <span className="absolute left-1.5 top-1.5 rounded-full bg-slate-950/90 px-2 py-0.5 text-[9px] font-black text-white shadow-sm">{item.rank}위</span>
                             <ClothingDetailButton item={item} onViewDetails={setSelectedItem} className="inset-x-2 bottom-2" />
                           </motion.article>
                         ))}
@@ -202,7 +277,7 @@ export default function TierMakerResultPage() {
                 </div>
               )}
             </div>
-          </section>
+          </motion.section>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { motion } from "motion/react";
 import { login, startKakaoLogin } from "@/api/auth";
 import { getMyInfo } from "@/api/users";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -86,74 +87,138 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-sm border border-gray-100">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">이메일</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="user@example.com"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition"
-                        />
+        <div className="relative flex min-h-[calc(100vh-6rem)] min-w-[1100px] items-center justify-center overflow-hidden px-12 py-16">
+
+            <motion.main
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                className="relative grid w-[980px] grid-cols-[370px_1fr] overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)]"
+            >
+                <section className="relative flex min-h-[650px] flex-col overflow-hidden bg-[#253129] p-10 text-white">
+                    <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full border border-white/10" />
+                    <div className="absolute -right-12 -top-8 h-40 w-40 rounded-full bg-white/5" />
+
+                    <div className="relative">
+                        <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em]">
+                            혼자 고르기 어려울 땐,
+                            <br />함께 골라봐요.
+                        </h1>
+                        <p className="mt-4 text-sm leading-6 text-white/58">
+                            나만의 체형과 취향을 담고,
+                            <br />친구들과 티어를 나누어보세요.
+                        </p>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">비밀번호</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition"
-                        />
+                    <div className="relative mt-auto rounded-[24px] border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
+                        <div className="mb-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">
+                            <span>Today&apos;s tier</span>
+                            <span>3 items</span>
+                        </div>
+                        <div className="space-y-2">
+                            {[
+                                ["S", "bg-[#f8dfa2]", "오늘의 베스트"],
+                                ["A", "bg-[#cfe3d3]", "다시 입고 싶은 옷"],
+                                ["B", "bg-[#dcd8ed]", "고민 중인 옷"],
+                            ].map(([tier, color, label], index) => (
+                                <motion.div
+                                    key={tier}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.24 + index * 0.08, duration: 0.4 }}
+                                    className="flex items-center gap-3 rounded-2xl bg-white/[0.08] p-2"
+                                >
+                                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${color} text-xs font-black text-[#253129]`}>{tier}</span>
+                                    <span className="text-xs font-medium text-white/72">{label}</span>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                <section className="flex flex-col justify-center px-14 py-12">
+                    <div className="mb-8">
+                        <h2 className="text-[30px] font-semibold tracking-[-0.035em] text-slate-950">다시 만나서 반가워요</h2>
+                        <p className="mt-2 text-sm text-slate-500">로그인하고 이어서 의상을 골라보세요.</p>
                     </div>
 
-                    <button type="submit" disabled={isPending} className="w-full py-3 mt-4 text-sm font-bold text-white bg-black rounded-lg hover:bg-gray-800 disabled:bg-gray-300 transition">
-                        {isPending ? "로그인 중..." : "로그인"}
-                    </button>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="mb-2 block text-xs font-semibold text-slate-600">이메일</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="user@example.com"
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
+                        </div>
 
-                    <button
+                        <div>
+                            <label className="mb-2 block text-xs font-semibold text-slate-600">비밀번호</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
+                        </div>
+
+                        <motion.button
+                            type="submit"
+                            disabled={isPending}
+                            whileHover={isPending ? undefined : { y: -2 }}
+                            whileTap={isPending ? undefined : { scale: 0.985 }}
+                            className="mt-2 w-full rounded-2xl bg-[#253129] px-4 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(37,49,41,0.2)] transition-colors hover:bg-[#344239] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                        >
+                            {isPending ? "로그인 중..." : "로그인"}
+                        </motion.button>
+
+                        <motion.button
+                            type="button"
+                            onClick={handleTemporaryLogin}
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.985 }}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+                        >
+                            임시 로그인
+                        </motion.button>
+                    </form>
+
+                    <div className="my-5 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <span className="text-[11px] font-medium text-slate-400">또는</span>
+                        <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+
+                    {searchParams.get("error") === "oauth" && (
+                        <p role="alert" className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            카카오 로그인에 실패했습니다. 다시 시도해 주세요.
+                        </p>
+                    )}
+
+                    <motion.button
                         type="button"
-                        onClick={handleTemporaryLogin}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:border-gray-500 hover:bg-gray-50 hover:text-black"
+                        onClick={startKakaoLogin}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.985 }}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] px-4 py-3.5 text-sm font-bold text-[#191919] shadow-[0_10px_24px_rgba(95,83,0,0.12)] transition-colors hover:bg-[#F5DC00]"
                     >
-                        임시 로그인
-                    </button>
-                </form>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                            <path d="M12 3C6.48 3 2 6.58 2 11c0 2.84 1.85 5.34 4.64 6.76l-1.18 4.37c-.1.38.33.68.66.46l5.16-3.43c.24.02.48.03.72.03 5.52 0 10-3.58 10-8.19S17.52 3 12 3Z" />
+                        </svg>
+                        카카오로 로그인
+                    </motion.button>
 
-                <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gray-200" />
-                    <span className="text-xs text-gray-400">또는</span>
-                    <div className="h-px flex-1 bg-gray-200" />
-                </div>
-
-                {searchParams.get("error") === "oauth" && (
-                    <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-                        카카오 로그인에 실패했습니다. 다시 시도해 주세요.
-                    </p>
-                )}
-
-                <button
-                    type="button"
-                    onClick={startKakaoLogin}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#FEE500] px-4 py-3 text-sm font-bold text-[#191919] transition hover:bg-[#F5DC00]"
-                >
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                        <path d="M12 3C6.48 3 2 6.58 2 11c0 2.84 1.85 5.34 4.64 6.76l-1.18 4.37c-.1.38.33.68.66.46l5.16-3.43c.24.02.48.03.72.03 5.52 0 10-3.58 10-8.19S17.52 3 12 3Z" />
-                    </svg>
-                    카카오로 로그인
-                </button>
-
-                <div className="text-sm text-center text-gray-500 pt-4">
-                    계정이 없으신가요?{" "}
-                    <Link to="/signup" className="text-blue-500 hover:underline ml-1">
-                        회원가입
-                    </Link>
-                </div>
-            </div>
+                    <div className="pt-7 text-center text-sm text-slate-500">
+                        계정이 없으신가요?{" "}
+                        <Link to="/signup" className="ml-1 font-bold text-emerald-700 transition-colors hover:text-emerald-900">
+                            회원가입
+                        </Link>
+                    </div>
+                </section>
+            </motion.main>
         </div>
     );
 }

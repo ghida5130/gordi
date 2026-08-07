@@ -1,23 +1,23 @@
 import { Link } from 'react-router-dom'
 
-import PageContainer from '@/components/common/PageContainer'
+import StatePage from '@/components/common/StatePage'
 
 // 등록되지 않은 주소를 안내하는 대체 화면
 function NotFoundPage() {
   return (
-    <PageContainer className="flex min-h-[70vh] flex-col items-center justify-center text-center">
-      <p className="text-sm font-semibold text-brand-600">404</p>
-      <h1 className="mt-3 text-3xl font-bold">페이지를 찾을 수 없습니다.</h1>
-      <p className="mt-4 text-slate-600">
-        주소가 올바른지 확인하거나 홈으로 이동해 주세요.
-      </p>
+    <StatePage
+      title="페이지를 찾을 수 없습니다"
+      description="입력한 주소를 다시 확인하거나 메인페이지에서 원하는 메뉴를 찾아보세요."
+      icon="?"
+      withinLayout
+    >
       <Link
         to="/"
-        className="mt-8 rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-500"
+        className="group rounded-full bg-slate-950 px-6 py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-violet-600"
       >
-        홈으로 이동
+        메인으로 이동 <span className="ml-1 inline-block transition-transform group-hover:translate-x-1">→</span>
       </Link>
-    </PageContainer>
+    </StatePage>
   )
 }
 

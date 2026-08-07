@@ -80,11 +80,11 @@ function AvatarOption({ avatar, selected, onSelect }) {
             type="button"
             onClick={() => onSelect(avatar)}
             aria-pressed={selected}
-            className={`relative overflow-hidden rounded-lg border bg-white text-left transition-all ${selected ? "border-black shadow-md ring-2 ring-black" : "border-gray-200 hover:border-gray-400"}`}
+            className={`group relative overflow-hidden rounded-2xl border bg-white text-left transition-all duration-300 ${selected ? "border-violet-500 shadow-[0_14px_32px_rgba(124,58,237,0.16)] ring-2 ring-violet-200" : "border-gray-200 hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg"}`}
         >
-            <div className="relative flex aspect-[4/5] items-center justify-center bg-gray-50">
+            <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden bg-[linear-gradient(145deg,#f8fafc,#f5f3ff)]">
                 {avatar.imageUrl ? (
-                    <img src={avatar.imageUrl} alt={`${BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType} 체형`} className="h-full w-full object-contain" />
+                    <img src={avatar.imageUrl} alt={`${BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType} 체형`} className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.025]" />
                 ) : (
                     <svg className="h-14 w-14 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                         <circle cx="12" cy="7" r="3" />
@@ -92,10 +92,10 @@ function AvatarOption({ avatar, selected, onSelect }) {
                     </svg>
                 )}
                 {selected && (
-                    <span className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black text-sm font-bold text-white shadow-sm" aria-hidden="true">✓</span>
+                    <span className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-violet-600 text-sm font-bold text-white shadow-sm" aria-hidden="true">✓</span>
                 )}
             </div>
-            <div className={`px-3 py-3 text-center text-sm font-bold transition-colors ${selected ? "bg-black text-white" : "text-gray-800"}`}>{BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType}</div>
+            <div className={`px-3 py-3 text-center text-sm font-bold transition-colors ${selected ? "bg-violet-600 text-white" : "text-gray-800"}`}>{BODY_TYPE_LABELS[avatar.bodyType] ?? avatar.bodyType}</div>
         </button>
     );
 }
@@ -262,23 +262,23 @@ export default function AvatarSetupPage() {
 
     if (avatarQuery.isPending || avatarQuery.isFetching) {
         return (
-            <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
-                <div className="mx-auto h-[520px] w-full max-w-2xl animate-pulse rounded-lg bg-white" />
+            <main className="min-h-[calc(100vh-6rem)] px-4 py-10">
+                <div className="mx-auto h-[520px] w-full max-w-2xl animate-pulse rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]" />
             </main>
         );
     }
 
     if (avatarQuery.isError && avatarQuery.error.response?.status !== 404) {
         return (
-            <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
-                <section className="mx-auto w-full max-w-2xl rounded-lg border border-red-100 bg-white p-8 text-center shadow-sm">
+            <main className="min-h-[calc(100vh-6rem)] px-4 py-10">
+                <section className="mx-auto w-full max-w-2xl rounded-3xl border border-red-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
                     <p className="text-sm text-red-700">
                         {getApiErrorMessage(avatarQuery.error, "저장된 체형 정보를 불러오지 못했습니다.")}
                     </p>
                     <button
                         type="button"
                         onClick={() => avatarQuery.refetch()}
-                        className="mt-5 rounded-lg bg-black px-5 py-3 text-sm font-bold text-white hover:bg-gray-800"
+                        className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-violet-600"
                     >
                         다시 시도
                     </button>
@@ -323,19 +323,27 @@ export default function AvatarSetupPage() {
         : [{ key: "all", avatars: visibleAvatars }];
 
     return (
-        <main className="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10">
-            <section className="mx-auto w-full max-w-2xl rounded-lg border border-gray-100 bg-white p-8 shadow-sm">
-                <div className="flex items-start justify-between border-b border-gray-100 pb-6">
+        <main className="min-h-[calc(100vh-6rem)] px-4 py-10">
+            <section className="mx-auto w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+                <div className="flex items-start justify-between border-b border-slate-100 pb-6">
                     <div>
-                        <p className="text-sm font-bold text-gray-400">{step === "information" ? "1 / 2" : "2 / 2"}</p>
-                        <h1 className="mt-2 text-2xl font-bold text-gray-950">체형 설정</h1>
+                        <h1 className="text-3xl font-black tracking-tight text-gray-950">체형 설정</h1>
+                        <p className="mt-2 text-sm text-slate-500">내 체형과 가장 가까운 아바타를 만들어 보세요.</p>
                     </div>
-                    <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-500">선택 정보는 건너뛸 수 있어요</span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500">키·몸무게는 선택 정보</span>
                 </div>
 
+                <AnimatePresence mode="wait" initial={false}>
                 {step === "information" ? (
-                    <form onSubmit={handleSubmit} className="mt-7 space-y-6">
-                        <fieldset>
+                    <motion.form
+                        key="information"
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        onSubmit={handleSubmit}
+                        className="mt-7 space-y-6"
+                    >
+                        <fieldset className="rounded-2xl bg-slate-50 p-5">
                             <legend className="text-sm font-bold text-gray-800">성별 <span className="text-red-500">*</span></legend>
                             <div className="mt-3 grid grid-cols-2 gap-3">
                                 {[["MALE", "남성"], ["FEMALE", "여성"]].map(([value, label]) => (
@@ -343,7 +351,7 @@ export default function AvatarSetupPage() {
                                         key={value}
                                         type="button"
                                         onClick={() => setGender(value)}
-                                        className={`rounded-lg border px-4 py-3 text-sm font-bold transition-colors ${gender === value ? "border-black bg-black text-white" : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"}`}
+                                        className={`rounded-xl border px-4 py-3 text-sm font-bold transition-all ${gender === value ? "border-violet-600 bg-violet-600 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)]" : "border-gray-200 bg-white text-gray-600 hover:-translate-y-0.5 hover:border-violet-300"}`}
                                     >
                                         {label}
                                     </button>
@@ -362,7 +370,7 @@ export default function AvatarSetupPage() {
                                         value={height}
                                         onChange={handleHeightChange}
                                         placeholder="100~220"
-                                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 pr-12 font-medium outline-none transition-colors focus:border-black"
+                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 font-medium outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 font-medium text-gray-400">cm</span>
                                 </span>
@@ -379,7 +387,7 @@ export default function AvatarSetupPage() {
                                         onChange={(event) => setWeight(event.target.value)}
                                         disabled={!height}
                                         placeholder={height ? "30~200" : "키를 먼저 입력"}
-                                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 pr-12 font-medium outline-none transition-colors focus:border-black disabled:bg-gray-100 disabled:text-gray-400"
+                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 font-medium outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100 disabled:bg-gray-100 disabled:text-gray-400"
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 font-medium text-gray-400">kg</span>
                                 </span>
@@ -389,13 +397,19 @@ export default function AvatarSetupPage() {
                         <button
                             type="submit"
                             disabled={templateMutation.isPending || avatarMutation.isPending}
-                            className="w-full rounded-lg bg-black px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300"
+                            className="w-full rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-violet-600 disabled:translate-y-0 disabled:bg-gray-300 disabled:shadow-none"
                         >
                             {avatarMutation.isPending ? "아바타 저장 중..." : templateMutation.isPending ? "템플릿 생성 중..." : "체형 템플릿 생성하기"}
                         </button>
-                    </form>
+                    </motion.form>
                 ) : (
-                    <div className="mt-7">
+                    <motion.div
+                        key="selection"
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        className="mt-7"
+                    >
                         <div>
                             <h2 className="text-lg font-bold text-gray-950">체형 선택</h2>
                             <p className="mt-1 text-sm text-gray-500">생성된 체형 중 하나를 선택해 주세요.</p>
@@ -442,19 +456,20 @@ export default function AvatarSetupPage() {
                             <button
                                 type="button"
                                 onClick={() => setShowAdditionalAvatars(true)}
-                                className="mt-4 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-bold text-gray-700 transition-colors hover:border-gray-500 hover:bg-gray-50"
+                                className="mt-4 w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-100"
                             >
                                 체형 더 불러오기
                             </button>
                         )}
                         <div className="mt-7 flex gap-3">
-                            <button type="button" onClick={() => setStep("information")} className="w-1/3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50">이전</button>
-                            <button type="button" onClick={handleNext} disabled={!selectedAvatar || avatarMutation.isPending} className="flex-1 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800 disabled:bg-gray-300">
+                            <button type="button" onClick={() => setStep("information")} className="w-1/3 rounded-xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50">이전</button>
+                            <button type="button" onClick={handleNext} disabled={!selectedAvatar || avatarMutation.isPending} className="flex-1 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-violet-600 disabled:translate-y-0 disabled:bg-gray-300 disabled:shadow-none">
                                 {avatarMutation.isPending ? "저장 중..." : "아바타 저장하기"}
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
+                </AnimatePresence>
             </section>
         </main>
     );
