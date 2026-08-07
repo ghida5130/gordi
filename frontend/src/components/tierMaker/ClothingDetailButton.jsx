@@ -3,9 +3,9 @@ import { createPortal } from "react-dom";
 
 import ClothingArtwork from "@/components/tierMaker/ClothingArtwork";
 
-const HOVER_DELAY_MS = 500;
-const PREVIEW_WIDTH_PX = 176;
-const PREVIEW_HEIGHT_PX = 176;
+const HOVER_DELAY_MS = 400;
+const PREVIEW_WIDTH_PX = 264;
+const PREVIEW_HEIGHT_PX = 264;
 const PREVIEW_GAP_PX = 18;
 
 function ClothingDetailButton({ item, onViewDetails, className = "" }) {
@@ -112,8 +112,8 @@ function ClothingDetailButton({ item, onViewDetails, className = "" }) {
             {isHoverVisible &&
                 createPortal(
                     <div
-                        className="pointer-events-none fixed z-[90] w-44 overflow-hidden rounded-2xl shadow-[0_22px_55px_rgba(15,23,42,0.48)] ring-1 ring-black/10"
-                        style={{ left: previewLeft, top: previewTop }}
+                        className="pointer-events-none fixed z-[90] overflow-hidden rounded-2xl shadow-[0_22px_55px_rgba(15,23,42,0.48)] ring-1 ring-black/10"
+                        style={{ left: previewLeft, top: previewTop, width: PREVIEW_WIDTH_PX }}
                         aria-hidden="true"
                     >
                         <ClothingArtwork item={item} className="aspect-square w-full" />

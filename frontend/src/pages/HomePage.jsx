@@ -126,7 +126,7 @@ function HomePage() {
 
           <p className="mt-6 text-center text-sm text-slate-500">
             계정이 없나요?{" "}
-            <Link to="/signup" className="font-semibold text-brand-600 hover:underline">
+            <Link to="/signup/email" className="font-semibold text-brand-600 hover:underline">
               회원가입
             </Link>
           </p>

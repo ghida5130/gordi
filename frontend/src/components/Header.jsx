@@ -130,7 +130,7 @@ export default function Header({ isHidden = false }) {
 
         if (hasConfiguredAvatar(avatarResponse)) {
             toast.info("이미 체형이 설정되어있습니다");
-            navigate("/mypage", { state: { activeTab: "avatar" } });
+            navigate("/mypage", { state: { activeTab: "profile" } });
             return;
         }
 
@@ -253,7 +253,7 @@ export default function Header({ isHidden = false }) {
                                 </>
                             ) : (
                                 <>
-                                    <Link to="/signup" className="rounded-full px-4 py-2.5 text-base font-semibold text-gray-500 transition-colors duration-300 hover:bg-gray-100 hover:text-black">
+                                    <Link to="/signup/email" className="rounded-full px-4 py-2.5 text-base font-semibold text-gray-500 transition-colors duration-300 hover:bg-gray-100 hover:text-black">
                                         회원가입
                                     </Link>
                                     <Link

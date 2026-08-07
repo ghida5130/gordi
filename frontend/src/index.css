@@ -210,6 +210,59 @@
     animation: tier-maker-preview-name-scroll 6s linear infinite;
 }
 
+.price-range-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    appearance: none;
+    background: transparent;
+    pointer-events: none;
+}
+
+.price-range-input::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent;
+}
+
+.price-range-input::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+    appearance: none;
+    border: 3px solid white;
+    border-radius: 9999px;
+    background: #6d5ccf;
+    box-shadow: 0 2px 10px rgb(76 64 139 / 35%);
+    pointer-events: auto;
+}
+
+.price-range-input::-moz-range-track {
+    height: 4px;
+    background: transparent;
+}
+
+.price-range-input::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 3px solid white;
+    border-radius: 9999px;
+    background: #6d5ccf;
+    box-shadow: 0 2px 10px rgb(76 64 139 / 35%);
+    pointer-events: auto;
+}
+
+.price-range-input:focus-visible::-webkit-slider-thumb {
+    outline: 3px solid rgb(217 205 248 / 80%);
+    outline-offset: 2px;
+}
+
+.price-range-input:focus-visible::-moz-range-thumb {
+    outline: 3px solid rgb(217 205 248 / 80%);
+    outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .tier-maker-preview-name-scroll {
         animation: none;

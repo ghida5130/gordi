@@ -148,7 +148,7 @@ export default function AvatarSetupPage() {
             queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
             queryClient.invalidateQueries({ queryKey: ["myInfo"] });
             toast.success("아바타가 설정되었습니다.");
-            navigate("/mypage", { replace: true, state: { activeTab: "avatar" } });
+            navigate("/mypage", { replace: true, state: { activeTab: "profile" } });
         },
         onError: (error) => {
             if (error.response?.status === 404) {
