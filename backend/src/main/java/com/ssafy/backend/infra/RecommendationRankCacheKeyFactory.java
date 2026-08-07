@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+// gordi:{도메인}:{용도}:{버전}:{식별자}
 @Component
 public class RecommendationRankCacheKeyFactory {
 
