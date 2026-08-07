@@ -171,14 +171,11 @@ public class ResultService {
             return List.of();
         }
 
-        int highestTierPosition = boardItems.stream()
-                .mapToInt(item -> item.getResultTier().getPosition())
-                .min()
-                .orElseThrow();
-
         return boardItems.stream()
-                .filter(item -> item.getResultTier().getPosition() == highestTierPosition)
-                .sorted(Comparator.comparing(ResultBoardItem::getPosition))
+                .sorted(Comparator
+                        .comparing((ResultBoardItem item) ->
+                                item.getResultTier().getPosition())
+                        .thenComparing(ResultBoardItem::getPosition))
                 .limit(3)
                 .toList();
     }
