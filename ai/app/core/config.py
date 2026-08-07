@@ -81,6 +81,13 @@ class Settings(BaseSettings):
     tryon_s3_key_prefix: str = "fittings"
     tryon_result_public_base_url: str = ""
     spring_internal_base_url: str = "http://localhost:8080"
+    # selective: 무가치 국면(격식 행사·데일리) 질의는 리랭크 스킵
+    # (근거: docs/2026-08-06_vlm_rerank_selective_gating.md).
+    # always 로 되돌리면 전면 리랭크(롤백 경로).
+    recommendation_vlm_rerank_mode: str = Field(
+        default="selective",
+        pattern="^(always|selective)$",
+    )
     recommendation_vlm_rerank_top_k: int = Field(
         default=20,
         ge=1,

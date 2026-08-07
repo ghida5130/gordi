@@ -199,6 +199,7 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
             settings.recommendation_vlm_rerank_concurrency
         ),
         reason_generator=reason_generator,
+        rerank_mode=settings.recommendation_vlm_rerank_mode,
         index_version=index.snapshot_sha256,
     )
 
@@ -230,5 +231,8 @@ def get_ab_pipeline(rerank_enabled: bool) -> RecommendationPipeline:
         rerank_concurrency=(
             settings.recommendation_vlm_rerank_concurrency
         ),
+        # A/B 비교 팔은 게이트를 태우지 않는다 — ON 팔이 조용히
+        # 스킵되면 비교 자체가 오염된다.
+        rerank_mode="always",
         index_version=index.snapshot_sha256,
     )
