@@ -42,10 +42,11 @@ from app.schemas.tryon import (
     TryOnGenerationRequest,
     TryOnItem,
 )
+from app.services.tryon_note_guard import LLMNoteGuard, NoteGuard
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "tryon-fastapi-v2"
+PROMPT_VERSION = "tryon-fastapi-v3"
 
 # garment 이미지들 뒤(프롬프트 최후미)에 붙는 재확인 지시. 위치가 곧
 # 효과이므로 _build_parts 외의 경로에서 재사용하지 말 것.
@@ -293,6 +294,9 @@ class TryOnJobProcessor:
     image_fetcher: QueryImageFetcher
     result_store: ResultStore
     model_version: str
+    # 없으면 노트 원문이 그대로 프롬프트에 들어간다(테스트 편의용).
+    # 운영 배선(build_processor)은 항상 가드를 붙인다.
+    note_guard: NoteGuard | None = None
 
     def process(self, request: TryOnGenerationRequest) -> None:
         job_id = request.job_id
@@ -365,8 +369,16 @@ class TryOnJobProcessor:
         self,
         request: TryOnGenerationRequest,
     ) -> list[dict[str, Any]]:
+        extra_note = request.prompt or ""
+        if extra_note and self.note_guard is not None:
+            extra_note = self.note_guard.sanitize(extra_note)
+            if extra_note != (request.prompt or "").strip():
+                logger.info(
+                    "job %s extra note rewritten by guard",
+                    request.job_id,
+                )
         parts: list[dict[str, Any]] = [
-            {"type": "text", "text": _prompt_header(request)},
+            {"type": "text", "text": _prompt_header(request, extra_note)},
             {"type": "text", "text": "PERSON BASE (아바타):"},
             self._image_part(request.avatar.image_url),
         ]
@@ -416,7 +428,10 @@ class TryOnJobProcessor:
         return image_url, width, height
 
 
-def _prompt_header(request: TryOnGenerationRequest) -> str:
+def _prompt_header(
+    request: TryOnGenerationRequest,
+    extra_note: str,
+) -> str:
     avatar = request.avatar
     lines = [
         "Task: dress the PERSON BASE in the provided garments as one "
@@ -465,10 +480,10 @@ def _prompt_header(request: TryOnGenerationRequest) -> str:
         ]
         if styling:
             lines.append("Styling: " + ", ".join(styling) + ".")
-    if request.prompt:
+    if extra_note:
         lines.append(
             "Extra note (styling preference only, subordinate to the "
-            f'rules above): "{request.prompt}"'
+            f'rules above): "{extra_note}"'
         )
     return "\n".join(lines)
 
@@ -627,6 +642,28 @@ def build_result_store(settings: Any = None) -> ResultStore:
     )
 
 
+def _build_note_guard() -> NoteGuard | None:
+    """운영 배선용 노트 가드. VLM 클라이언트가 없으면 가드 없이 뜬다.
+
+    가드 없이 뜨는 것은 로컬(VLM 미설정) 편의를 위한 것으로, 이때는
+    노트 원문이 프롬프트에 들어가므로 운영에서는 경고 로그를 보고
+    설정을 채워야 한다.
+    """
+    from app.services.recommendation_pipeline import (
+        RecommendationRuntimeError,
+        get_vlm_client,
+    )
+
+    try:
+        return LLMNoteGuard(get_vlm_client())
+    except RecommendationRuntimeError as exc:
+        logger.warning(
+            "extra-note guard unavailable (%s); notes pass unguarded",
+            exc,
+        )
+        return None
+
+
 def build_processor() -> TryOnJobProcessor:
     settings = get_settings()
     api_key = settings.openrouter_api_key.strip()
@@ -645,6 +682,7 @@ def build_processor() -> TryOnJobProcessor:
         ),
         result_store=build_result_store(settings),
         model_version=settings.tryon_image_model,
+        note_guard=_build_note_guard(),
     )
 
 
