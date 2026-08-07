@@ -4,10 +4,34 @@ import { Link } from "react-router-dom";
 const easeOut = [0.16, 1, 0.3, 1];
 
 const tierLayers = [
-  { tier: "S", color: "bg-[#F6DCA5]", top: 40, delay: 0.24, hover: "group-hover:translate-x-1" },
-  { tier: "A", color: "bg-[#CFE2CE]", top: 154, delay: 0.32, hover: "group-hover:translate-x-2" },
-  { tier: "B", color: "bg-[#D9E0CD]", top: 268, delay: 0.4, hover: "group-hover:translate-x-3" },
-  { tier: "C", color: "bg-[#DCDDD9]", top: 382, delay: 0.48, hover: "group-hover:translate-x-4" },
+  {
+    tier: "S",
+    color: "bg-[#F6DCA5]",
+    top: 40,
+    delay: 0.24,
+    hover: "group-hover:translate-x-1",
+  },
+  {
+    tier: "A",
+    color: "bg-[#CFE2CE]",
+    top: 154,
+    delay: 0.32,
+    hover: "group-hover:translate-x-2",
+  },
+  {
+    tier: "B",
+    color: "bg-[#D9E0CD]",
+    top: 268,
+    delay: 0.4,
+    hover: "group-hover:translate-x-3",
+  },
+  {
+    tier: "C",
+    color: "bg-[#DCDDD9]",
+    top: 382,
+    delay: 0.48,
+    hover: "group-hover:translate-x-4",
+  },
 ];
 
 function Highlight({ children, color, delay }) {
@@ -94,11 +118,21 @@ function MainHeroDesignPage() {
                 transition={{ delay: 0.16, duration: 0.72, ease: easeOut }}
                 className="text-[62px] font-semibold leading-[1.06] tracking-[-0.055em]"
               >
-                나만의 <Highlight color="bg-[#D9CDF8]" delay={0.48}>아바타</Highlight>로
+                나만의{" "}
+                <Highlight color="bg-[#D9CDF8]" delay={0.48}>
+                  아바타
+                </Highlight>
+                로
                 <br />
-                친구들과 <Highlight color="bg-[#BFE7D2]" delay={0.62}>함께</Highlight>
+                친구들과{" "}
+                <Highlight color="bg-[#BFE7D2]" delay={0.62}>
+                  함께
+                </Highlight>
                 <br />
-                의상 <Highlight color="bg-[#F8D4BF]" delay={0.76}>티어메이커</Highlight>
+                의상{" "}
+                <Highlight color="bg-[#F8D4BF]" delay={0.76}>
+                  티어메이커
+                </Highlight>
               </motion.h1>
 
               <motion.p
@@ -107,7 +141,8 @@ function MainHeroDesignPage() {
                 transition={{ delay: 0.42, duration: 0.64, ease: easeOut }}
                 className="mt-6 max-w-[590px] text-[16px] font-medium leading-7 text-[#666D67]"
               >
-                내 체형에 맞는 옷을 AI로 추천받고, 친구들과 티어를 나누며
+                내 체형에 맞는 옷을 AI로 추천받고 <br />
+                친구들과 티어를 나누며 <br />
                 가장 마음에 드는 코디를 완성해보세요.
               </motion.p>
 

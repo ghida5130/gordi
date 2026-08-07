@@ -21,6 +21,7 @@ import FittingPanel from "@/components/tierMaker/FittingPanel";
 import ItemDeleteConfirmModal from "@/components/tierMaker/ItemDeleteConfirmModal";
 import ParticipantDock from "@/components/tierMaker/ParticipantDock";
 import ProductDetailModal from "@/components/tierMaker/ProductDetailModal";
+import RoomFinishConfirmModal from "@/components/tierMaker/RoomFinishConfirmModal";
 import SharedCursorLayer from "@/components/tierMaker/SharedCursorLayer";
 import TierBoard from "@/components/tierMaker/TierBoard";
 import TierMakerIcon from "@/components/tierMaker/TierMakerIcon";
@@ -217,6 +218,7 @@ function TierMakerRoomPage() {
   const [isClothingModalOpen, setIsClothingModalOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState(null);
   const [itemPendingDeletion, setItemPendingDeletion] = useState(null);
+  const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
   const [addingProductId, setAddingProductId] = useState(null);
   const [isTierFocusMode, setIsTierFocusMode] = useState(false);
   const [boardScale, setBoardScale] = useState(1);
@@ -242,6 +244,28 @@ function TierMakerRoomPage() {
       toast.success("방 코드를 복사했습니다.");
     } catch {
       toast.error("방 코드를 복사하지 못했습니다.");
+    }
+  };
+  const handleCopyInviteLink = async () => {
+    const roomCode = String(roomSession?.roomCode ?? "").trim();
+
+    if (!roomCode) {
+      toast.warning("복사할 방 링크가 없습니다.");
+      return;
+    }
+
+    const inviteLink = new URL(
+      `/rooms/join/${encodeURIComponent(roomCode)}`,
+      window.location.origin,
+    ).toString();
+
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success("방 링크를 복사했습니다.");
+    } catch {
+      toast.error("방 링크를 복사하지 못했습니다.");
     }
   };
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
@@ -428,6 +452,7 @@ function TierMakerRoomPage() {
   const roomTitle = normalizedHostNickname
     ? `${normalizedHostNickname}님의 방`
     : "고르디의 방";
+  const hostInitial = Array.from(normalizedHostNickname || "고르디")[0] ?? "고";
   const isBoardReady =
     roomEvents.hasSnapshot &&
     !roomStatusQuery.isPending &&
@@ -638,6 +663,9 @@ function TierMakerRoomPage() {
     },
     onError: () => {
       toast.error("방 종료에 실패했습니다.");
+    },
+    onSuccess: () => {
+      setIsFinishConfirmOpen(false);
     },
   });
 
@@ -1023,7 +1051,19 @@ function TierMakerRoomPage() {
   };
 
   const handleFinishRoom = () => {
-    if (!window.confirm("티어메이킹 방을 종료할까요?")) return;
+    if (finishRoomMutation.isPending) return;
+
+    setIsFinishConfirmOpen(true);
+  };
+
+  const handleCloseFinishConfirm = () => {
+    if (finishRoomMutation.isPending) return;
+
+    setIsFinishConfirmOpen(false);
+  };
+
+  const handleConfirmFinishRoom = () => {
+    if (finishRoomMutation.isPending) return;
 
     finishRoomMutation.mutate();
   };
@@ -1259,59 +1299,65 @@ function TierMakerRoomPage() {
             <div className="flex min-w-0 items-center gap-3.5">
               <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 text-lg font-black text-white shadow-lg shadow-violet-200/80">
                 <span className="absolute -right-3 -top-3 size-8 rounded-full bg-white/20" />
-                <span className="relative">T</span>
+                <span className="relative">{hostInitial}</span>
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="truncate text-base font-black tracking-tight text-slate-900 sm:text-lg">
                     {roomTitle}
                   </h1>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                      roomEvents.connectionState === "CONNECTED"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    <span
-                      className={`size-1.5 rounded-full ${
-                        roomEvents.connectionState === "CONNECTED"
-                          ? "bg-emerald-500"
-                          : "animate-pulse bg-amber-500"
-                      }`}
-                    />
-                    {roomEvents.connectionState === "CONNECTED"
-                      ? "참여 중"
-                      : "연결 중"}
-                  </span>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
                   <span className="font-semibold text-slate-500">
                     방 코드 {roomSession.roomCode ?? "-"}
                   </span>
                   {roomSession.roomCode && (
-                    <button
-                      type="button"
-                      onClick={handleCopyRoomCode}
-                      className="inline-flex items-center gap-1 font-semibold text-slate-400 transition-colors hover:text-slate-700"
-                      aria-label="방 코드 복사"
-                      title="방 코드 복사"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="size-3.5"
-                        aria-hidden="true"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyRoomCode}
+                        className="inline-flex items-center gap-1 font-semibold text-slate-400 transition-colors hover:text-slate-700"
+                        aria-label="방 코드 복사"
+                        title="방 코드 복사"
                       >
-                        <rect width="14" height="14" x="8" y="8" rx="2" />
-                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                      </svg>
-                      복사
-                    </button>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <rect width="14" height="14" x="8" y="8" rx="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                        코드 복사
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyInviteLink}
+                        className="inline-flex items-center gap-1 font-semibold text-slate-400 transition-colors hover:text-slate-700"
+                        aria-label="방 링크 복사"
+                        title="방 링크 복사"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+                          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                        </svg>
+                        링크 복사
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1449,7 +1495,7 @@ function TierMakerRoomPage() {
                     transition={{ duration: 0.3, ease: "easeOut" }}
                     aria-hidden={isTierFocusMode}
                     inert={isTierFocusMode ? true : undefined}
-                    className="col-start-1 row-start-1 min-w-0 overflow-hidden [&>*]:w-[280px]"
+                    className="col-start-1 row-start-1 min-w-0 overflow-hidden rounded-3xl [&>*]:w-[280px]"
                   >
                     <FittingPanel
                       candidates={candidates}
@@ -1463,7 +1509,6 @@ function TierMakerRoomPage() {
                       prompt={tryOnPrompt}
                       onPromptChange={handleTryOnPromptChange}
                       canEditOptions={isHost}
-                      hasOuterCandidate={hasOuterCandidate}
                       onDropCandidate={handleDropCandidate}
                       onRemoveCandidate={handleRemoveCandidate}
                       onDragStart={handleDragStart}
@@ -1527,7 +1572,7 @@ function TierMakerRoomPage() {
                     transition={{ duration: 0.3, ease: "easeOut" }}
                     aria-hidden={isTierFocusMode}
                     inert={isTierFocusMode ? true : undefined}
-                    className="col-start-3 row-start-1 min-w-0 overflow-hidden [&>*]:w-[310px]"
+                    className="col-start-3 row-start-1 min-w-0 overflow-hidden rounded-3xl [&>*]:w-[310px]"
                   >
                     <ClothingCatalog
                       clothes={fittingOnlyClothes}
@@ -1608,6 +1653,14 @@ function TierMakerRoomPage() {
             }
             onConfirm={handleConfirmItemDelete}
             onClose={handleCloseItemDelete}
+          />
+        )}
+        {isFinishConfirmOpen && (
+          <RoomFinishConfirmModal
+            key="room-finish"
+            isFinishing={finishRoomMutation.isPending}
+            onConfirm={handleConfirmFinishRoom}
+            onClose={handleCloseFinishConfirm}
           />
         )}
       </AnimatePresence>
