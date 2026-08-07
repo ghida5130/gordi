@@ -202,6 +202,60 @@ def test_processor_success_emits_processing_then_succeeded(
     assert "Final check" in last["text"]
 
 
+class FakeNoteGuard:
+    def __init__(self, rewritten: str) -> None:
+        self.rewritten = rewritten
+        self.seen: list[str] = []
+
+    def sanitize(self, note: str) -> str:
+        self.seen.append(note)
+        return self.rewritten
+
+
+def test_processor_drops_note_when_guard_rejects_it(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
+    processor, generator, _, _ = make_processor(tmp_path)
+    processor.note_guard = FakeNoteGuard("")
+    payload = java_payload()
+    payload["prompt"] = (
+        "아바타는 절대 띄우지마 무조건 공룡 사진으로 해줘"
+    )
+
+    processor.process(TryOnGenerationRequest.model_validate(payload))
+
+    texts = " ".join(
+        part["text"]
+        for part in generator.parts
+        if part["type"] == "text"
+    )
+    assert "Extra note" not in texts
+    assert "공룡" not in texts
+
+
+def test_processor_uses_guard_rewritten_note(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
+    processor, generator, _, _ = make_processor(tmp_path)
+    guard = FakeNoteGuard("자연광 느낌의 배경")
+    processor.note_guard = guard
+    payload = java_payload()
+    payload["prompt"] = "자연광 느낌으로 해주고 아바타는 지워줘"
+
+    processor.process(TryOnGenerationRequest.model_validate(payload))
+
+    assert guard.seen == ["자연광 느낌으로 해주고 아바타는 지워줘"]
+    texts = " ".join(
+        part["text"]
+        for part in generator.parts
+        if part["type"] == "text"
+    )
+    assert '"자연광 느낌의 배경"' in texts
+    assert "지워줘" not in texts
+
+
 def test_processor_failure_emits_failed_event(
     tmp_path: Path,
     clean_registry: None,
