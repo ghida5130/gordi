@@ -46,6 +46,12 @@ from app.schemas.recommendation import (
 
 logger = logging.getLogger(__name__)
 
+# VLM 리랭크 윈도우 = limit × 이 배수 (설정 top_k 가 상한). 소수 교체
+# (리롤 limit=2)에 top-20 전량을 판정하면 웨이브 3회 ≈ 15초가 나오는데,
+# 상위 limit 자리를 실제로 다투는 후보는 그 근방뿐이다. limit=10 인
+# 최초 추천은 10×3 > 20 이라 기존 동작 그대로다.
+_RERANK_WINDOW_PER_SLOT = 3
+
 # Spring MoodCode → 임베딩 쿼리에 넣을 한국어 라벨.
 _MOOD_LABELS = {
     "CASUAL": "캐주얼",
@@ -195,7 +201,7 @@ class VectorRecommendationRanker:
             self._rerank_mode == "selective"
             and should_skip_vlm_rerank(query_text, has_image=False)
         ):
-            scored = self._rerank_pairwise(scored, intent)
+            scored = self._rerank_pairwise(scored, intent, limit=limit)
         return [
             RankedProduct(
                 product_id=candidate.product_id,
@@ -212,16 +218,25 @@ class VectorRecommendationRanker:
         self,
         scored: list[tuple[float, float, RankCandidate]],
         intent: RecommendationIntent,
+        *,
+        limit: int,
     ) -> list[tuple[float, float, RankCandidate]]:
         """Re-judge the top-K compatibility with the VLM, in parallel.
 
         Mirrors the `/search` pipeline semantics: only the top-K window
         is judged, a successful judgment replaces the rule-based
         compatibility inside the final blend, and any failure keeps the
-        original score so the reranker never degrades availability.
+        original score so the reranker never degrades availability. The
+        window additionally scales with the requested ``limit`` so a
+        small replacement request (reroll) does not pay the full top-K
+        judgment cost.
         """
         assert self._reranker is not None
-        top_k = min(self._rerank_top_k, len(scored))
+        top_k = min(
+            self._rerank_top_k,
+            len(scored),
+            max(1, limit) * _RERANK_WINDOW_PER_SLOT,
+        )
         failures = 0
         failure_lock = threading.Lock()
 
@@ -302,9 +317,10 @@ class VectorRecommendationRanker:
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
         logger.info(
-            "pairwise rerank (/rank): top_k=%d workers=%d "
+            "pairwise rerank (/rank): top_k=%d limit=%d workers=%d "
             "failed=%d timed_out=%d elapsed=%.2fs",
             top_k,
+            limit,
             workers,
             failures,
             timed_out,

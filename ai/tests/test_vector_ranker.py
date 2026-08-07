@@ -225,6 +225,34 @@ def test_vlm_rerank_judges_only_top_k(tmp_path: Path) -> None:
     assert judged_ids == {1, 2}
 
 
+def test_vlm_rerank_window_scales_with_limit(tmp_path: Path) -> None:
+    # 리롤(limit=2)은 top_k=20 이 아니라 limit×3 개만 판정해야 한다.
+    ids = list(range(1, 11))
+    products = [product(pid) for pid in ids]
+    vectors = {
+        pid: vector(1.0 - 0.05 * pid, 0.05 * pid) for pid in ids
+    }
+    _, index = build_index(tmp_path, products, vectors)
+    reranker = ScriptedReranker({pid: 0.5 for pid in ids})
+    ranker = VectorRecommendationRanker(
+        index,
+        QueryProvider(vector(1.0, 0.0)),
+        reranker=reranker,
+        rerank_top_k=20,
+    )
+
+    ranked = ranker.rank(
+        condition(),
+        [candidate(pid) for pid in ids],
+        limit=2,
+    )
+
+    assert len(ranked) == 2
+    # 벡터 유사도 상위 6개(2×3)만 판정 — 20개 전량 판정 금지.
+    judged_ids = {int(item["product_id"]) for item in reranker.judged}
+    assert judged_ids == {1, 2, 3, 4, 5, 6}
+
+
 def test_vlm_rerank_deadline_keeps_rule_scores(tmp_path: Path) -> None:
     # 판정이 keepalive filler 로 매달리는 상황(212초 행 사건) —
     # 마감시간이 웨이브를 끊고 규칙 점수를 유지해야 한다.
