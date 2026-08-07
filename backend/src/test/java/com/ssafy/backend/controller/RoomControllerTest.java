@@ -182,6 +182,7 @@ class RoomControllerTest {
                 51L,
                 "A7K9Q2",
                 17L,
+                List.of(new RoomResultResponseDTO.Tier(1L, "S", 0)),
                 List.of(new RoomResultResponseDTO.TopItem(
                         1,
                         301L,
