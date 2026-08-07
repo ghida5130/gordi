@@ -24,9 +24,10 @@ public record RecommendationRequest(
         Integer budgetMax,
 
         @NotNull
-        @Size(min = 1, max = 5)
+        @Size(min = 1, max = 6)
         List<@NotBlank String> moods,
 
+        @Size(max = 300)
         String tpo
 ) {
 }
