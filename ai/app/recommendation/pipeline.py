@@ -28,7 +28,7 @@ MAX_RERANK_CONCURRENCY = 32
 RERANK_MODES = ("always", "selective")
 
 # 리랭크가 무가치했던 국면의 스킵 사전 v1 — A/B 라운드(6명×12쿼리)
-# 실측 근거와 한계는 docs/2026-08-06_vlm_rerank_selective_gating.md.
+# 실측 근거와 한계는 docs/ai/2026-08-06_vlm_rerank_selective_gating.md.
 # 격식 행사(TPO 태그 임베딩이 이미 흡수)와 데일리(무난하면 정답)만
 # 좁게 시작한다. 소개팅·페스티벌은 단일 관측이라 제외(감시 항목).
 _RERANK_SKIP_KEYWORDS = (
@@ -554,7 +554,7 @@ class RecommendationPipeline:
             has_image=image is not None,
         ):
             # 격식 행사·데일리 국면은 리랭크 무가치 실측에 따라 스킵
-            # (docs/2026-08-06_vlm_rerank_selective_gating.md).
+            # (docs/ai/2026-08-06_vlm_rerank_selective_gating.md).
             _notify(
                 progress,
                 "rerank",
