@@ -73,6 +73,8 @@ class RecommendationServiceTest {
     @Mock
     private RecommendationRankClient rankClient;
     @Mock
+    private CachedRecommendationRankService cachedRankService;
+    @Mock
     private IdempotencyService idempotencyService;
 
     private RecommendationPolicy policy;
@@ -90,6 +92,7 @@ class RecommendationServiceTest {
                 roomRepository,
                 userRepository,
                 rankClient,
+                cachedRankService,
                 idempotencyService,
                 policy,
                 new ImageUrlResolver("")
@@ -107,6 +110,8 @@ class RecommendationServiceTest {
         });
         when(recommendationItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(recommendationMoodRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cachedRankService.rank(any(RankRequest.class)))
+                .thenAnswer(invocation -> rankClient.rank(invocation.getArgument(0)));
 
         authenticateAs(EMAIL);
     }
@@ -147,6 +152,33 @@ class RecommendationServiceTest {
         assertThat(response.condition().subcategory()).isEqualTo("LONG_SLEEVE");
         assertThat(response.condition().gender()).isEqualTo("MALE");
         assertThat(response.condition().moods()).containsExactly("MINIMAL", "CASUAL");
+    }
+
+    @Test
+    void createSnapshotPersistsCachedRankingForCurrentUserWithoutCallingFastApi() {
+        Product first = product(101L, 39_000);
+        Product second = product(102L, 89_000);
+        when(productRepository.findMatching(
+                eq("TOP"), eq("LONG_SLEEVE"), eq("MALE"), eq(30_000), eq(120_000), any(Pageable.class)))
+                .thenReturn(List.of(first, second));
+        when(cachedRankService.rank(any(RankRequest.class))).thenReturn(List.of(
+                new RankedProduct(102L, 1, new BigDecimal("0.8600")),
+                new RankedProduct(101L, 2, new BigDecimal("0.7100"))
+        ));
+
+        RecommendationResponse response = recommendationService.createSnapshot(request(), null);
+
+        assertThat(response.recommendationId()).isEqualTo(21L);
+        assertThat(response.version()).isEqualTo(1L);
+        assertThat(response.items())
+                .extracting("productId", "rank")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(102L, 1),
+                        org.assertj.core.groups.Tuple.tuple(101L, 2)
+                );
+        verify(recommendationRepository).save(any(Recommendation.class));
+        verify(recommendationItemRepository).saveAll(any());
+        verify(rankClient, never()).rank(any());
     }
 
     @Test

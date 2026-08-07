@@ -22,7 +22,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               AND p.category = :category
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
               AND p.price BETWEEN :budgetMin AND :budgetMax
-            ORDER BY p.price ASC
+            ORDER BY p.price ASC, p.id ASC
             """)
     List<Product> findMatching(
             @Param("category") String category,
@@ -42,7 +42,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               AND (:subcategory IS NULL OR p.subcategory = :subcategory)
               AND p.price BETWEEN :budgetMin AND :budgetMax
               AND p.id NOT IN :excludedIds
-            ORDER BY p.price ASC
+            ORDER BY p.price ASC, p.id ASC
             """)
     List<Product> findMatchingExcluding(
             @Param("category") String category,
