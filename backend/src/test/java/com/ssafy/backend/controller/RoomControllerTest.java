@@ -190,6 +190,7 @@ class RoomControllerTest {
                         "MUSINSA STANDARD",
                         39_900,
                         "https://cdn.example.com/products/501.jpg",
+                        "https://www.musinsa.com/products/101",
                         1,
                         new RoomResultResponseDTO.TierInfo(1L, "S")
                 )),
