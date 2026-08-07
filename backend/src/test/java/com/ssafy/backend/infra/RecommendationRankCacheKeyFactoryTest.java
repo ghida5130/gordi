@@ -61,6 +61,33 @@ class RecommendationRankCacheKeyFactoryTest {
     }
 
     @Test
+    void tpoInnerWhitespaceDifferenceProducesSameKeyButKeepsRequestTpo() {
+        RankRequest spaced = request(
+                21L,
+                30_000,
+                120_000,
+                List.of("CASUAL"),
+                "생일 파티",
+                List.of(candidate(101L, 39_000, "first"))
+        );
+        RankRequest compact = request(
+                21L,
+                30_000,
+                120_000,
+                List.of("CASUAL"),
+                "생일파티",
+                List.of(candidate(101L, 39_000, "first"))
+        );
+
+        RecommendationRankCacheKeyFactory.PreparedRankRequest preparedSpaced = keyFactory.prepare(spaced);
+        RecommendationRankCacheKeyFactory.PreparedRankRequest preparedCompact = keyFactory.prepare(compact);
+
+        assertThat(preparedSpaced.cacheKey()).isEqualTo(preparedCompact.cacheKey());
+        assertThat(preparedSpaced.request().condition().tpo()).isEqualTo("생일 파티");
+        assertThat(preparedCompact.request().condition().tpo()).isEqualTo("생일파티");
+    }
+
+    @Test
     void exactBudgetChangeProducesDifferentKey() {
         RankRequest first = request(
                 21L,

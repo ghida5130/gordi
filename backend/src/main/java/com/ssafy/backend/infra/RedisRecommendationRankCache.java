@@ -49,9 +49,9 @@ public class RedisRecommendationRankCache {
             serialized = redisTemplate.opsForValue().get(key);
         } catch (RuntimeException exception) {
             log.warn(
-                    "Recommendation rank cache read failed. cacheKey={}, exceptionType={}",
+                    "Recommendation rank cache read failed. cacheKey={}",
                     keyTag(key),
-                    exception.getClass().getName()
+                    exception
             );
             return Optional.empty();
         }
@@ -106,9 +106,9 @@ public class RedisRecommendationRankCache {
             redisTemplate.opsForValue().set(key, serialized, properties.getTtl());
         } catch (Exception exception) {
             log.warn(
-                    "Recommendation rank cache write failed. cacheKey={}, exceptionType={}",
+                    "Recommendation rank cache write failed. cacheKey={}",
                     keyTag(key),
-                    exception.getClass().getName()
+                    exception
             );
         }
     }

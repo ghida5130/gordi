@@ -69,10 +69,21 @@ public class RecommendationRankCacheKeyFactory {
                 normalizedCandidates
         );
 
+        // 캐시 키에서는 TPO의 공백 유무("생일 파티" vs "생일파티")를 같은 조건으로 취급한다.
+        // AI로 보내는 요청(normalizedRequest)의 TPO는 입력 원형을 유지한다.
+        RankCondition keyCondition = new RankCondition(
+                normalizedCondition.gender(),
+                normalizedCondition.category(),
+                normalizedCondition.subcategory(),
+                normalizedCondition.budgetMin(),
+                normalizedCondition.budgetMax(),
+                normalizedCondition.moods(),
+                WHITESPACE.matcher(normalizedCondition.tpo()).replaceAll("")
+        );
         CacheKeyInput input = new CacheKeyInput(
                 KEY_FORMAT_VERSION,
                 properties.getRankerRevision(),
-                normalizedCondition,
+                keyCondition,
                 request.limit(),
                 normalizedCandidates
         );
