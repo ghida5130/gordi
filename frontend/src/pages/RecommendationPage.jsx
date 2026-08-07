@@ -697,10 +697,21 @@ function RecommendationLoading({ title, description }) {
   );
 }
 
-function RecommendationItemSkeleton() {
+function RecommendationItemSkeleton({ index = 0 }) {
   return (
-    <article
-      className="animate-pulse overflow-hidden rounded-[24px] border border-[#E1E3DE] bg-white shadow-[0_12px_30px_rgba(31,35,32,0.05)]"
+    <motion.article
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: [0, -3, 0] }}
+      transition={{
+        opacity: { duration: 0.3, delay: Math.min(index * 0.035, 0.28) },
+        y: {
+          duration: 2.4,
+          delay: (index % 5) * 0.08,
+          ease: "easeInOut",
+          repeat: Infinity,
+        },
+      }}
+      className="relative overflow-hidden rounded-[24px] border border-[#E1E3DE] bg-white shadow-[0_12px_30px_rgba(31,35,32,0.05)]"
       aria-label="추천 의상 정보를 불러오는 중"
     >
       <div className="aspect-[3/4] bg-[#E6E7E3]" />
@@ -710,7 +721,20 @@ function RecommendationItemSkeleton() {
         <div className="h-4 w-1/2 rounded-full bg-[#E4E5E1]" />
         <div className="h-3 w-3/5 rounded-full bg-[#E4E5E1]" />
       </div>
-    </article>
+      <motion.span
+        aria-hidden="true"
+        initial={{ x: "-120%" }}
+        animate={{ x: "120%" }}
+        transition={{
+          duration: 1.55,
+          delay: (index % 5) * 0.1,
+          ease: "linear",
+          repeat: Infinity,
+          repeatDelay: 0.35,
+        }}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/65 to-transparent"
+      />
+    </motion.article>
   );
 }
 
@@ -797,12 +821,29 @@ function RecommendationResults({
               </span>
               추천 조건으로 돌아가기
             </button>
-            <h1 className="mt-2 text-[26px] font-black tracking-[-0.035em]">
-              {items.length}개 추천 아이템
-            </h1>
+            {isPending ? (
+              <div
+                className="mt-2 flex items-center gap-2.5"
+                role="status"
+                aria-live="polite"
+              >
+                <span
+                  className="size-5 animate-spin rounded-full border-[3px] border-[#E5E1F5] border-t-[#6D5CCF]"
+                  aria-hidden="true"
+                />
+                <h1 className="text-[24px] font-black tracking-[-0.035em]">
+                  AI가 의상 추천을 수행하는 중
+                </h1>
+              </div>
+            ) : (
+              <h1 className="mt-2 text-[26px] font-black tracking-[-0.035em]">
+                {items.length}개 추천 아이템
+              </h1>
+            )}
             <p className="mt-1 text-xs font-medium text-[#939892]">
-              마음에 들지 않는 의상을 선택하면 해당 항목만 다시 추천받을 수
-              있어요.
+              {isPending
+                ? "입력한 조건과 체형 정보를 바탕으로 어울리는 의상을 찾고 있어요."
+                : "마음에 들지 않는 의상을 선택하면 해당 항목만 다시 추천받을 수 있어요."}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -878,6 +919,7 @@ function RecommendationResults({
             ? Array.from({ length: 10 }, (_, index) => (
                 <RecommendationItemSkeleton
                   key={`recommendation-skeleton-${index}`}
+                  index={index}
                 />
               ))
             : items.map((item, index) => {
@@ -896,6 +938,7 @@ function RecommendationResults({
                   return (
                     <RecommendationItemSkeleton
                       key={`replacement-skeleton-${productId ?? index}`}
+                      index={index}
                     />
                   );
                 }

@@ -302,7 +302,7 @@ export default function Header({ isHidden = false }) {
                                             </div>
                                         </Link>
 
-                                        <section className="flex w-[650px] min-w-0 shrink-0 flex-col justify-center px-12">
+                                        <section className="flex w-[600px] min-w-0 shrink-0 flex-col justify-center px-12">
                                             <div className="w-fit max-w-3xl">
                                                 <h2 className="max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight text-gray-950 flex flex-col gap-2">
                                                     <p className={menuTextClass(showMenuDescription)} style={menuTextDelay(showMenuDescription, 0)}>
@@ -338,7 +338,7 @@ export default function Header({ isHidden = false }) {
                                             </div>
                                         </Link>
 
-                                        <section className="flex w-[650px] min-w-0 shrink-0 flex-col justify-center px-12">
+                                        <section className="flex w-[600px] min-w-0 shrink-0 flex-col justify-center px-12">
                                             <div className="w-fit max-w-3xl">
                                                 <h2 className="max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight text-gray-950 flex flex-col gap-2">
                                                     <p className={menuTextClass(showMenuDescription)} style={menuTextDelay(showMenuDescription, 0)}>
@@ -379,7 +379,7 @@ export default function Header({ isHidden = false }) {
                                             </div>
                                         </button>
 
-                                        <section className="flex w-[650px] min-w-0 shrink-0 flex-col justify-center px-12">
+                                        <section className="flex w-[600px] min-w-0 shrink-0 flex-col justify-center px-12">
                                             <div className="w-fit max-w-3xl">
                                                 <h2 className="max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight text-gray-950 flex flex-col gap-2">
                                                     <p className={menuTextClass(showMenuDescription)} style={menuTextDelay(showMenuDescription, 0)}>
