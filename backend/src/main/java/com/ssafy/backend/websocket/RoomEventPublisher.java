@@ -13,6 +13,7 @@ import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.FittingCandidatesUpdatedEvent;
+import com.ssafy.backend.websocket.event.FittingDraftUpdatedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -178,6 +179,18 @@ public class RoomEventPublisher {
                 event.roomVersion(),
                 event.senderParticipantId(),
                 new FittingCandidatesUpdatedEventDataDTO(event.fittingCandidates())
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFittingDraftUpdated(FittingDraftUpdatedEvent event) {
+        publish(RoomEventDTO.of(
+                RoomEventType.FITTING_DRAFT_UPDATED,
+                event.clientEventId(),
+                event.roomId(),
+                event.roomVersion(),
+                event.senderParticipantId(),
+                event.draft()
         ));
     }
 

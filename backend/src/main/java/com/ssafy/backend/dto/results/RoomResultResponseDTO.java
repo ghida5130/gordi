@@ -7,12 +7,20 @@ public record RoomResultResponseDTO(
         Long resultId,
         String roomCode,
         Long boardVersion,
+        List<Tier> tiers,
         List<TopItem> topItems,
         String snapshotImageUrl,
         List<String> fitSummary,
         String disclaimer,
         Instant createdAt
 ) {
+    public record Tier(
+            Long tierId,
+            String tierName,
+            int position
+    ) {
+    }
+
     public record TopItem(
             int rank,
             Long roomItemId,

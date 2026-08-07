@@ -7,12 +7,16 @@ import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.RoomParticipant;
 import com.ssafy.backend.domain.Tier;
+import com.ssafy.backend.infra.RedisFittingDraftStore;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.websocket.dto.BoardSnapshotDataDTO;
 import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftSizeSelectionDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftSnapshotDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftWearOptionsDTO;
 import com.ssafy.backend.websocket.dto.ItemSnapshotDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
@@ -43,6 +47,8 @@ class RoomSyncServiceTest {
     private TierRepository tierRepository;
     @Mock
     private RoomItemRepository roomItemRepository;
+    @Mock
+    private RedisFittingDraftStore fittingDraftStore;
 
     @InjectMocks
     private RoomSyncService roomSyncService;
@@ -107,6 +113,13 @@ class RoomSyncServiceTest {
 
         when(roomItemRepository.findAllByRoomIdWithProduct(31L))
                 .thenReturn(List.of(item1, item2));
+        FittingDraftSnapshotDTO fittingDraft = new FittingDraftSnapshotDTO(
+                4L,
+                List.of(new FittingDraftSizeSelectionDTO(30L, "M")),
+                new FittingDraftWearOptionsDTO("UNTUCKED", null, "ROLLED"),
+                "소매를 한 번 접어주세요"
+        );
+        when(fittingDraftStore.findByRoomId(31L)).thenReturn(Optional.of(fittingDraft));
 
         RoomEventDTO snapshot = roomSyncService.buildSnapshot(31L, "request-uuid", 42L);
 
@@ -132,6 +145,7 @@ class RoomSyncServiceTest {
         assertThat(data.fittingCandidates()).containsExactly(
                 new FittingCandidateDTO(30L)
         );
+        assertThat(data.fittingDraft()).isEqualTo(fittingDraft);
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.results.RoomResultResponseDTO;
 import com.ssafy.backend.repository.ResultBoardItemRepository;
 import com.ssafy.backend.repository.ResultRepository;
+import com.ssafy.backend.repository.ResultTierRepository;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class ResultService {
 
     private final ResultRepository resultRepository;
     private final ResultBoardItemRepository resultBoardItemRepository;
+    private final ResultTierRepository resultTierRepository;
     private final RoomAccessValidator roomAccessValidator;
     private final ImageUrlResolver imageUrlResolver;
 
@@ -85,6 +87,11 @@ public class ResultService {
     }
 
     private RoomResultResponseDTO toRoomResultResponse(Result result) {
+        List<RoomResultResponseDTO.Tier> tiers = resultTierRepository
+                .findAllByResult_IdOrderByPositionAsc(result.getId()).stream()
+                .map(this::toRoomResultTier)
+                .toList();
+
         List<ResultBoardItem> orderedBoardItems = resultBoardItemRepository
                 .findAllByResultIdInSnapshotOrder(List.of(result.getId())).stream()
                 .sorted(Comparator
@@ -105,11 +112,24 @@ public class ResultService {
                 result.getId(),
                 result.getRoom().getRoomCode(),
                 result.getBoardVersion(),
+                tiers,
                 topItems,
                 snapshotImageUrl,
                 List.of(),
                 snapshotImageUrl == null ? null : DEFAULT_DISCLAIMER,
                 result.getCreatedAt().atZone(AppZone.KST).toInstant()
+        );
+    }
+
+    private RoomResultResponseDTO.Tier toRoomResultTier(ResultTier resultTier) {
+        Long tierId = resultTier.getSourceTier() == null
+                ? null
+                : resultTier.getSourceTier().getId();
+
+        return new RoomResultResponseDTO.Tier(
+                tierId,
+                resultTier.getName(),
+                resultTier.getPosition()
         );
     }
 
@@ -171,14 +191,11 @@ public class ResultService {
             return List.of();
         }
 
-        int highestTierPosition = boardItems.stream()
-                .mapToInt(item -> item.getResultTier().getPosition())
-                .min()
-                .orElseThrow();
-
         return boardItems.stream()
-                .filter(item -> item.getResultTier().getPosition() == highestTierPosition)
-                .sorted(Comparator.comparing(ResultBoardItem::getPosition))
+                .sorted(Comparator
+                        .comparing((ResultBoardItem item) ->
+                                item.getResultTier().getPosition())
+                        .thenComparing(ResultBoardItem::getPosition))
                 .limit(3)
                 .toList();
     }

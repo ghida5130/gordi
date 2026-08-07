@@ -107,10 +107,7 @@ const MainPage = () => {
         className="relative flex h-screen min-h-[780px] w-full items-center overflow-hidden bg-cover bg-center bg-no-repeat px-[clamp(32px,4vw,72px)] pb-12 pt-[120px]"
         style={{ backgroundImage: "url('/images/main_background.webp')" }}
       >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[#F3F3EF]/70"
-        />
+        <div aria-hidden="true" className="absolute inset-0 bg-[#F3F3EF]/70" />
         <div
           aria-hidden="true"
           className="absolute -left-40 top-1/2 h-[560px] w-[560px] -translate-y-1/2 rounded-full bg-white/70 blur-3xl"
@@ -167,10 +164,11 @@ const MainPage = () => {
 
             <motion.p
               variants={revealVariants}
-              className="mt-7 max-w-[500px] text-[17px] font-medium leading-8 text-[#646B65]"
+              className="mt-7 max-w-[500px] text-[16px] font-medium leading-8 text-[#646B65]"
             >
-              내 체형에 맞는 옷을 AI로 추천받고, 친구들과 티어를 나누며 가장
-              마음에 드는 코디를 완성해보세요.
+              내 체형에 맞는 옷을 AI로 추천받고 친구들과 티어를 나누며
+              <br />
+              가장 마음에 드는 코디를 완성해보세요.
             </motion.p>
 
             <motion.div

@@ -11,6 +11,7 @@ public record BoardSnapshotDataDTO(
         List<ParticipantEventDataDTO> participants,
         List<TierSnapshotDTO> tiers,
         List<ItemSnapshotDTO> unclassifiedItems,
-        List<FittingCandidateDTO> fittingCandidates
+        List<FittingCandidateDTO> fittingCandidates,
+        FittingDraftSnapshotDTO fittingDraft
 ) {
 }

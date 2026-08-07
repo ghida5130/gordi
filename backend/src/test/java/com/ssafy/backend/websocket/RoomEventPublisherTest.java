@@ -3,6 +3,9 @@ package com.ssafy.backend.websocket;
 import com.ssafy.backend.dto.candidate.CandidateItemDTO;
 import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
 import com.ssafy.backend.websocket.dto.FittingCandidatesUpdatedEventDataDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftSizeSelectionDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftSnapshotDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftWearOptionsDTO;
 import com.ssafy.backend.websocket.dto.ItemAddedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemMovedEventDataDTO;
 import com.ssafy.backend.websocket.dto.ItemRemovedEventDataDTO;
@@ -16,6 +19,7 @@ import com.ssafy.backend.websocket.dto.TryOnProcessingEventDataDTO;
 import com.ssafy.backend.websocket.dto.TryOnSucceededEventDataDTO;
 import com.ssafy.backend.websocket.event.ItemAddedEvent;
 import com.ssafy.backend.websocket.event.FittingCandidatesUpdatedEvent;
+import com.ssafy.backend.websocket.event.FittingDraftUpdatedEvent;
 import com.ssafy.backend.websocket.event.ItemMovedEvent;
 import com.ssafy.backend.websocket.event.ItemRemovedEvent;
 import com.ssafy.backend.websocket.event.ParticipantJoinedEvent;
@@ -274,6 +278,37 @@ class RoomEventPublisherTest {
         assertThat(event.data()).isEqualTo(new FittingCandidatesUpdatedEventDataDTO(
                 domainEvent.fittingCandidates()
         ));
+    }
+
+    @Test
+    void 피팅_초안_전체_스냅샷을_브로드캐스트한다() {
+        FittingDraftSnapshotDTO draft = new FittingDraftSnapshotDTO(
+                4L,
+                List.of(new FittingDraftSizeSelectionDTO(301L, "M")),
+                new FittingDraftWearOptionsDTO("UNTUCKED", null, "ROLLED"),
+                "소매를 한 번 접어주세요"
+        );
+        FittingDraftUpdatedEvent domainEvent = new FittingDraftUpdatedEvent(
+                31L,
+                17L,
+                42L,
+                "request-uuid",
+                draft
+        );
+
+        roomEventPublisher.handleFittingDraftUpdated(domainEvent);
+
+        ArgumentCaptor<RoomEventDTO> eventCaptor = ArgumentCaptor.forClass(RoomEventDTO.class);
+        verify(messagingTemplate).convertAndSend(
+                eq("/topic/v1/rooms/31/participants"),
+                eventCaptor.capture()
+        );
+        RoomEventDTO event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(RoomEventType.FITTING_DRAFT_UPDATED);
+        assertThat(event.clientEventId()).isEqualTo("request-uuid");
+        assertThat(event.version()).isEqualTo(17L);
+        assertThat(event.senderParticipantId()).isEqualTo(42L);
+        assertThat(event.data()).isEqualTo(draft);
     }
 
     @Test

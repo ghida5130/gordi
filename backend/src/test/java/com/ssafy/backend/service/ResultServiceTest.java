@@ -15,6 +15,7 @@ import com.ssafy.backend.dto.results.MyResultListResponseDTO;
 import com.ssafy.backend.dto.results.RoomResultResponseDTO;
 import com.ssafy.backend.repository.ResultBoardItemRepository;
 import com.ssafy.backend.repository.ResultRepository;
+import com.ssafy.backend.repository.ResultTierRepository;
 import com.ssafy.backend.util.ImageUrlResolver;
 import com.ssafy.backend.websocket.RoomPrincipal;
 import org.junit.jupiter.api.Test;
@@ -34,10 +35,12 @@ class ResultServiceTest {
     private final ResultRepository resultRepository = mock(ResultRepository.class);
     private final ResultBoardItemRepository resultBoardItemRepository =
             mock(ResultBoardItemRepository.class);
+    private final ResultTierRepository resultTierRepository = mock(ResultTierRepository.class);
     private final RoomAccessValidator roomAccessValidator = mock(RoomAccessValidator.class);
     private final ResultService resultService = new ResultService(
             resultRepository,
             resultBoardItemRepository,
+            resultTierRepository,
             roomAccessValidator,
             new ImageUrlResolver("")
     );
@@ -79,7 +82,6 @@ class ResultServiceTest {
                 .thenReturn(List.of(result));
         when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
                 .thenReturn(List.of(lowerTier, fourth, second, third, first));
-
         MyResultListResponseDTO response = resultService.readMyResults("host@example.com");
 
         assertThat(response.items()).hasSize(1);
@@ -117,6 +119,13 @@ class ResultServiceTest {
                 .name("A")
                 .position(1)
                 .build();
+        ResultTier tierB = ResultTier.builder()
+                .id(83L)
+                .result(result)
+                .sourceTier(Tier.builder().id(3L).build())
+                .name("B")
+                .position(2)
+                .build();
         ResultBoardItem first = boardItem(result, tierS, product(101L), 1);
         ResultBoardItem second = boardItem(result, tierS, product(102L), 2);
         ResultBoardItem third = boardItem(result, tierS, product(103L), 3);
@@ -127,6 +136,8 @@ class ResultServiceTest {
         when(resultRepository.findByRoomCode("A7K9Q2")).thenReturn(Optional.of(result));
         when(resultBoardItemRepository.findAllByResultIdInSnapshotOrder(List.of(51L)))
                 .thenReturn(List.of(lowerTier, fourth, second, third, first));
+        when(resultTierRepository.findAllByResult_IdOrderByPositionAsc(51L))
+                .thenReturn(List.of(tierS, tierA, tierB));
 
         RoomResultResponseDTO response = resultService.readRoomResult(
                 " a7k9q2 ",
@@ -136,6 +147,12 @@ class ResultServiceTest {
         assertThat(response.resultId()).isEqualTo(51L);
         assertThat(response.roomCode()).isEqualTo("A7K9Q2");
         assertThat(response.boardVersion()).isEqualTo(17L);
+        assertThat(response.tiers())
+                .containsExactly(
+                        new RoomResultResponseDTO.Tier(1L, "S", 0),
+                        new RoomResultResponseDTO.Tier(2L, "A", 1),
+                        new RoomResultResponseDTO.Tier(3L, "B", 2)
+                );
         assertThat(response.topItems())
                 .extracting(
                         RoomResultResponseDTO.TopItem::rank,
