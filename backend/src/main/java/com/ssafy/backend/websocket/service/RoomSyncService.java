@@ -5,18 +5,21 @@ import com.ssafy.backend.common.error.ErrorCode;
 import com.ssafy.backend.domain.Room;
 import com.ssafy.backend.domain.RoomItem;
 import com.ssafy.backend.domain.Tier;
+import com.ssafy.backend.infra.RedisFittingDraftStore;
 import com.ssafy.backend.repository.RoomItemRepository;
 import com.ssafy.backend.repository.RoomParticipantRepository;
 import com.ssafy.backend.repository.RoomRepository;
 import com.ssafy.backend.repository.TierRepository;
 import com.ssafy.backend.websocket.dto.BoardSnapshotDataDTO;
 import com.ssafy.backend.websocket.dto.FittingCandidateDTO;
+import com.ssafy.backend.websocket.dto.FittingDraftSnapshotDTO;
 import com.ssafy.backend.websocket.dto.ItemSnapshotDTO;
 import com.ssafy.backend.websocket.dto.ParticipantEventDataDTO;
 import com.ssafy.backend.websocket.dto.RoomEventDTO;
 import com.ssafy.backend.websocket.dto.TierSnapshotDTO;
 import com.ssafy.backend.websocket.event.RoomEventType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
  * 클라이언트는 이 version보다 낮은 이벤트를 버리는 방식으로 상태를 동기화한다.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class RoomSyncService {
 
@@ -37,6 +41,7 @@ public class RoomSyncService {
     private final RoomParticipantRepository roomParticipantRepository;
     private final TierRepository tierRepository;
     private final RoomItemRepository roomItemRepository;
+    private final RedisFittingDraftStore fittingDraftStore;
 
     // - 인자: 방 ID, 요청 식별자(clientEventId, null 허용), 요청자 participantId
     // - 동작: 방 상태/참여자/티어별 아이템/미분류 아이템을 조회해 BOARD_SNAPSHOT envelope로 반환
@@ -81,6 +86,8 @@ public class RoomSyncService {
                 .map(item -> new FittingCandidateDTO(item.getId()))
                 .toList();
 
+        var fittingDraft = restoreFittingDraft(roomId);
+
         return RoomEventDTO.of(
                 RoomEventType.BOARD_SNAPSHOT,
                 clientEventId,
@@ -92,7 +99,8 @@ public class RoomSyncService {
                         participants,
                         tiers,
                         unclassifiedItems,
-                        fittingCandidates
+                        fittingCandidates,
+                        fittingDraft
                 )
         );
     }
@@ -103,6 +111,19 @@ public class RoomSyncService {
                 item.getProduct().getId(),
                 item.getPosition()
         );
+    }
+
+    private FittingDraftSnapshotDTO restoreFittingDraft(Long roomId) {
+        try {
+            return fittingDraftStore.findByRoomId(roomId).orElse(null);
+        } catch (RuntimeException exception) {
+            log.warn(
+                    "Fitting draft recovery failed while building room snapshot. roomId={}, exceptionType={}",
+                    roomId,
+                    exception.getClass().getName()
+            );
+            return null;
+        }
     }
 
     private TierSnapshotDTO toTierSnapshot(Tier tier, Map<Long, List<ItemSnapshotDTO>> itemsByTierId) {
