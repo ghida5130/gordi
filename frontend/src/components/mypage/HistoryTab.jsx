@@ -20,21 +20,21 @@ export default function HistoryTab() {
     }
 
     if (resultsQuery.isError) {
-        return <StatusPanel tone="danger" role="alert">{getApiErrorMessage(resultsQuery.error, "티어메이커 결과를 불러오지 못했습니다.")}</StatusPanel>;
+        return <StatusPanel tone="danger" role="alert">{getApiErrorMessage(resultsQuery.error, "티어메이커 기록을 불러오지 못했습니다.")}</StatusPanel>;
     }
 
     return (
         <section className="mx-auto max-w-6xl">
             <div className="flex items-end justify-between px-1">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight">내 티어메이커 결과</h1>
+                    <h1 className="text-3xl font-black tracking-tight">내 티어메이커 기록</h1>
                     <p className="mt-2 text-sm text-slate-500">완료한 보드와 높은 순위를 받은 의상을 다시 확인해 보세요.</p>
                 </div>
-                <small className="rounded-full bg-white px-4 py-2 font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">총 {results.length}개 결과</small>
+                <small className="rounded-full bg-white px-4 py-2 font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">총 {results.length}개 기록</small>
             </div>
 
             {results.length === 0 ? (
-                <SurfaceCard className="mt-8 px-5 py-16 text-center text-sm text-slate-500">아직 완료한 티어메이커 결과가 없습니다.</SurfaceCard>
+                <SurfaceCard className="mt-8 px-5 py-16 text-center text-sm text-slate-500">아직 완료한 티어메이커 기록이 없습니다.</SurfaceCard>
             ) : (
                 <div className="mt-8 space-y-5">
                     {results.map((result) => (
