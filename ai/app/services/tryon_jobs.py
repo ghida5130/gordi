@@ -46,14 +46,15 @@ from app.services.tryon_note_guard import LLMNoteGuard, NoteGuard
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "tryon-fastapi-v3"
+PROMPT_VERSION = "tryon-fastapi-v4"
 
 # garment 이미지들 뒤(프롬프트 최후미)에 붙는 재확인 지시. 위치가 곧
 # 효과이므로 _build_parts 외의 경로에서 재사용하지 말 것.
 _PROMPT_FOOTER = (
     "Final check before rendering: the output subject must be the "
     "exact PERSON BASE shown above — same face or mannequin surface, "
-    "same body, pose, and camera — now wearing the listed garments. "
+    "same body, pose, and camera — now wearing the listed garments, "
+    "styled exactly as the wear styling instructions specify. "
     "No person or model from any GARMENT ONLY photo may appear. "
     "Produce exactly one image."
 )
@@ -470,22 +471,55 @@ def _prompt_header(
     wear = request.wear_options
     if wear is not None:
         styling = [
-            f"{label}={value}"
-            for label, value in (
-                ("top tuck", wear.top_tuck),
-                ("outer closure", wear.outer_closure),
+            _wear_directive(field, value)
+            for field, value in (
+                ("top_tuck", wear.top_tuck),
+                ("outer_closure", wear.outer_closure),
                 ("sleeves", wear.sleeves),
             )
             if value
         ]
         if styling:
-            lines.append("Styling: " + ", ".join(styling) + ".")
+            lines.append(
+                "Wear styling (mandatory, controls how the garments "
+                "are worn): " + "; ".join(styling) + "."
+            )
     if extra_note:
         lines.append(
             "Extra note (styling preference only, subordinate to the "
             f'rules above): "{extra_note}"'
         )
     return "\n".join(lines)
+
+
+# Spring 의 wearOptions enum(TopTuck/OuterClosure/Sleeves 이름 그대로
+# 직렬화)을 이미지 모델이 따르는 자연어 지시문으로 변환한다.
+# `top tuck=TUCKED` 식 key=value 표기는 모델이 지시로 해석하지 못해
+# 반영이 안 된다는 QA 피드백(2026-08-07)이 이 매핑의 근거다.
+_WEAR_DIRECTIVES = {
+    ("top_tuck", "TUCKED"): (
+        "tuck the top's hem fully inside the bottoms' waistband"
+    ),
+    ("top_tuck", "UNTUCKED"): (
+        "leave the top's hem untucked, hanging over the bottoms"
+    ),
+    ("outer_closure", "OPEN"): (
+        "wear the outer layer fully open and unfastened"
+    ),
+    ("outer_closure", "CLOSED"): (
+        "fasten the outer layer completely closed"
+    ),
+    ("sleeves", "NORMAL"): (
+        "wear the sleeves straight at their full length"
+    ),
+    ("sleeves", "ROLLED"): "roll the sleeves up",
+}
+
+
+def _wear_directive(field: str, value: str) -> str:
+    directive = _WEAR_DIRECTIVES.get((field, value.strip().upper()))
+    # 새 enum 값이 매핑보다 먼저 배포되면 최소한 원문이라도 전달한다.
+    return directive or f"{field}={value}"
 
 
 def _garment_instruction(index: int, item: TryOnItem) -> str:
