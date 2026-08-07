@@ -32,18 +32,31 @@ function formatDate(createdAt) {
   }).format(new Date(createdAt));
 }
 
-function groupItemsByTier(items) {
+function getTierKey(tier) {
+  return tier?.tierId == null
+    ? `unknown:${tier?.tierName ?? "미분류"}`
+    : String(tier.tierId);
+}
+
+function groupItemsByTier(tiers, items) {
   const tierMap = new Map();
+
+  tiers.forEach((tier) => {
+    tierMap.set(getTierKey(tier), {
+      tierId: tier.tierId,
+      tierName: tier.tierName ?? "미분류",
+      position: tier.position,
+      items: [],
+    });
+  });
 
   items.forEach((item) => {
     const tierId = item.tier?.tierId;
-    const key =
-      tierId == null
-        ? `unknown:${item.tier?.tierName ?? "미분류"}`
-        : String(tierId);
+    const key = getTierKey(item.tier);
     const current = tierMap.get(key) ?? {
       tierId,
       tierName: item.tier?.tierName ?? "미분류",
+      position: null,
       items: [],
     };
 
@@ -53,6 +66,13 @@ function groupItemsByTier(items) {
 
   return [...tierMap.values()]
     .sort((left, right) => {
+      if (left.position != null && right.position != null) {
+        const positionDifference =
+          Number(left.position) - Number(right.position);
+        if (positionDifference !== 0) return positionDifference;
+      }
+      if (left.position == null && right.position != null) return 1;
+      if (left.position != null && right.position == null) return -1;
       if (left.tierId == null && right.tierId == null) {
         return left.tierName.localeCompare(right.tierName, "ko");
       }
@@ -108,7 +128,10 @@ export default function TierMakerResultPage() {
   const result = resultQuery.data?.data;
   const tierGroups = useMemo(
     () =>
-      groupItemsByTier(Array.isArray(result?.topItems) ? result.topItems : []),
+      groupItemsByTier(
+        Array.isArray(result?.tiers) ? result.tiers : [],
+        Array.isArray(result?.topItems) ? result.topItems : [],
+      ),
     [result],
   );
 
