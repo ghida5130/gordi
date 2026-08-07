@@ -427,7 +427,7 @@ function ClothingAddModal({
               type="button"
               onClick={() => setPage((current) => Math.max(0, current - 1))}
               disabled={currentPage === 0 || productsQuery.isFetching}
-              className="h-9 rounded-full px-5 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent disabled:hover:shadow-none"
+              className="h-9 rounded-full bg-slate-800 px-5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
             >
               이전
             </button>
@@ -438,7 +438,7 @@ function ClothingAddModal({
               type="button"
               onClick={() => setPage((current) => current + 1)}
               disabled={!hasNextPage || productsQuery.isFetching}
-              className="h-9 rounded-full px-5 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent disabled:hover:shadow-none"
+              className="h-9 rounded-full bg-slate-800 px-5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
             >
               다음
             </button>

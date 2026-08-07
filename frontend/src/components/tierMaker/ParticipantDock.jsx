@@ -64,11 +64,16 @@ function ParticipantDock({
       ) : (
         <motion.section
           key="participant-dock-expanded"
+          layout
           initial={{ opacity: 0, y: 120 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 120 }}
-          transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 bottom-3 z-[60] mx-auto flex w-[calc(100vw-2rem)] max-w-[1560px] items-center justify-between gap-3 rounded-full border border-slate-200 bg-white/95 px-4 pb-2 pt-4 shadow-[0_22px_65px_rgba(15,23,42,0.16)] backdrop-blur-md"
+          transition={{
+            duration: 0.34,
+            ease: [0.22, 1, 0.36, 1],
+            layout: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+          }}
+          className="fixed inset-x-0 bottom-3 z-[60] mx-auto flex w-fit max-w-[calc(100vw-2rem)] items-center justify-between gap-3 rounded-full border border-slate-200 bg-white/95 px-4 pb-2 pt-4 shadow-[0_22px_65px_rgba(15,23,42,0.16)] backdrop-blur-md"
         >
           <button
             type="button"
@@ -78,7 +83,7 @@ function ParticipantDock({
           >
             <img src={arrowImage} alt="" aria-hidden="true" className="size-2.5 object-contain opacity-45 transition-transform duration-200 hover:translate-y-0.5" />
           </button>
-      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+      <div className="flex min-w-0 items-center gap-3 overflow-x-auto py-1">
         <div className="mr-1 shrink-0 border-r border-slate-200 pr-4">
           <p className="text-xs font-bold text-slate-800">참여자</p>
           <p className="mt-1 text-[11px] text-slate-400">
@@ -94,7 +99,7 @@ function ParticipantDock({
               key={participant.participantId}
               className={`flex min-w-[142px] items-center gap-2 rounded-2xl border px-2.5 py-1 ${
                 isCurrent
-                  ? 'border-emerald-300 bg-emerald-50/50 ring-2 ring-emerald-100'
+                  ? 'border-emerald-300 bg-emerald-50/50'
                   : 'border-slate-100 bg-slate-50'
               }`}
             >

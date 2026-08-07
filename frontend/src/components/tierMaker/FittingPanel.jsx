@@ -69,7 +69,6 @@ function FittingPanel({
   prompt,
   onPromptChange,
   canEditOptions,
-  hasOuterCandidate,
   onDropCandidate,
   onRemoveCandidate,
   onDragStart,
@@ -313,7 +312,7 @@ function FittingPanel({
               </span>
             )}
           </div>
-          <div className="mt-2 grid grid-cols-3 gap-2">
+          <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="min-w-0 text-[11px] font-semibold text-slate-600">
               상의
               <select
@@ -327,23 +326,6 @@ function FittingPanel({
                 <option value="">선택안함</option>
                 <option value="TUCKED">넣입</option>
                 <option value="UNTUCKED">빼입</option>
-              </select>
-            </label>
-            <label className="min-w-0 text-[11px] font-semibold text-slate-600">
-              아우터
-              <select
-                value={
-                  hasOuterCandidate ? (wearOptions.outerClosure ?? '') : ''
-                }
-                onChange={(event) =>
-                  onWearOptionChange('outerClosure', event.target.value)
-                }
-                disabled={!canEditOptions || !hasOuterCandidate}
-                className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                <option value="">선택안함</option>
-                <option value="OPEN">열기</option>
-                <option value="CLOSED">잠그기</option>
               </select>
             </label>
             <label className="min-w-0 text-[11px] font-semibold text-slate-600">
@@ -362,12 +344,6 @@ function FittingPanel({
               </select>
             </label>
           </div>
-          {!hasOuterCandidate && (
-            <p className="mt-1.5 text-[10px] text-slate-400">
-              아우터 후보가 있을 때 여밈 방식을 선택할 수 있습니다.
-            </p>
-          )}
-
           <label className="mt-3 block text-[11px] font-semibold text-slate-600">
             추가 요청
             <textarea
