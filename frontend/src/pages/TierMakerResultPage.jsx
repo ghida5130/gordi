@@ -6,6 +6,8 @@ import { Link, useParams } from "react-router-dom";
 import { getRoomResult } from "@/api/rooms";
 import ClothingArtwork from "@/components/tierMaker/ClothingArtwork";
 import ClothingDetailButton from "@/components/tierMaker/ClothingDetailButton";
+import FittingImagePreviewModal from "@/components/tierMaker/FittingImagePreviewModal";
+import TierMakerIcon from "@/components/tierMaker/TierMakerIcon";
 import ResultProductDetailModal from "@/components/tierMakerResult/ResultProductDetailModal";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { getRoomSession } from "@/utils/roomSessionStorage";
@@ -35,7 +37,10 @@ function groupItemsByTier(items) {
 
   items.forEach((item) => {
     const tierId = item.tier?.tierId;
-    const key = tierId == null ? `unknown:${item.tier?.tierName ?? "미분류"}` : String(tierId);
+    const key =
+      tierId == null
+        ? `unknown:${item.tier?.tierName ?? "미분류"}`
+        : String(tierId);
     const current = tierMap.get(key) ?? {
       tierId,
       tierName: item.tier?.tierName ?? "미분류",
@@ -57,8 +62,11 @@ function groupItemsByTier(items) {
     })
     .map((tier) => ({
       ...tier,
-      items: tier.items.sort((left, right) =>
-        Number(left.position) - Number(right.position) || Number(left.rank) - Number(right.rank)),
+      items: tier.items.sort(
+        (left, right) =>
+          Number(left.position) - Number(right.position) ||
+          Number(left.rank) - Number(right.rank),
+      ),
     }));
 }
 
@@ -69,7 +77,9 @@ function ResultSkeleton() {
       <div className="mt-5 grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="h-[520px] rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.05)]" />
         <div className="space-y-3 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
-          {[0, 1, 2, 3].map((row) => <div key={row} className="h-32 rounded-2xl bg-slate-100" />)}
+          {[0, 1, 2, 3].map((row) => (
+            <div key={row} className="h-32 rounded-2xl bg-slate-100" />
+          ))}
         </div>
       </div>
     </div>
@@ -78,12 +88,17 @@ function ResultSkeleton() {
 
 export default function TierMakerResultPage() {
   const { roomCode: roomCodeParam } = useParams();
-  const roomCode = String(roomCodeParam ?? "").trim().toUpperCase();
+  const roomCode = String(roomCodeParam ?? "")
+    .trim()
+    .toUpperCase();
   const [roomSession] = useState(getRoomSession);
   const [selectedItem, setSelectedItem] = useState(null);
-  const roomToken = String(roomSession?.roomCode ?? "").toUpperCase() === roomCode
-    ? roomSession?.roomToken
-    : null;
+  const [isFittingImagePreviewOpen, setIsFittingImagePreviewOpen] =
+    useState(false);
+  const roomToken =
+    String(roomSession?.roomCode ?? "").toUpperCase() === roomCode
+      ? roomSession?.roomToken
+      : null;
   const resultQuery = useQuery({
     queryKey: ["roomResult", roomCode, Boolean(roomToken)],
     queryFn: () => getRoomResult({ roomCode, roomToken }),
@@ -92,7 +107,8 @@ export default function TierMakerResultPage() {
   });
   const result = resultQuery.data?.data;
   const tierGroups = useMemo(
-    () => groupItemsByTier(Array.isArray(result?.topItems) ? result.topItems : []),
+    () =>
+      groupItemsByTier(Array.isArray(result?.topItems) ? result.topItems : []),
     [result],
   );
 
@@ -122,11 +138,20 @@ export default function TierMakerResultPage() {
               <path d="m15 9-6 6M9 9l6 6" />
             </svg>
           </span>
-          <h1 className="mt-5 text-2xl font-black text-slate-950">결과를 확인할 수 없습니다</h1>
+          <h1 className="mt-5 text-2xl font-black text-slate-950">
+            결과를 확인할 수 없습니다
+          </h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            {getApiErrorMessage(resultQuery.error, "티어메이커 결과를 불러오지 못했습니다.")}
+            {getApiErrorMessage(
+              resultQuery.error,
+              "티어메이커 결과를 불러오지 못했습니다.",
+            )}
           </p>
-          <Link to="/mypage" state={{ activeTab: "history" }} className="mt-7 inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:bg-slate-800">
+          <Link
+            to="/mypage"
+            state={{ activeTab: "history" }}
+            className="mt-7 inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:bg-slate-800"
+          >
             내 결과로 돌아가기
             <span aria-hidden="true">→</span>
           </Link>
@@ -137,7 +162,6 @@ export default function TierMakerResultPage() {
 
   return (
     <main className="relative min-h-[calc(100vh-6rem)] overflow-hidden pb-16 text-slate-950">
-
       <div className="relative mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
         <motion.header
           initial={{ opacity: 0, y: 10 }}
@@ -152,14 +176,25 @@ export default function TierMakerResultPage() {
                 완료된 보드
               </span>
             </div>
-            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">공동 티어메이커 결과</h1>
-            <p className="mt-1 text-sm text-slate-500">ROOM {result?.roomCode ?? roomCode} · {formatDate(result?.createdAt)}</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+              공동 티어메이커 결과
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {result?.roomCode ?? roomCode} · {formatDate(result?.createdAt)}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/mypage" state={{ activeTab: "history" }} className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50">
+            <Link
+              to="/mypage"
+              state={{ activeTab: "history" }}
+              className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
+            >
               내 결과 보기
             </Link>
-            <Link to="/" className="flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-slate-800">
+            <Link
+              to="/"
+              className="flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
               메인으로 돌아가기
               <span aria-hidden="true">→</span>
             </Link>
@@ -170,7 +205,11 @@ export default function TierMakerResultPage() {
           <motion.aside
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              delay: 0.06,
+              duration: 0.38,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)] xl:sticky xl:top-24"
           >
             <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
@@ -191,32 +230,57 @@ export default function TierMakerResultPage() {
                 </svg>
               </span>
               <div>
-              <h2 className="font-black">최종 가상 피팅</h2>
+                <h2 className="font-black">최종 가상 피팅</h2>
               </div>
             </div>
             <div className="p-4">
-              <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-slate-100 shadow-inner">
+              <div className="relative overflow-hidden rounded-[20px] border border-slate-200 bg-slate-100 shadow-inner">
                 {result?.snapshotImageUrl ? (
-                  <img src={result.snapshotImageUrl} alt="최종 가상 피팅 결과" className="max-h-[560px] w-full object-contain" />
+                  <>
+                    <img
+                      src={result.snapshotImageUrl}
+                      alt="최종 가상 피팅 결과"
+                      className="max-h-[560px] w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsFittingImagePreviewOpen(true)}
+                      className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/80 bg-slate-950/75 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-slate-950"
+                      aria-label="최종 가상 피팅 결과 크게 보기"
+                    >
+                      <TierMakerIcon name="focus" size={18} />
+                    </button>
+                  </>
                 ) : (
                   <div className="flex aspect-[3/4] items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
                     저장된 가상 피팅 결과 이미지가 없습니다.
                   </div>
                 )}
               </div>
-              {Array.isArray(result?.fitSummary) && result.fitSummary.length > 0 && (
-                <ul className="mt-4 space-y-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
-                  {result.fitSummary.map((summary, index) => <li key={`${summary}-${index}`}>• {summary}</li>)}
-                </ul>
+              {Array.isArray(result?.fitSummary) &&
+                result.fitSummary.length > 0 && (
+                  <ul className="mt-4 space-y-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
+                    {result.fitSummary.map((summary, index) => (
+                      <li key={`${summary}-${index}`}>• {summary}</li>
+                    ))}
+                  </ul>
+                )}
+              {result?.disclaimer && (
+                <p className="mt-3 text-[11px] leading-5 text-slate-400">
+                  {result.disclaimer}
+                </p>
               )}
-              {result?.disclaimer && <p className="mt-3 text-[11px] leading-5 text-slate-400">{result.disclaimer}</p>}
             </div>
           </motion.aside>
 
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              delay: 0.1,
+              duration: 0.38,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="min-w-0 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
@@ -237,19 +301,28 @@ export default function TierMakerResultPage() {
                   </svg>
                 </span>
                 <div>
-                <h2 className="font-black text-slate-900">오늘의 티어</h2>
-                <p className="mt-1 text-xs text-slate-500">최종 확정된 의상 배치입니다.</p>
+                  <h2 className="font-black text-slate-900">티어메이커</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    최종 확정된 의상 티어메이커 결과입니다.
+                  </p>
                 </div>
               </div>
-              <span className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">총 {result?.topItems?.length ?? 0}개</span>
+              <span className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">
+                총 {result?.topItems?.length ?? 0}개
+              </span>
             </div>
 
             <div className="p-4">
               {tierGroups.length > 0 ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200">
                   {tierGroups.map((tier, tierIndex) => (
-                    <div key={tier.tierId ?? tier.tierName} className="flex min-h-[148px] border-b border-slate-200 bg-slate-50/60 last:border-b-0">
-                      <div className={`flex w-28 shrink-0 items-center justify-center px-3 text-center text-base font-black leading-5 sm:w-32 ${TIER_STYLES[tierIndex % TIER_STYLES.length]}`}>
+                    <div
+                      key={tier.tierId ?? tier.tierName}
+                      className="flex min-h-[148px] border-b border-slate-200 bg-slate-50/60 last:border-b-0"
+                    >
+                      <div
+                        className={`flex w-28 shrink-0 items-center justify-center px-3 text-center text-base font-black leading-5 sm:w-32 ${TIER_STYLES[tierIndex % TIER_STYLES.length]}`}
+                      >
                         <span className="break-all">{tier.tierName}</span>
                       </div>
                       <div className="grid min-w-0 flex-1 grid-cols-3 content-center gap-2 p-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
@@ -258,13 +331,28 @@ export default function TierMakerResultPage() {
                             key={item.roomItemId ?? item.productId}
                             initial={{ opacity: 0, y: 6, scale: 0.97 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ delay: Math.min((tierIndex * 3 + itemIndex) * 0.025, 0.28), duration: 0.24 }}
+                            transition={{
+                              delay: Math.min(
+                                (tierIndex * 3 + itemIndex) * 0.025,
+                                0.28,
+                              ),
+                              duration: 0.24,
+                            }}
                             whileHover={{ y: -3, rotate: 0.35 }}
                             className="group relative mx-auto aspect-square w-full max-w-[118px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-violet-300 hover:shadow-md"
                           >
-                            <ClothingArtwork item={item} className="size-full" />
-                            <span className="absolute left-1.5 top-1.5 rounded-full bg-slate-950/90 px-2 py-0.5 text-[9px] font-black text-white shadow-sm">{item.rank}위</span>
-                            <ClothingDetailButton item={item} onViewDetails={setSelectedItem} className="inset-x-2 bottom-2" />
+                            <ClothingArtwork
+                              item={item}
+                              className="size-full"
+                            />
+                            <span className="absolute left-1.5 top-1.5 rounded-full bg-slate-950/90 px-2 py-0.5 text-[9px] font-black text-white shadow-sm">
+                              {item.rank}위
+                            </span>
+                            <ClothingDetailButton
+                              item={item}
+                              onViewDetails={setSelectedItem}
+                              className="inset-x-2 bottom-2"
+                            />
                           </motion.article>
                         ))}
                       </div>
@@ -282,8 +370,19 @@ export default function TierMakerResultPage() {
       </div>
 
       <AnimatePresence>
-        {selectedItem && <ResultProductDetailModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
+        {selectedItem && (
+          <ResultProductDetailModal
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+          />
+        )}
       </AnimatePresence>
+      <FittingImagePreviewModal
+        isOpen={isFittingImagePreviewOpen}
+        imageUrl={result?.snapshotImageUrl}
+        imageAlt="최종 가상 피팅 결과"
+        onClose={() => setIsFittingImagePreviewOpen(false)}
+      />
     </main>
   );
 }

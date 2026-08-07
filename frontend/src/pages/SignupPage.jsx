@@ -64,7 +64,7 @@ export default function SignupPage() {
 
     // 정규식 (유효성 검사)
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*?_]).{8,}$/;
-    const nicknameRegex = /^[a-zA-Z가-힣0-9]{2,12}$/; // 특수문자 제외 2~12자
+    const nicknameRegex = /^[a-zA-Z가-힣0-9]{2,20}$/; // 특수문자 제외 2~20자
 
     // ⭐️ 수정됨: React-Query 회원가입 요청 (최신 API 명세서 반영)
     const { mutate, isPending } = useMutation({
@@ -117,7 +117,7 @@ export default function SignupPage() {
             return;
         }
         if (!nicknameRegex.test(nickname)) {
-            toast.warning("닉네임은 특수문자를 제외한 2~12글자로 입력해주세요.");
+            toast.warning("닉네임은 특수문자를 제외한 2~20글자로 입력해주세요.");
             return;
         }
         if (!agreements.terms || !agreements.privacy) {
@@ -142,146 +142,115 @@ export default function SignupPage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                className="relative grid w-[1100px] grid-cols-[340px_1fr] overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)]"
+                className="relative w-[610px] overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)]"
             >
-                <section className="relative flex flex-col overflow-hidden bg-[#253129] p-10 text-white">
-                    <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full border border-white/10" />
-                    <h1 className="relative text-[32px] font-semibold leading-[1.2] tracking-[-0.04em]">
-                        간단한 정보로
-                        <br />gordi를 시작해요.
-                    </h1>
-                    <p className="relative mt-4 text-sm leading-6 text-white/58">입력한 정보는 더 잘 맞는 추천과<br />안전한 서비스 제공에 사용돼요.</p>
-
-                    <div className="relative mt-12 space-y-3">
-                        {[
-                            ["01", "계정 정보", "이메일과 닉네임 입력"],
-                            ["02", "약관 확인", "필수 약관 동의"],
-                            ["03", "가입 완료", "나만의 취향 설정 시작"],
-                        ].map(([number, title, description], index) => (
-                            <motion.div
-                                key={number}
-                                initial={{ opacity: 0, x: -12 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.22 + index * 0.08, duration: 0.42 }}
-                                className={`flex gap-3 rounded-2xl border p-3.5 ${index === 0 ? "border-emerald-300/30 bg-emerald-300/10" : "border-white/10 bg-white/[0.05]"}`}
-                            >
-                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-black ${index === 0 ? "bg-emerald-200 text-[#253129]" : "bg-white/10 text-white/45"}`}>{number}</span>
-                                <span>
-                                    <strong className={`block text-xs font-semibold ${index === 0 ? "text-white" : "text-white/58"}`}>{title}</strong>
-                                    <span className="mt-1 block text-[11px] text-white/38">{description}</span>
-                                </span>
-                            </motion.div>
-                        ))}
+                <section className="flex flex-col justify-center px-14 py-12">
+                    <div className="mb-8">
+                        <h2 className="text-[30px] font-semibold tracking-[-0.035em] text-slate-950">이메일로 회원가입</h2>
+                        <p className="mt-2 text-sm text-slate-500">계정에 사용할 정보를 순서대로 입력해 주세요.</p>
                     </div>
 
-                    <p className="relative mt-auto pt-12 text-[11px] leading-5 text-white/35">계정 정보는 보호되며<br />서비스 운영 목적으로만 사용됩니다.</p>
-                </section>
-
-                <section className="px-12 py-10">
-                    <div className="mb-7 flex items-end justify-between">
+                    <form onSubmit={handleSubmit} autoComplete="on" className="space-y-4">
                         <div>
-                            <h2 className="text-[28px] font-semibold tracking-[-0.035em] text-slate-950">이메일로 시작하기</h2>
-                        </div>
-                        <Link to="/signup" className="text-xs font-semibold text-slate-400 transition-colors hover:text-slate-700">가입 방법 바꾸기</Link>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="rounded-[24px] border border-slate-200 bg-slate-50/65 p-5">
-                            <div className="mb-4 flex items-center gap-2">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#253129] text-[10px] font-black text-white">01</span>
-                                <h3 className="text-xs font-bold text-slate-700">계정 정보</h3>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                                <div>
-                                    <label className="mb-2 block text-xs font-semibold text-slate-600">이메일</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="user@example.com"
-                                        required
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
-                                    />
-                                    <p className="mt-1.5 text-[10px] text-slate-400">로그인에 사용됩니다</p>
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-xs font-semibold text-slate-600">닉네임</label>
-                                    <input
-                                        type="text"
-                                        value={nickname}
-                                        onChange={(e) => setNickname(e.target.value)}
-                                        placeholder="앱에서 사용되는 이름"
-                                        required
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
-                                    />
-                                    <p className="mt-1.5 text-[10px] text-slate-400">2~12글자, 특수문자 제외</p>
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-xs font-semibold text-slate-600">비밀번호</label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
-                                        required
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
-                                    />
-                                    <p className="mt-1.5 text-[10px] text-slate-400">영문+숫자+특수문자 8자리 이상</p>
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-xs font-semibold text-slate-600">비밀번호 확인</label>
-                                    <input
-                                        type="password"
-                                        value={passwordConfirm}
-                                        onChange={(e) => setPasswordConfirm(e.target.value)}
-                                        placeholder="••••••••"
-                                        required
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
-                                    />
-                                </div>
-                            </div>
+                            <label htmlFor="signup-email" className="mb-2 block text-xs font-semibold text-slate-600">이메일</label>
+                            <input
+                                id="signup-email"
+                                type="email"
+                                name="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
+                                inputMode="email"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                placeholder="user@example.com"
+                                required
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
                         </div>
 
-                        <div className="rounded-[24px] border border-slate-200 bg-white p-5">
-                            <div className="mb-4 flex items-center gap-2">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-[10px] font-black text-violet-700">02</span>
-                                <h3 className="text-xs font-bold text-slate-700">약관 동의</h3>
-                            </div>
+                        <div>
+                            <label htmlFor="signup-nickname" className="mb-2 block text-xs font-semibold text-slate-600">닉네임</label>
+                            <input
+                                id="signup-nickname"
+                                type="text"
+                                name="nickname"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                autoComplete="nickname"
+                                minLength={2}
+                                maxLength={20}
+                                placeholder="2~20글자, 특수문자 제외"
+                                required
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
+                        </div>
 
-                            <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                        <div>
+                            <label htmlFor="signup-password" className="mb-2 block text-xs font-semibold text-slate-600">비밀번호</label>
+                            <input
+                                id="signup-password"
+                                type="password"
+                                name="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                autoComplete="new-password"
+                                minLength={8}
+                                placeholder="영문, 숫자, 특수문자 포함 8자리 이상"
+                                required
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="signup-password-confirm" className="mb-2 block text-xs font-semibold text-slate-600">비밀번호 확인</label>
+                            <input
+                                id="signup-password-confirm"
+                                type="password"
+                                name="passwordConfirm"
+                                value={passwordConfirm}
+                                onChange={(e) => setPasswordConfirm(e.target.value)}
+                                autoComplete="new-password"
+                                minLength={8}
+                                placeholder="비밀번호를 다시 입력해 주세요"
+                                required
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            />
+                        </div>
+
+                        <div className="pt-2">
+                            <span className="text-xs font-semibold text-slate-600">약관 동의</span>
+
+                            <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
                                 <input type="checkbox" checked={isAllChecked} onChange={handleAllCheck} className="h-4 w-4 accent-[#253129]" />
                                 <span className="text-sm font-bold text-slate-800">전체 동의</span>
                                 <span className="ml-auto text-[10px] text-slate-400">선택 항목 포함</span>
                             </label>
 
-                            <div className="mt-3 space-y-1">
-                                <label className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors hover:bg-slate-50">
-                                    <div className="flex items-center gap-3">
+                            <div className="mt-2 divide-y divide-slate-100 px-2">
+                                <div className="flex items-center justify-between py-2.5 text-xs">
+                                    <label className="flex cursor-pointer items-center gap-3">
                                         <input type="checkbox" name="terms" checked={agreements.terms} onChange={handleSingleCheck} className="h-4 w-4 accent-[#253129]" />
                                         <span className="text-slate-600">[필수] 이용약관</span>
-                                    </div>
-                                    <button type="button" onClick={() => openModal("이용약관", TERMS_TEXT)} className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800">보기</button>
-                                </label>
+                                    </label>
+                                    <button type="button" onClick={() => openModal("이용약관", TERMS_TEXT)} className="font-semibold text-slate-400 transition-colors hover:text-slate-700">보기</button>
+                                </div>
 
-                                <label className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors hover:bg-slate-50">
-                                    <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-between py-2.5 text-xs">
+                                    <label className="flex cursor-pointer items-center gap-3">
                                         <input type="checkbox" name="privacy" checked={agreements.privacy} onChange={handleSingleCheck} className="h-4 w-4 accent-[#253129]" />
                                         <span className="text-slate-600">[필수] 개인정보 처리방침</span>
-                                    </div>
-                                    <button type="button" onClick={() => openModal("개인정보 처리방침", PRIVACY_TEXT)} className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800">보기</button>
-                                </label>
+                                    </label>
+                                    <button type="button" onClick={() => openModal("개인정보 처리방침", PRIVACY_TEXT)} className="font-semibold text-slate-400 transition-colors hover:text-slate-700">보기</button>
+                                </div>
 
-                                <label className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors hover:bg-slate-50">
-                                    <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-between py-2.5 text-xs">
+                                    <label className="flex cursor-pointer items-center gap-3">
                                         <input type="checkbox" name="marketing" checked={agreements.marketing} onChange={handleSingleCheck} className="h-4 w-4 accent-[#253129]" />
                                         <span className="text-slate-600">[선택] 마케팅 정보 수신 동의</span>
-                                    </div>
-                                    <button type="button" onClick={() => openModal("마케팅 정보 수신 동의", MARKETING_TEXT)} className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800">보기</button>
-                                </label>
+                                    </label>
+                                    <button type="button" onClick={() => openModal("마케팅 정보 수신 동의", MARKETING_TEXT)} className="font-semibold text-slate-400 transition-colors hover:text-slate-700">보기</button>
+                                </div>
                             </div>
                         </div>
 

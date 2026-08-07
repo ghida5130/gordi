@@ -169,6 +169,7 @@ const BOARD_MIN_HEIGHT = 720;
 const DEFAULT_TIER_COLUMN_LEFT = 280;
 const DEFAULT_TIER_COLUMN_WIDTH = 940;
 const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
+const LOCAL_CURSOR_HIDE_DELAY_MS = 40;
 
 const compareRoomItemId = (left, right) =>
   Number(left.roomItemId) - Number(right.roomItemId);
@@ -196,6 +197,9 @@ function TierMakerRoomPage() {
   const toast = useToast();
   const sharedBoardRef = useRef(null);
   const boardViewportRef = useRef(null);
+  const lastBoardPointerRef = useRef(null);
+  const cursorScrollFrameRef = useRef(null);
+  const cursorHideTimerRef = useRef(null);
   const cursorAnchorRegistryRef = useRef(new Map());
   const completedDropItemIdsRef = useRef(new Set());
   const processedItemRemovalEventIdsRef = useRef(new Set());
@@ -223,7 +227,26 @@ function TierMakerRoomPage() {
   }, []);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
+  const handleCopyRoomCode = async () => {
+    const roomCode = String(roomSession?.roomCode ?? "").trim();
+
+    if (!roomCode) {
+      toast.warning("복사할 방 코드가 없습니다.");
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+
+      await navigator.clipboard.writeText(roomCode);
+      toast.success("방 코드를 복사했습니다.");
+    } catch {
+      toast.error("방 코드를 복사하지 못했습니다.");
+    }
+  };
   const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const moveRoomCursor = roomEvents.moveCursor;
+  const hideRoomCursor = roomEvents.hideCursor;
   const applyRoomStatus = roomEvents.applyRoomStatus;
   const requestRoomSync = roomEvents.requestSync;
   const roomStatusQuery = useQuery({
@@ -375,7 +398,12 @@ function TierMakerRoomPage() {
     .filter((item) => !tieredItemIds.has(item.id))
     .sort(compareRoomItemId);
   const fittingOnlyClothes = clothes
-    .filter((item) => !tierEligibleItemIds.has(item.id))
+    .filter(
+      (item) =>
+        !tierEligibleItemIds.has(item.id) &&
+        item.slot !== "SHOES" &&
+        item.slot !== "OUTER",
+    )
     .sort(compareRoomItemId);
   const candidates = roomEvents.fittingCandidates
     .map((candidate) => clothesById[String(candidate.roomItemId)])
@@ -386,6 +414,20 @@ function TierMakerRoomPage() {
       : null;
   const hasOuterCandidate = candidates.some(isOuterItem);
   const isHost = roomSession?.role === "HOST";
+  const roomStatusParticipants = Array.isArray(
+    roomStatusQuery.data?.data?.participants,
+  )
+    ? roomStatusQuery.data.data.participants
+    : [];
+  const hostNickname = isHost
+    ? roomSession?.nickname
+    : roomStatusParticipants.find(
+        (participant) => participant.role === "HOST",
+      )?.nickname;
+  const normalizedHostNickname = String(hostNickname ?? "").trim();
+  const roomTitle = normalizedHostNickname
+    ? `${normalizedHostNickname}님의 방`
+    : "고르디의 방";
   const isBoardReady =
     roomEvents.hasSnapshot &&
     !roomStatusQuery.isPending &&
@@ -1074,42 +1116,116 @@ function TierMakerRoomPage() {
     [isTierFocusMode],
   );
 
-  const handleBoardPointerMove = (event) => {
+  const updateBoardCursorAtPoint = useCallback((clientX, clientY, target) => {
     const board = sharedBoardRef.current;
 
-    if (!board) return;
+    if (!board || !target || !board.contains(target)) return false;
 
     const bounds = board.getBoundingClientRect();
 
-    if (bounds.width === 0 || bounds.height === 0) return;
+    if (bounds.width === 0 || bounds.height === 0) return false;
 
-    const rawX = (event.clientX - bounds.left) / bounds.width;
-    const rawY = (event.clientY - bounds.top) / bounds.height;
+    const rawX = (clientX - bounds.left) / bounds.width;
+    const rawY = (clientY - bounds.top) / bounds.height;
     const anchor = findTierMakerCursorAnchor({
-      target: event.target,
+      target,
       boardElement: board,
       registry: cursorAnchorRegistryRef.current,
     });
 
     if (!anchor) {
-      roomEvents.moveCursor({ x: rawX, y: rawY });
-      return;
+      return moveRoomCursor({ x: rawX, y: rawY });
     }
 
     const anchorBounds = anchor.anchorElement.getBoundingClientRect();
 
-    if (anchorBounds.width === 0 || anchorBounds.height === 0) return;
+    if (anchorBounds.width === 0 || anchorBounds.height === 0) return false;
 
-    roomEvents.moveCursor(
+    return moveRoomCursor(
       encodeTierMakerCursor({
         rawX,
         rawY,
-        localX: (event.clientX - anchorBounds.left) / anchorBounds.width,
-        localY: (event.clientY - anchorBounds.top) / anchorBounds.height,
+        localX: (clientX - anchorBounds.left) / anchorBounds.width,
+        localY: (clientY - anchorBounds.top) / anchorBounds.height,
         anchorKey: anchor.anchorKey,
       }),
     );
+  }, [moveRoomCursor]);
+
+  const handleBoardPointerMove = (event) => {
+    if (cursorHideTimerRef.current !== null) {
+      window.clearTimeout(cursorHideTimerRef.current);
+      cursorHideTimerRef.current = null;
+    }
+
+    lastBoardPointerRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
+    updateBoardCursorAtPoint(event.clientX, event.clientY, event.target);
   };
+
+  const handleBoardPointerLeave = () => {
+    lastBoardPointerRef.current = null;
+
+    if (cursorHideTimerRef.current !== null) {
+      window.clearTimeout(cursorHideTimerRef.current);
+    }
+
+    cursorHideTimerRef.current = window.setTimeout(() => {
+      cursorHideTimerRef.current = null;
+      hideRoomCursor();
+    }, LOCAL_CURSOR_HIDE_DELAY_MS);
+  };
+
+  useEffect(() => {
+    const refreshCursorAfterScroll = () => {
+      if (
+        lastBoardPointerRef.current === null ||
+        cursorScrollFrameRef.current !== null
+      ) {
+        return;
+      }
+
+      cursorScrollFrameRef.current = window.requestAnimationFrame(() => {
+        cursorScrollFrameRef.current = null;
+
+        const pointer = lastBoardPointerRef.current;
+
+        if (!pointer) return;
+
+        const target = document.elementFromPoint(
+          pointer.clientX,
+          pointer.clientY,
+        );
+
+        updateBoardCursorAtPoint(
+          pointer.clientX,
+          pointer.clientY,
+          target,
+        );
+      });
+    };
+
+    window.addEventListener("scroll", refreshCursorAfterScroll, {
+      capture: true,
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", refreshCursorAfterScroll, true);
+
+      if (cursorScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(cursorScrollFrameRef.current);
+        cursorScrollFrameRef.current = null;
+      }
+
+      if (cursorHideTimerRef.current !== null) {
+        window.clearTimeout(cursorHideTimerRef.current);
+        cursorHideTimerRef.current = null;
+      }
+    };
+  }, [updateBoardCursorAtPoint]);
 
   if (!isCurrentRoom) {
     return (
@@ -1131,7 +1247,7 @@ function TierMakerRoomPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 pb-28">
       <header className="pt-5">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -1148,7 +1264,7 @@ function TierMakerRoomPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="truncate text-base font-black tracking-tight text-slate-900 sm:text-lg">
-                    {roomSession.roomCode ?? roomId} Room
+                    {roomTitle}
                   </h1>
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
@@ -1170,9 +1286,33 @@ function TierMakerRoomPage() {
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">
-                    v{roomEvents.version}
+                  <span className="font-semibold text-slate-500">
+                    방 코드 {roomSession.roomCode ?? "-"}
                   </span>
+                  {roomSession.roomCode && (
+                    <button
+                      type="button"
+                      onClick={handleCopyRoomCode}
+                      className="inline-flex items-center gap-1 font-semibold text-slate-400 transition-colors hover:text-slate-700"
+                      aria-label="방 코드 복사"
+                      title="방 코드 복사"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-3.5"
+                        aria-hidden="true"
+                      >
+                        <rect width="14" height="14" x="8" y="8" rx="2" />
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                      </svg>
+                      복사
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1267,7 +1407,9 @@ function TierMakerRoomPage() {
                 <motion.div
                   ref={sharedBoardRef}
                   data-tier-maker-cursor-anchor="board-root"
+                  onPointerEnter={handleBoardPointerMove}
                   onPointerMove={handleBoardPointerMove}
+                  onPointerLeave={handleBoardPointerLeave}
                   onDragOverCapture={(event) => {
                     event.preventDefault();
                     handleBoardPointerMove(event);
@@ -1389,6 +1531,7 @@ function TierMakerRoomPage() {
                   >
                     <ClothingCatalog
                       clothes={fittingOnlyClothes}
+                      excludedCategory={normalizedRoomCategory}
                       itemLocks={roomEvents.itemLocks}
                       currentParticipantId={roomSession.participantId}
                       onDragStart={handleDragStart}
