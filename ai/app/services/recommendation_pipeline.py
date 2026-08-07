@@ -199,5 +199,40 @@ def get_recommendation_pipeline() -> RecommendationPipeline:
             settings.recommendation_vlm_rerank_concurrency
         ),
         reason_generator=reason_generator,
+        rerank_mode=settings.recommendation_vlm_rerank_mode,
+        index_version=index.snapshot_sha256,
+    )
+
+
+@lru_cache
+def get_ab_pipeline(rerank_enabled: bool) -> RecommendationPipeline:
+    """VLM opt-in A/B 데모용 파이프라인 쌍.
+
+    로컬 env 플래그와 무관하게 rerank 유무만 다른 두 인스턴스를
+    만든다 — ON 팔은 VLM 런타임이 없으면 명시적으로 실패해야
+    비교가 성립한다 (조용한 강등 금지).
+    """
+    settings = get_settings()
+    try:
+        index = get_catalog_index()
+        provider = get_embedding_provider()
+        retriever = CandidateRetriever(index, provider)
+    except (
+        CatalogEmbeddingError,
+        VectorIndexError,
+    ) as exc:
+        raise RecommendationRuntimeError(str(exc)) from exc
+    return RecommendationPipeline(
+        retriever,
+        pairwise_reranker=(
+            get_pairwise_reranker() if rerank_enabled else None
+        ),
+        rerank_top_k=settings.recommendation_vlm_rerank_top_k,
+        rerank_concurrency=(
+            settings.recommendation_vlm_rerank_concurrency
+        ),
+        # A/B 비교 팔은 게이트를 태우지 않는다 — ON 팔이 조용히
+        # 스킵되면 비교 자체가 오염된다.
+        rerank_mode="always",
         index_version=index.snapshot_sha256,
     )

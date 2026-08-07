@@ -25,6 +25,41 @@ DEFAULT_RERANK_TOP_K = 20
 MAX_RERANK_TOP_K = 50
 DEFAULT_RERANK_CONCURRENCY = 8
 MAX_RERANK_CONCURRENCY = 32
+RERANK_MODES = ("always", "selective")
+
+# 리랭크가 무가치했던 국면의 스킵 사전 v1 — A/B 라운드(6명×12쿼리)
+# 실측 근거와 한계는 docs/2026-08-06_vlm_rerank_selective_gating.md.
+# 격식 행사(TPO 태그 임베딩이 이미 흡수)와 데일리(무난하면 정답)만
+# 좁게 시작한다. 소개팅·페스티벌은 단일 관측이라 제외(감시 항목).
+_RERANK_SKIP_KEYWORDS = (
+    "면접",
+    "정장",
+    "결혼식",
+    "하객",
+    "매일",
+    "데일리",
+    "일상",
+    "등교",
+    "통학",
+    "학교",
+)
+
+
+def should_skip_vlm_rerank(
+    query_text: str | None,
+    *,
+    has_image: bool,
+) -> bool:
+    """selective 모드에서 리랭크를 스킵할 질의인지 판정한다.
+
+    이미지 쿼리는 그 자체가 심미 맥락 신호라 항상 리랭크한다.
+    """
+    if has_image:
+        return False
+    text = (query_text or "").casefold()
+    if not text:
+        return False
+    return any(keyword in text for keyword in _RERANK_SKIP_KEYWORDS)
 
 _COLOR_KEYWORDS = {
     "BLACK": ("블랙", "검정", "검은", "black"),
@@ -374,8 +409,13 @@ class RecommendationPipeline:
         pairwise_reranker: PairwiseReranker | None = None,
         rerank_top_k: int = DEFAULT_RERANK_TOP_K,
         rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
+        rerank_mode: str = "always",
         index_version: str = "0" * 64,
     ) -> None:
+        if rerank_mode not in RERANK_MODES:
+            raise RecommendationPipelineError(
+                f"rerank_mode must be one of {RERANK_MODES}"
+            )
         if rerank_top_k < 1 or rerank_top_k > MAX_RERANK_TOP_K:
             raise RecommendationPipelineError(
                 f"rerank_top_k must be between 1 and {MAX_RERANK_TOP_K}"
@@ -407,6 +447,7 @@ class RecommendationPipeline:
         self._pairwise_reranker = pairwise_reranker
         self._rerank_top_k = rerank_top_k
         self._rerank_concurrency = rerank_concurrency
+        self._rerank_mode = rerank_mode
 
     def recommend(
         self,
@@ -506,7 +547,21 @@ class RecommendationPipeline:
             status="done",
             candidates=len(scored),
         )
-        if self._pairwise_reranker is not None:
+        if self._pairwise_reranker is None:
+            _notify(progress, "rerank", status="skipped")
+        elif self._rerank_mode == "selective" and should_skip_vlm_rerank(
+            intent.query_text,
+            has_image=image is not None,
+        ):
+            # 격식 행사·데일리 국면은 리랭크 무가치 실측에 따라 스킵
+            # (docs/2026-08-06_vlm_rerank_selective_gating.md).
+            _notify(
+                progress,
+                "rerank",
+                status="skipped",
+                reason="selective-gate",
+            )
+        else:
             scored = self._rerank_pairwise(
                 scored,
                 intent=intent,
@@ -514,8 +569,6 @@ class RecommendationPipeline:
                 mime_type=mime_type,
                 progress=progress,
             )
-        else:
-            _notify(progress, "rerank", status="skipped")
 
         _notify(
             progress,
