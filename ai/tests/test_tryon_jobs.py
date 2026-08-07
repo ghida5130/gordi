@@ -194,7 +194,12 @@ def test_processor_success_emits_processing_then_succeeded(
     assert "GARMENT ONLY #1" in texts
     assert "waist width 36.0cm" in texts
     assert "top tuck=FULL_TUCK" in texts
-    assert "자연광 느낌" in texts
+    # extra note 는 규칙에 종속된 스타일 힌트로만 전달된다
+    assert 'subordinate to the rules above): "자연광 느낌"' in texts
+    # 마지막 파트는 garment 사진이 아니라 재확인 지시문이어야 한다
+    last = generator.parts[-1]
+    assert last["type"] == "text"
+    assert "Final check" in last["text"]
 
 
 def test_processor_failure_emits_failed_event(
