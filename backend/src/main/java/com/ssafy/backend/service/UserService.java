@@ -71,6 +71,7 @@ public class UserService implements UserDetailsService {
     // 닉네임 수정
     @Transactional
     public void updateNickname(String nickname) {
+        String normalized = nickname.strip();
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
@@ -82,7 +83,7 @@ public class UserService implements UserDetailsService {
                         )
                 );
 
-        user.updateNickname(nickname);
+        user.updateNickname(normalized);
     }
 
     // 자체 유저 정보 조회
