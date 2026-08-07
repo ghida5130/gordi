@@ -137,6 +137,7 @@ public class ResultService {
                 item.getProduct().getBrand(),
                 item.getProduct().getPrice(),
                 imageUrlResolver.resolve(item.getProduct().getImageUrl()),
+                item.getProduct().getPurchaseUrl(),
                 item.getPosition(),
                 tier
         );

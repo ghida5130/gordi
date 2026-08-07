@@ -145,33 +145,39 @@ class ResultServiceTest {
                         RoomResultResponseDTO.TopItem::brand,
                         RoomResultResponseDTO.TopItem::price,
                         RoomResultResponseDTO.TopItem::imageUrl,
+                        RoomResultResponseDTO.TopItem::purchaseUrl,
                         RoomResultResponseDTO.TopItem::position,
                         RoomResultResponseDTO.TopItem::tier
                 )
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(
                                 1, 301L, 101L, "product-101", "brand", 10_000,
-                                "https://example.com/101.png", 1,
+                                "https://example.com/101.png",
+                                "https://example.com/buy/101", 1,
                                 new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 2, 302L, 102L, "product-102", "brand", 10_000,
-                                "https://example.com/102.png", 2,
+                                "https://example.com/102.png",
+                                "https://example.com/buy/102", 2,
                                 new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 3, 303L, 103L, "product-103", "brand", 10_000,
-                                "https://example.com/103.png", 3,
+                                "https://example.com/103.png",
+                                "https://example.com/buy/103", 3,
                                 new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 4, 304L, 104L, "product-104", "brand", 10_000,
-                                "https://example.com/104.png", 4,
+                                "https://example.com/104.png",
+                                "https://example.com/buy/104", 4,
                                 new RoomResultResponseDTO.TierInfo(1L, "S")
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 5, 305L, 105L, "product-105", "brand", 10_000,
-                                "https://example.com/105.png", 1,
+                                "https://example.com/105.png",
+                                "https://example.com/buy/105", 1,
                                 new RoomResultResponseDTO.TierInfo(2L, "A")
                         )
                 );
@@ -279,6 +285,7 @@ class ResultServiceTest {
                 .brand("brand")
                 .price(10_000)
                 .imageUrl("https://example.com/" + id + ".png")
+                .purchaseUrl("https://example.com/buy/" + id)
                 .build();
     }
 }

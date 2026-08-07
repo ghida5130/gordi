@@ -21,6 +21,7 @@ public record RoomResultResponseDTO(
             String brand,
             int price,
             String imageUrl,
+            String purchaseUrl,
             int position,
             TierInfo tier
     ) {
