@@ -12,3 +12,7 @@ api_router.include_router(
     recommendation_demo.tpo_api_router,
     tags=["tpo-eval"],
 )
+api_router.include_router(
+    recommendation_demo.vlm_ab_api_router,
+    tags=["vlm-ab-eval"],
+)

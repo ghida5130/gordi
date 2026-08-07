@@ -181,3 +181,33 @@ class TpoJudgmentSubmission(CamelCaseModel):
 
 class TpoJudgmentSaveResponse(CamelCaseModel):
     saved: int = Field(ge=0)
+
+
+class VlmAbRunRequest(CamelCaseModel):
+    query_id: str = Field(min_length=1)
+
+
+class VlmAbArm(CamelCaseModel):
+    label: str = Field(pattern="^(A|B)$")
+    results: list[DemoRecommendedProduct]
+
+
+class VlmAbRunResponse(CamelCaseModel):
+    schema_version: str
+    query_id: str
+    index_version: str = Field(min_length=64, max_length=64)
+    arms: list[VlmAbArm] = Field(min_length=2, max_length=2)
+    # UI 는 이 매핑을 표시하지 않는다(블라인드) — 판정 저장 시
+    # 선호 라벨을 variant 로 해석하는 데만 쓴다.
+    assignment: dict[str, str]
+    latency_on_ms: int = Field(ge=0)
+    latency_off_ms: int = Field(ge=0)
+
+
+class VlmAbJudgmentSubmission(CamelCaseModel):
+    evaluator: str = Field(min_length=1, max_length=40)
+    query_id: str = Field(min_length=1)
+    preferred: str = Field(pattern="^(VLM_ON|VLM_OFF|TIE)$")
+    index_version: str = Field(min_length=64, max_length=64)
+    latency_on_ms: int = Field(ge=0)
+    latency_off_ms: int = Field(ge=0)

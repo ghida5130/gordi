@@ -84,10 +84,9 @@ function ProductDetailModal({ productId, roomToken, onClose }) {
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
           <div>
-            <p className="text-xs font-bold text-violet-600">PRODUCT DETAIL</p>
             <h2
               id="tier-maker-product-detail-title"
-              className="mt-1 text-xl font-black text-slate-950"
+              className="text-xl font-black text-slate-950"
             >
               상품 상세정보
             </h2>

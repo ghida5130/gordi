@@ -125,6 +125,7 @@
 
     html {
         @apply bg-gray-50 font-sans text-slate-900 antialiased;
+        scrollbar-gutter: stable;
     }
 
     body {
@@ -160,6 +161,12 @@
     body .tier-maker-cursor-surface,
     body .tier-maker-cursor-surface * {
         cursor: none !important;
+    }
+}
+
+@supports not (scrollbar-gutter: stable) {
+    html {
+        overflow-y: scroll;
     }
 }
 

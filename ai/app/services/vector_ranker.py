@@ -28,6 +28,7 @@ from app.recommendation.pipeline import (
     RecommendationIntent,
     RuleBasedCompatibilityModel,
     parse_recommendation_intent,
+    should_skip_vlm_rerank,
 )
 from app.recommendation.vlm_reranker import PairwiseCompatibilityModel
 from app.recommendation.vector_index import (
@@ -79,6 +80,7 @@ class VectorRecommendationRanker:
         reranker: PairwiseCompatibilityModel | None = None,
         rerank_top_k: int = DEFAULT_RERANK_TOP_K,
         rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
+        rerank_mode: str = "always",
     ) -> None:
         self._index = index
         self._provider = provider
@@ -88,6 +90,7 @@ class VectorRecommendationRanker:
         self._reranker = reranker
         self._rerank_top_k = rerank_top_k
         self._rerank_concurrency = rerank_concurrency
+        self._rerank_mode = rerank_mode
 
     def rank(
         self,
@@ -185,7 +188,10 @@ class VectorRecommendationRanker:
                 item[2].product_id,
             )
         )
-        if self._reranker is not None:
+        if self._reranker is not None and not (
+            self._rerank_mode == "selective"
+            and should_skip_vlm_rerank(query_text, has_image=False)
+        ):
             scored = self._rerank_pairwise(scored, intent)
         return [
             RankedProduct(

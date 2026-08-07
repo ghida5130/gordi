@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import secrets
+import time
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,6 +47,12 @@ from app.recommendation.tpo_eval import (
     load_tpo_queries,
     summarize_judgments,
 )
+from app.recommendation.vlm_ab_eval import (
+    VlmAbJudgment,
+    append_judgment as append_ab_judgment,
+    load_judgments as load_ab_judgments,
+    summarize_judgments as summarize_ab_judgments,
+)
 from app.schemas.recommendation import (
     DemoRecommendationResponse,
     DemoRecommendedProduct,
@@ -52,6 +60,14 @@ from app.schemas.recommendation import (
     TpoJudgmentSubmission,
     TpoQueriesResponse,
     TpoQueryItem,
+    VlmAbArm,
+    VlmAbJudgmentSubmission,
+    VlmAbRunRequest,
+    VlmAbRunResponse,
+)
+from app.services.recommendation_pipeline import (
+    RecommendationRuntimeError,
+    get_ab_pipeline,
 )
 
 _DEMO_HTML_PATH = (
@@ -76,6 +92,15 @@ api_router = APIRouter(
 tpo_api_router = APIRouter(
     prefix="/demo/tpo-eval",
     dependencies=[Depends(require_recommendation_demo)],
+)
+vlm_ab_api_router = APIRouter(
+    prefix="/demo/vlm-ab",
+    dependencies=[Depends(require_recommendation_demo)],
+)
+_VLM_AB_HTML_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "static"
+    / "vlm_ab_demo.html"
 )
 
 
@@ -255,6 +280,34 @@ async def _parse_demo_request(
     }
 
 
+def _demo_products(
+    results: list[Any],
+    settings: Settings,
+) -> list[DemoRecommendedProduct]:
+    return [
+        DemoRecommendedProduct(
+            product_id=result.product_id,
+            rank=result.rank,
+            score=round(result.score, 6),
+            retrieval_score=round(result.retrieval_score, 6),
+            compatibility_score=round(
+                result.compatibility_score,
+                6,
+            ),
+            reason=result.reason,
+            name=str(result.product["name"]),
+            brand=str(result.product["brand"]),
+            price=int(result.product["price"]),
+            currency=str(result.product["currency"]),
+            category=str(result.product["category"]),
+            subcategory=str(result.product["subcategory"]),
+            image_url=_demo_image_url(result.product, settings),
+            purchase_url=str(result.product["purchase_url"]),
+        )
+        for result in results
+    ]
+
+
 def _build_demo_response(
     results: list[Any],
     *,
@@ -266,28 +319,7 @@ def _build_demo_response(
         schema_version="1.0",
         index_version=pipeline.index_version,
         candidate_limit=candidate_limit,
-        results=[
-            DemoRecommendedProduct(
-                product_id=result.product_id,
-                rank=result.rank,
-                score=round(result.score, 6),
-                retrieval_score=round(result.retrieval_score, 6),
-                compatibility_score=round(
-                    result.compatibility_score,
-                    6,
-                ),
-                reason=result.reason,
-                name=str(result.product["name"]),
-                brand=str(result.product["brand"]),
-                price=int(result.product["price"]),
-                currency=str(result.product["currency"]),
-                category=str(result.product["category"]),
-                subcategory=str(result.product["subcategory"]),
-                image_url=_demo_image_url(result.product, settings),
-                purchase_url=str(result.product["purchase_url"]),
-            )
-            for result in results
-        ],
+        results=_demo_products(results, settings),
     )
 
 
@@ -536,6 +568,211 @@ def tpo_eval_summary(
             detail=str(exc),
         ) from exc
     return summarize_judgments(judgments, queries)
+
+
+@page_router.get(
+    "/vlm-ab",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+def vlm_ab_page() -> HTMLResponse:
+    try:
+        html = _VLM_AB_HTML_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"demo asset unavailable: {exc}",
+        ) from exc
+    return HTMLResponse(html)
+
+
+@vlm_ab_api_router.get(
+    "/queries",
+    response_model=TpoQueriesResponse,
+    summary="VLM A/B 평가 쿼리셋 조회",
+)
+def vlm_ab_queries(
+    settings: Settings = Depends(get_settings),
+) -> TpoQueriesResponse:
+    try:
+        queries = load_tpo_queries(settings.vlm_ab_queries_path)
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return TpoQueriesResponse(
+        schema_version="recommendation-tpo-eval-v1",
+        queries=[
+            TpoQueryItem(
+                query_id=query.query_id,
+                text=query.text,
+                moods=list(query.moods),
+                gender=str(query.filters.get("gender")),
+                category=query.filters.get("category"),
+                subcategory=query.filters.get("subcategory"),
+                budget_min=int(query.filters.get("budget_min") or 0),
+                budget_max=query.filters.get("budget_max"),
+            )
+            for query in queries
+        ],
+    )
+
+
+@vlm_ab_api_router.post(
+    "/run",
+    response_model=VlmAbRunResponse,
+    summary="같은 쿼리를 VLM rerank on/off 로 실행해 블라인드 쌍 반환",
+)
+async def vlm_ab_run(
+    request: VlmAbRunRequest,
+    settings: Settings = Depends(get_settings),
+) -> VlmAbRunResponse:
+    try:
+        queries = load_tpo_queries(settings.vlm_ab_queries_path)
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    query = next(
+        (q for q in queries if q.query_id == request.query_id),
+        None,
+    )
+    if query is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"unknown queryId {request.query_id!r}",
+        )
+    try:
+        pipeline_on = get_ab_pipeline(True)
+        pipeline_off = get_ab_pipeline(False)
+    except RecommendationRuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    filters = SearchFilters(
+        gender=str(query.filters.get("gender")),
+        category=query.filters.get("category"),
+        subcategory=query.filters.get("subcategory"),
+        budget_min=int(query.filters.get("budget_min") or 0),
+        budget_max=query.filters.get("budget_max"),
+    )
+
+    def run_arm(
+        pipeline: RecommendationPipeline,
+    ) -> tuple[list[Any], int]:
+        started = time.perf_counter()
+        results = pipeline.recommend(
+            text=query.text,
+            image=None,
+            mime_type=None,
+            filters=filters,
+        )
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        return results, elapsed_ms
+
+    try:
+        (results_on, latency_on), (results_off, latency_off) = (
+            await asyncio.gather(
+                run_in_threadpool(run_arm, pipeline_on),
+                run_in_threadpool(run_arm, pipeline_off),
+            )
+        )
+    except (RecommendationPipelineError, VectorIndexError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    on_first = secrets.choice((True, False))
+    arm_pairs = [
+        ("VLM_ON", results_on),
+        ("VLM_OFF", results_off),
+    ]
+    if not on_first:
+        arm_pairs.reverse()
+    labels = ("A", "B")
+    return VlmAbRunResponse(
+        schema_version="1.0",
+        query_id=query.query_id,
+        index_version=pipeline_on.index_version,
+        arms=[
+            VlmAbArm(
+                label=label,
+                results=_demo_products(results, settings),
+            )
+            for label, (_, results) in zip(labels, arm_pairs)
+        ],
+        assignment={
+            label: variant
+            for label, (variant, _) in zip(labels, arm_pairs)
+        },
+        latency_on_ms=latency_on,
+        latency_off_ms=latency_off,
+    )
+
+
+@vlm_ab_api_router.post(
+    "/judgments",
+    response_model=TpoJudgmentSaveResponse,
+    summary="VLM A/B 선호 판정 저장",
+)
+def vlm_ab_save_judgment(
+    submission: VlmAbJudgmentSubmission,
+    settings: Settings = Depends(get_settings),
+) -> TpoJudgmentSaveResponse:
+    try:
+        queries = load_tpo_queries(settings.vlm_ab_queries_path)
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    if submission.query_id not in {
+        query.query_id for query in queries
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"unknown queryId {submission.query_id!r}",
+        )
+    append_ab_judgment(
+        settings.vlm_ab_judgments_path,
+        VlmAbJudgment(
+            evaluator=submission.evaluator.strip(),
+            query_id=submission.query_id,
+            preferred=submission.preferred,
+            index_version=submission.index_version,
+            latency_on_ms=submission.latency_on_ms,
+            latency_off_ms=submission.latency_off_ms,
+            judged_at=datetime.now(timezone.utc).isoformat(),
+        ),
+    )
+    return TpoJudgmentSaveResponse(saved=1)
+
+
+@vlm_ab_api_router.get(
+    "/summary",
+    summary="VLM A/B 승률·지연 집계",
+)
+def vlm_ab_summary(
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    try:
+        queries = load_tpo_queries(settings.vlm_ab_queries_path)
+        judgments = load_ab_judgments(
+            settings.vlm_ab_judgments_path
+        )
+    except TpoEvalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    return summarize_ab_judgments(
+        judgments,
+        [query.query_id for query in queries],
+    )
 
 
 def _demo_image_url(

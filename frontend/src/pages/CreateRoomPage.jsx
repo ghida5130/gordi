@@ -61,10 +61,7 @@ function CreateRoomPage() {
             ← 방 선택으로 돌아가기
           </Link>
 
-          <p className="mt-8 text-sm font-semibold text-brand-600">
-            CREATE ROOM
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+          <h1 className="mt-8 text-3xl font-bold tracking-tight">
             새로운 방 만들기
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
