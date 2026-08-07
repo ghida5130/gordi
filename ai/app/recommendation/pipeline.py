@@ -6,7 +6,7 @@ import logging
 import re
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Protocol
 
@@ -25,10 +25,11 @@ DEFAULT_RERANK_TOP_K = 20
 MAX_RERANK_TOP_K = 50
 DEFAULT_RERANK_CONCURRENCY = 8
 MAX_RERANK_CONCURRENCY = 32
+DEFAULT_RERANK_DEADLINE_SECONDS = 30.0
 RERANK_MODES = ("always", "selective")
 
 # 리랭크가 무가치했던 국면의 스킵 사전 v1 — A/B 라운드(6명×12쿼리)
-# 실측 근거와 한계는 docs/2026-08-06_vlm_rerank_selective_gating.md.
+# 실측 근거와 한계는 docs/ai/2026-08-06_vlm_rerank_selective_gating.md.
 # 격식 행사(TPO 태그 임베딩이 이미 흡수)와 데일리(무난하면 정답)만
 # 좁게 시작한다. 소개팅·페스티벌은 단일 관측이라 제외(감시 항목).
 _RERANK_SKIP_KEYWORDS = (
@@ -410,11 +411,16 @@ class RecommendationPipeline:
         rerank_top_k: int = DEFAULT_RERANK_TOP_K,
         rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
         rerank_mode: str = "always",
+        rerank_deadline_seconds: float = DEFAULT_RERANK_DEADLINE_SECONDS,
         index_version: str = "0" * 64,
     ) -> None:
         if rerank_mode not in RERANK_MODES:
             raise RecommendationPipelineError(
                 f"rerank_mode must be one of {RERANK_MODES}"
+            )
+        if rerank_deadline_seconds <= 0:
+            raise RecommendationPipelineError(
+                "rerank_deadline_seconds must be positive"
             )
         if rerank_top_k < 1 or rerank_top_k > MAX_RERANK_TOP_K:
             raise RecommendationPipelineError(
@@ -448,6 +454,7 @@ class RecommendationPipeline:
         self._rerank_top_k = rerank_top_k
         self._rerank_concurrency = rerank_concurrency
         self._rerank_mode = rerank_mode
+        self._rerank_deadline_seconds = rerank_deadline_seconds
 
     def recommend(
         self,
@@ -554,7 +561,7 @@ class RecommendationPipeline:
             has_image=image is not None,
         ):
             # 격식 행사·데일리 국면은 리랭크 무가치 실측에 따라 스킵
-            # (docs/2026-08-06_vlm_rerank_selective_gating.md).
+            # (docs/ai/2026-08-06_vlm_rerank_selective_gating.md).
             _notify(
                 progress,
                 "rerank",
@@ -676,15 +683,48 @@ class RecommendationPipeline:
 
         workers = max(1, min(self._rerank_concurrency, top_k))
         started = time.perf_counter()
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            judged = list(executor.map(judge, scored[:top_k]))
-        failed = sum(1 for item in judged if item[4])
+        entries = scored[:top_k]
+        # 마감 초과 판정은 규칙 점수 유지(failed 취급)로 강등된다 —
+        # httpx read timeout 은 keepalive filler 앞에서 무력하므로
+        # 웨이브 전체에 wall-clock 마감을 강제한다
+        # (docs/ai/2026-08-07_vlm_rerank_hang_incident.md).
+        judged = [entry + (True,) for entry in entries]
+        failed = 0
+        executor = ThreadPoolExecutor(max_workers=workers)
+        try:
+            futures = {
+                executor.submit(judge, entry): position
+                for position, entry in enumerate(entries)
+            }
+            done, not_done = wait(
+                futures,
+                timeout=self._rerank_deadline_seconds,
+            )
+            for future in done:
+                outcome = future.result()
+                judged[futures[future]] = outcome
+                if outcome[4]:
+                    failed += 1
+            timed_out = len(not_done)
+            if timed_out:
+                _logger.warning(
+                    "pairwise rerank deadline (%.1fs) exceeded; "
+                    "keeping rule-based score for products %s",
+                    self._rerank_deadline_seconds,
+                    sorted(
+                        entries[futures[future]][2].product_id
+                        for future in not_done
+                    ),
+                )
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
         _logger.info(
             "pairwise rerank (/search): top_k=%d workers=%d "
-            "failed=%d elapsed=%.2fs",
+            "failed=%d timed_out=%d elapsed=%.2fs",
             top_k,
             workers,
             failed,
+            timed_out,
             time.perf_counter() - started,
         )
         reranked = [item[:4] for item in judged]
@@ -695,7 +735,7 @@ class RecommendationPipeline:
             "rerank",
             status="done",
             total=top_k,
-            failed=failed,
+            failed=failed + timed_out,
         )
         return reranked
 

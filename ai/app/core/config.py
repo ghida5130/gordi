@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     tryon_result_public_base_url: str = ""
     spring_internal_base_url: str = "http://localhost:8080"
     # selective: 무가치 국면(격식 행사·데일리) 질의는 리랭크 스킵
-    # (근거: docs/2026-08-06_vlm_rerank_selective_gating.md).
+    # (근거: docs/ai/2026-08-06_vlm_rerank_selective_gating.md).
     # always 로 되돌리면 전면 리랭크(롤백 경로).
     recommendation_vlm_rerank_mode: str = Field(
         default="selective",
@@ -97,6 +97,15 @@ class Settings(BaseSettings):
         default=8,
         ge=1,
         le=32,
+    )
+    # 리랭크 웨이브 전체의 wall-clock 상한. httpx read timeout은 read
+    # 1회당 적용이라 keepalive filler를 흘려주는 게이트웨이에는 무력하다
+    # — 마감 초과 판정은 규칙 점수 유지로 강등된다
+    # (근거: docs/ai/2026-08-07_vlm_rerank_hang_incident.md).
+    recommendation_vlm_rerank_deadline_seconds: float = Field(
+        default=30.0,
+        gt=0,
+        le=300,
     )
     # 기본 모델(gpt-5.6-luna 등 OpenAI reasoning 계열)은 low가 필요하고,
     # Gemma처럼 reasoning 필드를 거부하는 모델은 빈 값으로 둔다.

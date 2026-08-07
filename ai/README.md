@@ -53,6 +53,7 @@ RECOMMENDATION_VLM_API_KEY=            # 비우면 OPENROUTER_API_KEY 재사용
 RECOMMENDATION_IMAGE_ATTRIBUTES_ENABLED=false  # query 이미지 → 색상/계절/스타일/패턴 intent
 RECOMMENDATION_VLM_RERANK_ENABLED=false        # 상위 N 후보 pairwise 궁합 재정렬
 RECOMMENDATION_VLM_RERANK_TOP_K=20
+RECOMMENDATION_VLM_RERANK_DEADLINE_SECONDS=30  # 리랭크 웨이브 wall-clock 상한, 초과 판정은 규칙 점수 유지
 RECOMMENDATION_LLM_REASONS_ENABLED=false       # 검증된 사실 기반 LLM 추천 이유
 ```
 

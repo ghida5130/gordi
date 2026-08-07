@@ -16,12 +16,13 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from app.recommendation.catalog_embeddings import CatalogEmbeddingError
 from app.recommendation.pipeline import (
     COMPATIBILITY_WEIGHT,
     DEFAULT_RERANK_CONCURRENCY,
+    DEFAULT_RERANK_DEADLINE_SECONDS,
     DEFAULT_RERANK_TOP_K,
     RETRIEVAL_WEIGHT,
     GarmentTags,
@@ -81,6 +82,7 @@ class VectorRecommendationRanker:
         rerank_top_k: int = DEFAULT_RERANK_TOP_K,
         rerank_concurrency: int = DEFAULT_RERANK_CONCURRENCY,
         rerank_mode: str = "always",
+        rerank_deadline_seconds: float = DEFAULT_RERANK_DEADLINE_SECONDS,
     ) -> None:
         self._index = index
         self._provider = provider
@@ -91,6 +93,7 @@ class VectorRecommendationRanker:
         self._rerank_top_k = rerank_top_k
         self._rerank_concurrency = rerank_concurrency
         self._rerank_mode = rerank_mode
+        self._rerank_deadline_seconds = rerank_deadline_seconds
 
     def rank(
         self,
@@ -267,14 +270,44 @@ class VectorRecommendationRanker:
 
         workers = max(1, min(self._rerank_concurrency, top_k))
         started = time.perf_counter()
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            reranked = list(executor.map(judge, scored[:top_k]))
+        entries = scored[:top_k]
+        reranked = list(entries)
+        # httpx read timeout 은 read 1회당이라 keepalive filler 앞에서는
+        # 무력하다 — 웨이브 전체에 wall-clock 마감을 강제하고, 못 끝낸
+        # 판정은 규칙 점수를 유지한다 (212초 행 사건 재발 방지,
+        # docs/ai/2026-08-07_vlm_rerank_hang_incident.md).
+        executor = ThreadPoolExecutor(max_workers=workers)
+        try:
+            futures = {
+                executor.submit(judge, entry): position
+                for position, entry in enumerate(entries)
+            }
+            done, not_done = wait(
+                futures,
+                timeout=self._rerank_deadline_seconds,
+            )
+            for future in done:
+                reranked[futures[future]] = future.result()
+            timed_out = len(not_done)
+            if timed_out:
+                logger.warning(
+                    "pairwise rerank deadline (%.1fs) exceeded; "
+                    "keeping rule-based score for products %s",
+                    self._rerank_deadline_seconds,
+                    sorted(
+                        entries[futures[future]][2].product_id
+                        for future in not_done
+                    ),
+                )
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
         logger.info(
             "pairwise rerank (/rank): top_k=%d workers=%d "
-            "failed=%d elapsed=%.2fs",
+            "failed=%d timed_out=%d elapsed=%.2fs",
             top_k,
             workers,
             failures,
+            timed_out,
             time.perf_counter() - started,
         )
         reranked.extend(scored[top_k:])

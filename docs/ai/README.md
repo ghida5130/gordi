@@ -25,6 +25,8 @@ AI 파트(FastAPI 서버 `ai/`)의 기능 정리, 회고, 정책, 운영 런북�
 | [2026-08-01_ai_recommendation_daily_retrospective.md](2026-08-01_ai_recommendation_daily_retrospective.md) | 추천 파이프라인 구축 하루 회고 (트러블슈팅·latency) |
 | [2026-08-04_ai_ec2_deployment_retrospective.md](2026-08-04_ai_ec2_deployment_retrospective.md) | EC2 배포 회고 (캐시 키·인프라) |
 | [2026-08-05_AI_이미지_모델_평가_프로세스_개선안.md](2026-08-05_AI_이미지_모델_평가_프로세스_개선안.md) | 이미지 모델 평가 프로세스 개선안 |
+| [2026-08-06_vlm_rerank_selective_gating.md](2026-08-06_vlm_rerank_selective_gating.md) | VLM 리랭크 선택적 게이팅 검증·채택 결정 |
+| [2026-08-07_vlm_rerank_hang_incident.md](2026-08-07_vlm_rerank_hang_incident.md) | 버그 판정 — 리랭크 판정 212초 행(hang) 사건 |
 
 ## 데이터 수집·확장
 

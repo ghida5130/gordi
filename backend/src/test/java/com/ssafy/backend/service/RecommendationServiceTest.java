@@ -166,6 +166,12 @@ class RecommendationServiceTest {
         assertThat(captor.getValue().candidates().getFirst().gender()).isEqualTo("MALE");
         assertThat(captor.getValue().condition().moods()).containsExactly("MINIMAL", "CASUAL");
         assertThat(captor.getValue().condition().tpo()).isEqualTo("여름 저녁 데이트");
+
+        // 리롤 때 다시 쓸 수 있도록 TPO가 스냅샷에 저장된다
+        ArgumentCaptor<Recommendation> savedRecommendation = ArgumentCaptor.forClass(Recommendation.class);
+        verify(recommendationRepository).save(savedRecommendation.capture());
+        assertThat(savedRecommendation.getValue().getTpo()).isEqualTo("여름 저녁 데이트");
+
         verify(idempotencyService).hashRequest(
                 "MALE",
                 "TOP",
@@ -377,6 +383,49 @@ class RecommendationServiceTest {
                 );
     }
 
+    // 리롤 순위 요청에도 최초 추천 조건(TPO)이 유지된다
+    @Test
+    void replaceItemsSendsStoredTpoToFastApi() {
+        Recommendation recommendation = recommendation(21L, owner, 1L);
+        when(recommendationRepository.findById(21L)).thenReturn(Optional.of(recommendation));
+        when(recommendationItemRepository.findVersionItems(21L, 1L))
+                .thenReturn(List.of(item(recommendation, product(101L, 39_000), 1L, 1)));
+        when(recommendationItemRepository.findAllExposedProductIds(21L)).thenReturn(List.of(101L));
+        when(productRepository.findMatchingExcluding(
+                any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(List.of(product(121L, 61_000)));
+        when(rankClient.rank(any(RankRequest.class)))
+                .thenReturn(List.of(new RankedProduct(121L, 1, new BigDecimal("0.9100"))));
+
+        recommendationService.replaceItems(21L, new ReplacementRequest(1L, List.of(101L)), null);
+
+        ArgumentCaptor<RankRequest> captor = ArgumentCaptor.forClass(RankRequest.class);
+        verify(rankClient).rank(captor.capture());
+        assertThat(captor.getValue().condition().tpo()).isEqualTo("여름 저녁 데이트");
+    }
+
+    // TPO 컬럼 도입 전에 저장된 추천은 tpo 가 null 이므로 빈 문자열로 보정한다
+    @Test
+    void replaceItemsSendsEmptyTpoForLegacyRecommendation() {
+        Recommendation recommendation = recommendation(21L, owner, 1L);
+        recommendation.setTpo(null);
+        when(recommendationRepository.findById(21L)).thenReturn(Optional.of(recommendation));
+        when(recommendationItemRepository.findVersionItems(21L, 1L))
+                .thenReturn(List.of(item(recommendation, product(101L, 39_000), 1L, 1)));
+        when(recommendationItemRepository.findAllExposedProductIds(21L)).thenReturn(List.of(101L));
+        when(productRepository.findMatchingExcluding(
+                any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(List.of(product(121L, 61_000)));
+        when(rankClient.rank(any(RankRequest.class)))
+                .thenReturn(List.of(new RankedProduct(121L, 1, new BigDecimal("0.9100"))));
+
+        recommendationService.replaceItems(21L, new ReplacementRequest(1L, List.of(101L)), null);
+
+        ArgumentCaptor<RankRequest> captor = ArgumentCaptor.forClass(RankRequest.class);
+        verify(rankClient).rank(captor.capture());
+        assertThat(captor.getValue().condition().tpo()).isEmpty();
+    }
+
     @Test
     void replaceItemsReportsUnreplacedWhenCandidatesRunOut() {
         Recommendation recommendation = recommendation(21L, owner, 1L);
@@ -511,6 +560,7 @@ class RecommendationServiceTest {
                 .subcategory("LONG_SLEEVE")
                 .budgetMin(30_000)
                 .budgetMax(120_000)
+                .tpo("여름 저녁 데이트")
                 .status("READY")
                 .version(version)
                 .build();

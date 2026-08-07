@@ -154,7 +154,15 @@ class OpenAICompatibleVLMClient:
         try:
             body = response.json()
         except ValueError as exc:
-            raise VLMError("VLM returned a non-JSON response") from exc
+            # filler-only 응답(212초 행 사건)인지, HTML 에러 페이지인지,
+            # 잘린 JSON인지 로그만으로 구분할 수 있어야 한다.
+            snippet = response.text[:120]
+            raise VLMError(
+                "VLM returned a non-JSON response "
+                f"(status {response.status_code}, "
+                f"{len(response.content)} bytes, "
+                f"snippet {snippet!r})"
+            ) from exc
         try:
             content = body["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
