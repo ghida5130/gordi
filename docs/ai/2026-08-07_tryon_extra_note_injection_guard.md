@@ -84,4 +84,5 @@ reasoning effort low)로 "허용된 의도만 남긴 재서술"로 변환한다.
 ## 이벤트 구분
 
 Spring으로 나가는 job 이벤트의 `promptVersion`으로 결과를 구분할 수 있다:
-`tryon-fastapi-v1`(원본) → `v2`(구조 강화) → `v3`(노트 가드).
+`tryon-fastapi-v1`(원본) → `v2`(구조 강화) → `v3`(노트 가드) →
+`v4`(wearOptions 자연어 지시문, `2026-08-07_tryon_wear_options_prompt_fix.md`).
