@@ -276,6 +276,38 @@ def test_pipeline_keeps_rule_score_when_judgment_fails() -> None:
     assert [result.product_id for result in results] == [1, 2, 3]
 
 
+def test_pipeline_rerank_deadline_keeps_rule_scores() -> None:
+    # 마감시간 초과 판정은 규칙 점수 유지 — /search 경로도 /rank 와
+    # 동일하게 리랭크 지연이 마감시간으로 상한된다.
+    import time
+
+    class HangingReranker(StaticReranker):
+        def score_pair(self, **kwargs):
+            time.sleep(1.5)
+            return super().score_pair(**kwargs)
+
+    reranker = HangingReranker({1: 0.0, 2: 1.0})
+    pipeline = RecommendationPipeline(
+        Retriever(hits(3)),
+        pairwise_reranker=reranker,
+        rerank_top_k=2,
+        rerank_deadline_seconds=0.2,
+    )
+
+    started = time.monotonic()
+    results = pipeline.recommend(
+        text="기본 상의",
+        image=None,
+        mime_type=None,
+        filters=SearchFilters(gender="MALE"),
+        result_limit=3,
+    )
+    elapsed = time.monotonic() - started
+
+    assert [result.product_id for result in results] == [1, 2, 3]
+    assert elapsed < 1.2
+
+
 def test_pipeline_reports_progress_stages_in_order() -> None:
     reranker = StaticReranker({1: 0.9, 2: 0.8})
     pipeline = RecommendationPipeline(

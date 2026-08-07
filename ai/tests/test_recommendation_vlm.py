@@ -113,6 +113,22 @@ def test_client_rejects_http_error_and_bad_content() -> None:
         )
 
 
+def test_client_reports_non_json_body_details() -> None:
+    # keepalive filler 만 오고 JSON 없이 끝난 응답(212초 행 사건) —
+    # 크기·스니펫이 에러 메시지에 남아야 로그로 원인 구분이 된다.
+    def filler_handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=" \n" * 266)
+
+    with pytest.raises(VLMError, match="non-JSON") as excinfo:
+        make_client(filler_handler).complete_text(
+            system="s",
+            user_parts=[],
+        )
+    message = str(excinfo.value)
+    assert "532 bytes" in message
+    assert "snippet" in message
+
+
 def test_client_max_tokens_override_reaches_payload() -> None:
     seen: dict[str, Any] = {}
 

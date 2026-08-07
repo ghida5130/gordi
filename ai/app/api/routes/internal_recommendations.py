@@ -75,6 +75,9 @@ def get_vector_ranker(
                 settings.recommendation_vlm_rerank_concurrency
             ),
             rerank_mode=settings.recommendation_vlm_rerank_mode,
+            rerank_deadline_seconds=(
+                settings.recommendation_vlm_rerank_deadline_seconds
+            ),
         )
     except RecommendationRuntimeError as exc:
         logger.warning(

@@ -225,6 +225,36 @@ def test_vlm_rerank_judges_only_top_k(tmp_path: Path) -> None:
     assert judged_ids == {1, 2}
 
 
+def test_vlm_rerank_deadline_keeps_rule_scores(tmp_path: Path) -> None:
+    # 판정이 keepalive filler 로 매달리는 상황(212초 행 사건) —
+    # 마감시간이 웨이브를 끊고 규칙 점수를 유지해야 한다.
+    import time
+
+    class HangingReranker(ScriptedReranker):
+        def score_pair(self, **kwargs):
+            time.sleep(1.5)
+            return super().score_pair(**kwargs)
+
+    # 판정이 반영됐다면 3 이 1 위가 됐을 점수 — 반영되면 안 된다.
+    reranker = HangingReranker({1: 0.0, 2: 0.1, 3: 1.0})
+    ranker = make_reranked_ranker(
+        tmp_path,
+        reranker,
+        rerank_deadline_seconds=0.2,
+    )
+
+    started = time.monotonic()
+    ranked = ranker.rank(
+        condition(),
+        [candidate(1), candidate(2), candidate(3)],
+        limit=3,
+    )
+    elapsed = time.monotonic() - started
+
+    assert [item.product_id for item in ranked] == [1, 2, 3]
+    assert elapsed < 1.2
+
+
 def rank_payload() -> dict:
     return {
         "recommendationId": 1,
