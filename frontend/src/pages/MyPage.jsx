@@ -5,7 +5,6 @@ import { useLocation } from "react-router-dom";
 
 import { getMyActiveRoom, getMyInfo } from "@/api/users";
 import PageContainer from "@/components/common/PageContainer";
-import AvatarTab from "@/components/mypage/AvatarTab";
 import HistoryTab from "@/components/mypage/HistoryTab";
 import MyPageTabs from "@/components/mypage/MyPageTabs";
 import ProfileHome from "@/components/mypage/ProfileTab";
@@ -15,6 +14,8 @@ import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
 import { getApiErrorMessage } from "@/utils/apiError";
 
+const normalizeTab = (tab) => tab === "history" ? "history" : "profile";
+
 function MyPage() {
     const location = useLocation();
     const toast = useToast();
@@ -22,7 +23,7 @@ function MyPage() {
     const storedNickname = useUserStore((state) => state.nickname);
     const [tabSelection, setTabSelection] = useState(() => ({
         locationKey: location.key,
-        activeTab: location.state?.activeTab ?? "profile",
+        activeTab: normalizeTab(location.state?.activeTab),
     }));
     const [isRoomNoticeOpen, setIsRoomNoticeOpen] = useState(true);
     const { data } = useQuery({ queryKey: ["myInfo"], queryFn: getMyInfo, retry: false });
@@ -38,7 +39,7 @@ function MyPage() {
     const nickname = user.nickname ?? storedNickname ?? "사용자";
     const activeTab = tabSelection.locationKey === location.key
         ? tabSelection.activeTab
-        : (location.state?.activeTab ?? "profile");
+        : normalizeTab(location.state?.activeTab);
     const handleTabChange = (nextTab) => {
         setTabSelection({ locationKey: location.key, activeTab: nextTab });
     };
@@ -76,8 +77,7 @@ function MyPage() {
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                     >
-                        {activeTab === "profile" && <ProfileHome nickname={nickname} onHistory={() => handleTabChange("history")} />}
-                        {activeTab === "avatar" && <AvatarTab />}
+                        {activeTab === "profile" && <ProfileHome nickname={nickname} />}
                         {activeTab === "history" && <HistoryTab />}
                     </motion.div>
                 </AnimatePresence>

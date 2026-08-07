@@ -5,11 +5,8 @@ import ClothingDetailButton from '@/components/tierMaker/ClothingDetailButton'
 import TierMakerIcon from '@/components/tierMaker/TierMakerIcon'
 
 const categories = [
-  ['all', '전체'],
   ['top', '상의'],
-  ['outer', '아우터'],
   ['bottom', '하의'],
-  ['shoes', '신발'],
 ]
 
 function ClothingCatalog({
@@ -23,21 +20,29 @@ function ClothingCatalog({
   onDeleteItem,
   onAddClothing,
   onViewDetails,
+  excludedCategory = '',
   title = '피팅 전용 보관함',
   description = `티어 배정 불가 · 총 ${clothes.length}개`,
 }) {
-  const [activeCategory, setActiveCategory] = useState('all')
-  const [keyword, setKeyword] = useState('')
+  const [activeCategory, setActiveCategory] = useState('top')
+  const availableCategories = useMemo(() => {
+    const normalizedExcludedCategory = String(excludedCategory).toLowerCase()
+
+    return categories.filter(
+      ([value]) => value !== normalizedExcludedCategory,
+    )
+  }, [excludedCategory])
+  const resolvedActiveCategory = availableCategories.some(
+    ([value]) => value === activeCategory,
+  )
+    ? activeCategory
+    : availableCategories[0]?.[0] ?? ''
 
   const filteredClothes = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase()
-
     return clothes.filter(
-      (item) =>
-        (activeCategory === 'all' || item.category === activeCategory) &&
-        item.name.toLowerCase().includes(normalizedKeyword),
+      (item) => item.category === resolvedActiveCategory,
     )
-  }, [activeCategory, clothes, keyword])
+  }, [clothes, resolvedActiveCategory])
 
   return (
     <aside className="flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
@@ -58,24 +63,14 @@ function ClothingCatalog({
           </button>
         </div>
 
-        <label className="mt-4 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-violet-300 focus-within:bg-white">
-          <TierMakerIcon name="search" size={17} className="text-slate-400" />
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-            placeholder="의상 검색"
-          />
-        </label>
-
-        <div className="mt-3 flex gap-1 overflow-x-auto">
-          {categories.map(([value, label]) => (
+        <div className="mt-4 flex gap-1 overflow-x-auto">
+          {availableCategories.map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setActiveCategory(value)}
               className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-                activeCategory === value
+                resolvedActiveCategory === value
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-500 hover:bg-slate-100'
               }`}
@@ -176,7 +171,7 @@ function ClothingCatalog({
 
         {filteredClothes.length === 0 && (
           <div className="col-span-2 py-12 text-center text-sm text-slate-400">
-            검색 결과가 없습니다
+            보관함에 표시할 의상이 없습니다
           </div>
         )}
       </div>

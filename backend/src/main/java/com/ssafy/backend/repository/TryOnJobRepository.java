@@ -1,6 +1,7 @@
 package com.ssafy.backend.repository;
 
 import com.ssafy.backend.domain.TryOnJob;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,13 @@ import java.util.Optional;
 public interface TryOnJobRepository extends JpaRepository<TryOnJob, Long> {
 
     Optional<TryOnJob> findFirstByRoomIdAndResultImageUrlIsNotNullOrderByCreatedAtDesc(Long roomId);
+
+    /** 액세스 토큰 회원이 생성한 성공 Job의 이미지만 조회한다. */
+    Page<TryOnJob> findAllByOwnerUserEmailAndStatusAndResultImageUrlIsNotNull(
+            String email,
+            String status,
+            Pageable pageable
+    );
 
     /**
      * 조회 API 용 단건 조회.

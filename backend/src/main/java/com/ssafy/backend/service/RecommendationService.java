@@ -63,6 +63,7 @@ public class RecommendationService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final RecommendationRankClient rankClient;
+    private final CachedRecommendationRankService cachedRankService;
     private final IdempotencyService idempotencyService;
     private final RecommendationPolicy policy;
     private final ImageUrlResolver imageUrlResolver;
@@ -75,6 +76,7 @@ public class RecommendationService {
             RoomRepository roomRepository,
             UserRepository userRepository,
             RecommendationRankClient rankClient,
+            CachedRecommendationRankService cachedRankService,
             IdempotencyService idempotencyService,
             RecommendationPolicy policy,
             ImageUrlResolver imageUrlResolver
@@ -86,6 +88,7 @@ public class RecommendationService {
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
         this.rankClient = rankClient;
+        this.cachedRankService = cachedRankService;
         this.idempotencyService = idempotencyService;
         this.policy = policy;
         this.imageUrlResolver = imageUrlResolver;
@@ -165,7 +168,7 @@ public class RecommendationService {
             );
             items = List.of();
         } else {
-            List<RankedProduct> ranked = rankClient.rank(new RankRequest(
+            List<RankedProduct> ranked = cachedRankService.rank(new RankRequest(
                     recommendation.getId(),
                     new RankCondition(
                             gender,

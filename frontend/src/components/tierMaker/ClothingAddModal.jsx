@@ -3,14 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 
 import { searchProducts } from "@/api/products";
+import arrowImage from "@/assets/images/arrow.svg";
+import PriceRangeSlider, {
+  PRICE_INPUT_MAX,
+  PRICE_SLIDER_MAX,
+} from "@/components/common/PriceRangeSlider";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { normalizeTierMakerSubcategory } from "@/utils/tierMakerClothing";
 
 const EMPTY_FILTERS = {
   category: "",
   subcategory: "",
-  minPrice: "",
-  maxPrice: "",
+  minPrice: "0",
+  maxPrice: String(PRICE_SLIDER_MAX),
   keyword: "",
 };
 
@@ -55,7 +60,7 @@ function createSearchParams(filters, page) {
   if (filters.subcategory) params.subcategory = filters.subcategory;
   if (filters.minPrice !== "") params.minPrice = Number(filters.minPrice);
   if (filters.maxPrice !== "") params.maxPrice = Number(filters.maxPrice);
-  if (filters.keyword.trim()) params.keyword = filters.keyword.trim();
+  if (filters.keyword.trim()) params.keyword = filters.keyword.trim().slice(0, 50);
   if (page > 0) params.page = page;
 
   return params;
@@ -81,9 +86,10 @@ function ClothingAddModal({
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
   const [validationError, setValidationError] = useState("");
+  const [isPriceRangeOpen, setIsPriceRangeOpen] = useState(false);
   const availableSubcategories = filters.category
     ? (SUBCATEGORY_OPTIONS[filters.category] ?? [])
-    : Object.values(SUBCATEGORY_OPTIONS).flat();
+    : [];
   const productsQuery = useQuery({
     queryKey: ["roomProductSearch", roomToken, appliedFilters, page],
     queryFn: () =>
@@ -100,13 +106,14 @@ function ClothingAddModal({
   const currentPage = Number(result.page ?? page);
   const pageSize = Number(result.size ?? 20);
   const totalElements = Number(result.totalElements ?? products.length);
+  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
   const hasNextPage = (currentPage + 1) * pageSize < totalElements;
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const minPrice = filters.minPrice === "" ? 0 : Number(filters.minPrice);
     const maxPrice =
-      filters.maxPrice === "" ? 5_000_000 : Number(filters.maxPrice);
+      filters.maxPrice === "" ? PRICE_SLIDER_MAX : Number(filters.maxPrice);
 
     if (minPrice > maxPrice) {
       setValidationError("최소 금액은 최대 금액보다 클 수 없습니다.");
@@ -114,6 +121,7 @@ function ClothingAddModal({
     }
 
     setValidationError("");
+    setIsPriceRangeOpen(false);
     setPage(0);
     setAppliedFilters({ ...filters });
   };
@@ -122,6 +130,7 @@ function ClothingAddModal({
     setFilters({ ...EMPTY_FILTERS });
     setAppliedFilters({ ...EMPTY_FILTERS });
     setValidationError("");
+    setIsPriceRangeOpen(false);
     setPage(0);
   };
 
@@ -161,7 +170,7 @@ function ClothingAddModal({
 
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-[1fr_1fr_150px_150px] gap-3 border-b border-slate-100 px-6 py-4"
+          className="grid grid-cols-[1fr_1fr_150px_150px] items-start gap-3 border-b border-slate-100 px-6 py-4"
         >
           <select
             value={filters.category}
@@ -174,57 +183,79 @@ function ClothingAddModal({
             }
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
           >
-            <option value="">전체 카테고리</option>
+            <option value="">카테고리 선택</option>
             <option value="TOP">상의</option>
             <option value="BOTTOM">하의</option>
           </select>
           <select
             value={filters.subcategory}
+            disabled={!filters.category}
             onChange={(event) =>
               setFilters((current) => ({
                 ...current,
                 subcategory: event.target.value,
               }))
             }
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400 disabled:cursor-not-allowed disabled:text-slate-400 disabled:opacity-60"
           >
-            <option value="">전체 상세 카테고리</option>
+            <option value="">상세 카테고리 선택</option>
             {availableSubcategories.map((subcategory) => (
               <option key={subcategory.value} value={subcategory.value}>
                 {subcategory.label}
               </option>
             ))}
           </select>
-          <input
-            type="number"
-            min="0"
-            max="5000000"
-            value={filters.minPrice}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                minPrice: event.target.value,
-              }))
-            }
-            placeholder="최소 금액"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
-          />
-          <input
-            type="number"
-            min="0"
-            max="5000000"
-            value={filters.maxPrice}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                maxPrice: event.target.value,
-              }))
-            }
-            placeholder="최대 금액"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
-          />
+          <div className="relative col-span-2">
+            <button
+              type="button"
+              onClick={() => setIsPriceRangeOpen((current) => !current)}
+              aria-expanded={isPriceRangeOpen}
+              className="flex h-[42px] w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition hover:border-violet-300 hover:bg-white"
+            >
+              <span className="font-semibold text-slate-500">가격 범위</span>
+              <span className="font-bold text-violet-700">
+                {Number(filters.minPrice).toLocaleString()}원 ~ {Number(filters.maxPrice).toLocaleString()}원
+              </span>
+              <img
+                src={arrowImage}
+                alt=""
+                aria-hidden="true"
+                className={`size-3.5 shrink-0 object-contain opacity-45 transition-transform duration-300 ${isPriceRangeOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {isPriceRangeOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[440px] rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.18)]"
+              >
+                <PriceRangeSlider
+                  min={0}
+                  sliderMax={PRICE_SLIDER_MAX}
+                  inputMax={PRICE_INPUT_MAX}
+                  minValue={filters.minPrice}
+                  maxValue={filters.maxPrice}
+                  onChange={({ minValue, maxValue }) =>
+                    setFilters((current) => ({
+                      ...current,
+                      minPrice: String(minValue),
+                      maxPrice: String(maxValue),
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPriceRangeOpen(false)}
+                  className="mt-4 w-full rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  설정 완료
+                </button>
+              </motion.div>
+            )}
+          </div>
           <input
             value={filters.keyword}
+            maxLength={50}
             onChange={(event) =>
               setFilters((current) => ({
                 ...current,
@@ -389,23 +420,25 @@ function ClothingAddModal({
             )}
         </div>
 
-        <footer className="flex items-center justify-between border-t border-slate-100 px-6 py-4 text-sm text-slate-500">
-          <span>총 {totalElements.toLocaleString()}개</span>
-          <div className="flex items-center gap-3">
+        <footer className="relative flex min-h-16 items-center justify-center border-t border-slate-100 px-6 py-3 text-sm text-slate-500">
+          <span className="absolute left-6 font-semibold text-slate-500">총 {totalElements.toLocaleString()}개</span>
+          <div className="flex items-center rounded-full border border-slate-200 bg-slate-50 p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setPage((current) => Math.max(0, current - 1))}
               disabled={currentPage === 0 || productsQuery.isFetching}
-              className="rounded-lg border px-3 py-1.5 font-semibold disabled:opacity-40"
+              className="h-9 rounded-full px-5 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent disabled:hover:shadow-none"
             >
               이전
             </button>
-            <span>{currentPage + 1} 페이지</span>
+            <span className="min-w-28 border-x border-slate-200 px-4 text-center text-xs font-black text-slate-800">
+              {currentPage + 1} / {totalPages} 페이지
+            </span>
             <button
               type="button"
               onClick={() => setPage((current) => current + 1)}
               disabled={!hasNextPage || productsQuery.isFetching}
-              className="rounded-lg border px-3 py-1.5 font-semibold disabled:opacity-40"
+              className="h-9 rounded-full px-5 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent disabled:hover:shadow-none"
             >
               다음
             </button>

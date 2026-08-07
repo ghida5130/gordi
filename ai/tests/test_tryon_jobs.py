@@ -76,7 +76,7 @@ def java_payload(job_id: int = 7) -> dict[str, Any]:
             },
         ],
         "wearOptions": {
-            "topTuck": "FULL_TUCK",
+            "topTuck": "TUCKED",
             "outerClosure": None,
             "sleeves": "ROLLED",
         },
@@ -156,7 +156,7 @@ def test_schema_parses_spring_shaped_payload() -> None:
     assert request.job_id == 7
     assert request.avatar.image_url.endswith("/avatars/5.png")
     assert request.items[1].size_profile.waist_width is not None
-    assert request.wear_options.top_tuck == "FULL_TUCK"
+    assert request.wear_options.top_tuck == "TUCKED"
 
 
 def test_processor_success_emits_processing_then_succeeded(
@@ -193,13 +193,41 @@ def test_processor_success_emits_processing_then_succeeded(
     assert "PERSON BASE" in texts
     assert "GARMENT ONLY #1" in texts
     assert "waist width 36.0cm" in texts
-    assert "top tuck=FULL_TUCK" in texts
+    # wearOptions enum 은 raw 문자열이 아니라 자연어 지시문으로 전달된다
+    assert "tuck the top's hem fully inside" in texts
+    assert "roll the sleeves up" in texts
+    assert "TUCKED" not in texts
     # extra note 는 규칙에 종속된 스타일 힌트로만 전달된다
     assert 'subordinate to the rules above): "자연광 느낌"' in texts
     # 마지막 파트는 garment 사진이 아니라 재확인 지시문이어야 한다
     last = generator.parts[-1]
     assert last["type"] == "text"
     assert "Final check" in last["text"]
+
+
+def test_processor_renders_wear_enums_with_fallback(
+    tmp_path: Path,
+    clean_registry: None,
+) -> None:
+    processor, generator, _, _ = make_processor(tmp_path)
+    payload = java_payload()
+    payload["wearOptions"] = {
+        "topTuck": "UNTUCKED",
+        "outerClosure": "OPEN",
+        "sleeves": "BALLOON",  # 매핑에 없는 미래 enum 값
+    }
+
+    processor.process(TryOnGenerationRequest.model_validate(payload))
+
+    texts = " ".join(
+        part["text"]
+        for part in generator.parts
+        if part["type"] == "text"
+    )
+    assert "leave the top's hem untucked" in texts
+    assert "wear the outer layer fully open" in texts
+    # 미지의 값은 최소한 원문이라도 전달한다
+    assert "sleeves=BALLOON" in texts
 
 
 class FakeNoteGuard:

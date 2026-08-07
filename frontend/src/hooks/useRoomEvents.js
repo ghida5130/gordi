@@ -953,6 +953,22 @@ export function useRoomEvents(roomSession) {
         [publishPendingCursor, roomSession?.participantId],
     );
 
+    const hideCursor = useCallback(() => {
+        const participantId = roomSession?.participantId;
+
+        if (participantId == null) return;
+
+        const participantKey = String(participantId);
+
+        setCursors((currentCursors) => {
+            if (!currentCursors[participantKey]) return currentCursors;
+
+            const nextCursors = { ...currentCursors };
+            delete nextCursors[participantKey];
+            return nextCursors;
+        });
+    }, [roomSession?.participantId]);
+
     const shareDemoPlacements = useCallback(
         (placements) => {
             const client = clientRef.current;
@@ -994,6 +1010,7 @@ export function useRoomEvents(roomSession) {
         requestSync,
         applyRoomStatus,
         moveCursor,
+        hideCursor,
         shareDemoPlacements,
     };
 }

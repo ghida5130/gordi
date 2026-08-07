@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import arrowImage from "@/assets/images/arrow.svg";
 import PageContainer from "@/components/common/PageContainer";
 import { useJoinRoom } from "@/hooks/useJoinRoom";
 import { getApiErrorMessage } from "@/utils/apiError";
@@ -104,18 +105,12 @@ function RoomLobbyPage() {
                 className="group relative flex min-h-[250px] transform-gpu flex-col justify-between overflow-hidden rounded-[24px] bg-sky-400 p-7 text-left text-white shadow-[0_18px_40px_rgba(14,165,233,0.2)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[0.97] hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)] focus-visible:scale-[0.97] focus-visible:ring-4 focus-visible:ring-sky-200 active:scale-[0.95]"
               >
                 <span className="absolute right-6 top-6 flex size-11 items-center justify-center rounded-full border border-white/40 bg-white/15">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`size-6 transition-transform duration-300 ${isJoinFormOpen ? "rotate-90" : ""}`}
+                  <img
+                    src={arrowImage}
+                    alt=""
                     aria-hidden="true"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                    className={`size-5 object-contain brightness-0 invert transition-transform duration-300 ${isJoinFormOpen ? "rotate-180" : ""}`}
+                  />
                 </span>
                 <span className="relative flex size-24 -rotate-3 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_22px_42px_-12px_rgba(3,105,161,0.48),0_6px_14px_-6px_rgba(3,105,161,0.28)] transition-transform duration-500 group-hover:-rotate-1">
                   <svg

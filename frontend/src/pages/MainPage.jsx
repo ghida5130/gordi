@@ -103,17 +103,13 @@ const MainPage = () => {
   return (
     <div className="min-h-screen min-w-[1180px] overflow-x-hidden bg-[#F3F3EF] font-sans text-[#1F2320]">
       {/* 1. Hero Section */}
-      <section className="relative flex h-screen min-h-[780px] w-full items-center overflow-hidden px-[clamp(32px,4vw,72px)] pb-12 pt-[120px]">
+      <section
+        className="relative flex h-screen min-h-[780px] w-full items-center overflow-hidden bg-cover bg-center bg-no-repeat px-[clamp(32px,4vw,72px)] pb-12 pt-[120px]"
+        style={{ backgroundImage: "url('/images/main_background.webp')" }}
+      >
         <div
           aria-hidden="true"
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(31,35,32,0.08) 1px, transparent 0)",
-            backgroundSize: "24px 24px",
-            maskImage:
-              "linear-gradient(to right, black, transparent 45%, transparent)",
-          }}
+          className="absolute inset-0 bg-[#F3F3EF]/70"
         />
         <div
           aria-hidden="true"

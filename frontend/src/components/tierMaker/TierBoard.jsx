@@ -83,7 +83,7 @@ function TierName({ tier, canRename, onRename }) {
   const [name, setName] = useState(tier.name);
 
   const commitName = () => {
-    const nextName = name.trim();
+    const nextName = name.trim().slice(0, 10);
     setIsEditing(false);
 
     if (!nextName) {
@@ -113,7 +113,7 @@ function TierName({ tier, canRename, onRename }) {
             setIsEditing(false);
           }
         }}
-        maxLength={20}
+        maxLength={10}
         className="w-[92px] rounded-lg border border-white/70 bg-white/90 px-2 py-1.5 text-center text-sm font-black text-slate-900 outline-none"
         aria-label={`${tier.name} 티어 이름 변경`}
       />
