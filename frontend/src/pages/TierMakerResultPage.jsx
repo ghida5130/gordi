@@ -193,13 +193,7 @@ export default function TierMakerResultPage() {
           className="flex flex-wrap items-center justify-between gap-5 rounded-[28px] border border-slate-200 bg-white px-7 py-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)]"
         >
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                완료된 보드
-              </span>
-            </div>
-            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
               공동 티어메이커 결과
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -207,13 +201,6 @@ export default function TierMakerResultPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/mypage"
-              state={{ activeTab: "history" }}
-              className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
-            >
-              내 결과 보기
-            </Link>
             <Link
               to="/"
               className="flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-slate-800"
