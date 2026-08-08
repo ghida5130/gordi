@@ -122,42 +122,42 @@ const MainPage = () => {
           >
             <motion.h1
               variants={revealVariants}
-              className="text-[clamp(58px,4.2vw,68px)] font-thin leading-[1.06] tracking-[-0.055em] text-[#202421]"
+              className="font-a2z text-[clamp(58px,4.2vw,68px)] font-thin leading-[1.06] tracking-[-0.055em] text-[#202421]"
             >
               나만의{" "}
-              <span className="relative isolate inline-block px-1 font-extrabold">
+              <span className="relative isolate inline-block px-1 font-semibold">
                 아바타
                 <motion.span
                   aria-hidden="true"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 0.55, duration: 0.7, ease: easeOut }}
-                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#D9CDF8]"
+                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#bca1ff]"
                 />
               </span>
               로
               <br />
               친구들과{" "}
-              <span className="relative isolate inline-block px-1 font-extrabold">
+              <span className="relative isolate inline-block px-1 font-semibold">
                 함께
                 <motion.span
                   aria-hidden="true"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 0.68, duration: 0.7, ease: easeOut }}
-                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#BFE7D2]"
+                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#a1ffcd]"
                 />
               </span>
               <br />
               의상{" "}
-              <span className="relative isolate inline-block px-1 font-extrabold">
+              <span className="relative isolate inline-block px-1 font-semibold">
                 티어메이커
                 <motion.span
                   aria-hidden="true"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 0.81, duration: 0.8, ease: easeOut }}
-                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#F8D4BF]"
+                  className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.24em] origin-left rounded-full bg-[#ffc4a1]"
                 />
               </span>
             </motion.h1>
