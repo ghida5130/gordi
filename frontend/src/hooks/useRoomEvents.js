@@ -35,6 +35,7 @@ function createInitialState(roomSession) {
         roomItems: [],
         placements: [],
         fittingCandidates: [],
+        fittingDraft: null,
         removedRoomItemIds: [],
         itemRemoval: null,
         itemLocks: {},
@@ -98,6 +99,38 @@ function removeRoomItem(state, event, data, nextVersion, pendingEvents) {
     };
 }
 
+function normalizeFittingDraft(data, event = {}) {
+    return {
+        draftRevision: Number(data?.draftRevision ?? 0),
+        sizeSelections: Array.isArray(data?.sizeSelections) ? data.sizeSelections : [],
+        wearOptions: {
+            topTuck: data?.wearOptions?.topTuck ?? null,
+            outerClosure: data?.wearOptions?.outerClosure ?? null,
+            sleeves: data?.wearOptions?.sleeves ?? null,
+        },
+        prompt: data?.prompt ?? "",
+        eventId: event.eventId ?? null,
+        clientEventId: event.clientEventId ?? null,
+        senderParticipantId: event.senderParticipantId ?? null,
+    };
+}
+
+function applyFittingDraft(state, event, data, nextVersion, pendingEvents) {
+    const nextDraft = normalizeFittingDraft(data, event);
+    const currentDraftRevision = Number(state.fittingDraft?.draftRevision ?? -1);
+
+    if (state.fittingDraft && nextDraft.draftRevision < currentDraftRevision) {
+        return state;
+    }
+
+    return {
+        ...state,
+        fittingDraft: nextDraft,
+        version: nextVersion,
+        ...(pendingEvents ? { pendingEvents } : {}),
+    };
+}
+
 function normalizeSnapshot(data) {
     const tiers = Array.isArray(data.tiers) ? data.tiers : [];
     const unclassifiedItems = Array.isArray(data.unclassifiedItems) ? data.unclassifiedItems : [];
@@ -125,6 +158,10 @@ function normalizeSnapshot(data) {
         })),
     ];
 
+    const fittingDraftData = data.fittingDraft ?? (
+        data.draftRevision != null ? data : null
+    );
+
     return {
         participants: Array.isArray(data.participants) ? data.participants : [],
         status,
@@ -137,6 +174,9 @@ function normalizeSnapshot(data) {
         roomItems,
         placements,
         fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
+        ...(fittingDraftData
+            ? { fittingDraft: normalizeFittingDraft(fittingDraftData) }
+            : {}),
         removedRoomItemIds: [],
     };
 }
@@ -163,7 +203,14 @@ function roomEventReducer(state, event) {
         };
 
         state.pendingEvents
-            .filter((pendingEvent) => Number(pendingEvent.version ?? 0) > snapshotVersion)
+            .filter((pendingEvent) => {
+                if (pendingEvent.eventType === "FITTING_DRAFT_UPDATED") {
+                    return Number(pendingEvent.data?.draftRevision ?? 0) >
+                        Number(nextState.fittingDraft?.draftRevision ?? -1);
+                }
+
+                return Number(pendingEvent.version ?? 0) > snapshotVersion;
+            })
             .forEach((pendingEvent) => {
                 nextState = roomEventReducer(nextState, pendingEvent);
             });
@@ -285,6 +332,10 @@ function roomEventReducer(state, event) {
             };
         }
 
+        if (eventType === "FITTING_DRAFT_UPDATED") {
+            return applyFittingDraft(state, event, data, nextVersion, pendingEvents);
+        }
+
         if (eventType === "ROOM_FINISHED" || eventType === "ROOM_EXPIRED") {
             return {
                 ...state,
@@ -352,6 +403,10 @@ function roomEventReducer(state, event) {
             fittingCandidates: Array.isArray(data.fittingCandidates) ? data.fittingCandidates : [],
             version: nextVersion,
         };
+    }
+
+    if (eventType === "FITTING_DRAFT_UPDATED") {
+        return applyFittingDraft(state, event, data, nextVersion);
     }
 
     if (eventType === "TIER_RENAMED") {
@@ -424,6 +479,7 @@ export function useRoomEvents(roomSession) {
     const processedEventIdsRef = useRef(new Set());
     const ownedLockTokensRef = useRef(new Map());
     const versionRef = useRef(Number(roomSession?.version ?? 0));
+    const draftRevisionRef = useRef(0);
     const hasSnapshotRef = useRef(false);
     const activeSyncRequestRef = useRef(null);
     const deferredEventsRef = useRef([]);
@@ -476,6 +532,13 @@ export function useRoomEvents(roomSession) {
     useEffect(() => {
         versionRef.current = roomState.version;
     }, [roomState.version]);
+
+    useEffect(() => {
+        draftRevisionRef.current = Math.max(
+            draftRevisionRef.current,
+            Number(roomState.fittingDraft?.draftRevision ?? 0),
+        );
+    }, [roomState.fittingDraft?.draftRevision]);
 
     useEffect(() => {
         const staleCursorTimer = window.setInterval(() => {
@@ -537,6 +600,12 @@ export function useRoomEvents(roomSession) {
 
             for (let index = 0; index < deferredEvents.length; index += 1) {
                 const deferredEvent = deferredEvents[index];
+
+                if (deferredEvent.eventType === "FITTING_DRAFT_UPDATED") {
+                    applyEvent(deferredEvent);
+                    continue;
+                }
+
                 const deferredVersion = Number(deferredEvent.version);
 
                 if (!Number.isFinite(deferredVersion) || deferredVersion <= replayVersion) {
@@ -887,6 +956,42 @@ export function useRoomEvents(roomSession) {
         [publishCommand],
     );
 
+    const updateFittingDraft = useCallback(
+        ({ sizeSelections, wearOptions, prompt }) => {
+            const client = clientRef.current;
+
+            if (!client?.connected) {
+                setConnectionError("방 연결 후 다시 시도해 주세요.");
+                return null;
+            }
+
+            const clientEventId = crypto.randomUUID();
+            const baseDraftRevision = draftRevisionRef.current;
+            draftRevisionRef.current = baseDraftRevision + 1;
+            client.publish({
+                destination: `/app/rooms/${roomId}/fitting-draft/update`,
+                body: JSON.stringify({
+                    clientEventId,
+                    baseVersion: versionRef.current,
+                    baseDraftRevision,
+                    data: {
+                        sizeSelections: Array.isArray(sizeSelections)
+                            ? sizeSelections
+                            : [],
+                        wearOptions: {
+                            topTuck: wearOptions?.topTuck ?? null,
+                            outerClosure: wearOptions?.outerClosure ?? null,
+                            sleeves: wearOptions?.sleeves ?? null,
+                        },
+                        prompt: prompt ?? "",
+                    },
+                }),
+            });
+            return clientEventId;
+        },
+        [roomId],
+    );
+
     const publishPendingCursor = useCallback(() => {
         cursorPublishTimerRef.current = null;
 
@@ -1007,6 +1112,7 @@ export function useRoomEvents(roomSession) {
         moveItem,
         renameTier,
         updateFittingCandidate,
+        updateFittingDraft,
         requestSync,
         applyRoomStatus,
         moveCursor,
