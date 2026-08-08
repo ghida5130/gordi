@@ -121,7 +121,7 @@ class RoomExpirationServiceIntegrationTest {
                 .role("HOST")
                 .build());
 
-        List<RoomParticipant> activeRooms = roomParticipantRepository.findActiveByUserEmail(
+        List<RoomParticipant> activeRooms = roomParticipantRepository.findRejoinableByUserEmail(
                 host.getEmail(),
                 LocalDateTime.now(AppZone.KST)
         );

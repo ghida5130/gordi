@@ -172,39 +172,55 @@ function ClothingAddModal({
           onSubmit={handleSubmit}
           className="grid grid-cols-[1fr_1fr_150px_150px] items-start gap-3 border-b border-slate-100 px-6 py-4"
         >
-          <select
-            value={filters.category}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                category: event.target.value,
-                subcategory: "",
-              }))
-            }
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400"
-          >
-            <option value="">카테고리 선택</option>
-            <option value="TOP">상의</option>
-            <option value="BOTTOM">하의</option>
-          </select>
-          <select
-            value={filters.subcategory}
-            disabled={!filters.category}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                subcategory: event.target.value,
-              }))
-            }
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-violet-400 disabled:cursor-not-allowed disabled:text-slate-400 disabled:opacity-60"
-          >
-            <option value="">상세 카테고리 선택</option>
-            {availableSubcategories.map((subcategory) => (
-              <option key={subcategory.value} value={subcategory.value}>
-                {subcategory.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={filters.category}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  category: event.target.value,
+                  subcategory: "",
+                }))
+              }
+              className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-3 pr-11 text-sm outline-none focus:border-violet-400"
+            >
+              <option value="">카테고리 선택</option>
+              <option value="TOP">상의</option>
+              <option value="BOTTOM">하의</option>
+            </select>
+            <img
+              src={arrowImage}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute right-4 top-1/2 size-3 -translate-y-1/2 object-contain opacity-45"
+            />
+          </div>
+          <div className="relative">
+            <select
+              value={filters.subcategory}
+              disabled={!filters.category}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  subcategory: event.target.value,
+                }))
+              }
+              className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-3 pr-11 text-sm outline-none focus:border-violet-400 disabled:cursor-not-allowed disabled:text-slate-400 disabled:opacity-60"
+            >
+              <option value="">상세 카테고리 선택</option>
+              {availableSubcategories.map((subcategory) => (
+                <option key={subcategory.value} value={subcategory.value}>
+                  {subcategory.label}
+                </option>
+              ))}
+            </select>
+            <img
+              src={arrowImage}
+              alt=""
+              aria-hidden="true"
+              className={`pointer-events-none absolute right-4 top-1/2 size-3 -translate-y-1/2 object-contain ${filters.category ? "opacity-45" : "opacity-25"}`}
+            />
+          </div>
           <div className="relative col-span-2">
             <button
               type="button"

@@ -198,10 +198,12 @@ public class RoomService {
         return joinResponse(room, participant);
     }
 
+    // 재입장 가능한 방(만료 전 WAITING/IN_PROGRESS)을 노출한다.
+    // leftAt 여부는 보지 않는다 — 나갔던 회원도 join API로 복귀할 수 있기 때문.
     @Transactional(readOnly = true)
     public MyActiveRoomResponseDTO readMyActiveRoom(String email) {
         return roomParticipantRepository
-                .findActiveByUserEmail(email, LocalDateTime.now(AppZone.KST))
+                .findRejoinableByUserEmail(email, LocalDateTime.now(AppZone.KST))
                 .stream().findFirst()
                 .map(rp -> new MyActiveRoomResponseDTO(new MyActiveRoomResponseDTO.ActiveRoom(
                         rp.getRoom().getId(),

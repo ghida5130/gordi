@@ -41,12 +41,11 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
         select rp from RoomParticipant rp
         join fetch rp.room
         where rp.user.email = :email
-          and rp.leftAt is null
-          and rp.room.status = 'IN_PROGRESS'
+          and rp.room.status in ('WAITING', 'IN_PROGRESS')
           and rp.room.expiresAt > :now
         order by rp.joinedAt desc
         """)
-    List<RoomParticipant> findActiveByUserEmail(
+    List<RoomParticipant> findRejoinableByUserEmail(
             @Param("email") String email,
             @Param("now") LocalDateTime now
     );
