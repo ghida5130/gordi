@@ -608,7 +608,10 @@ function TierMakerRoomPage() {
       outerClosure: draft.wearOptions?.outerClosure ?? null,
       sleeves: draft.wearOptions?.sleeves ?? null,
     });
-    setTryOnPrompt(String(draft.prompt ?? ""));
+
+    if (!isOwnEvent) {
+      setTryOnPrompt(String(draft.prompt ?? ""));
+    }
   }, [roomEvents.fittingDraft, roomSession?.participantId]);
 
   useLayoutEffect(() => {
