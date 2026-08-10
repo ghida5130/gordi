@@ -171,6 +171,7 @@ const DEFAULT_TIER_COLUMN_LEFT = 280;
 const DEFAULT_TIER_COLUMN_WIDTH = 940;
 const DRAGGING_CURSOR_CLASS = "tier-maker-dragging";
 const LOCAL_CURSOR_HIDE_DELAY_MS = 40;
+const FITTING_PROMPT_THROTTLE_MS = 500;
 
 const compareRoomItemId = (left, right) =>
   Number(left.roomItemId) - Number(right.roomItemId);
@@ -202,6 +203,12 @@ function TierMakerRoomPage() {
   const cursorScrollFrameRef = useRef(null);
   const cursorHideTimerRef = useRef(null);
   const cursorAnchorRegistryRef = useRef(new Map());
+  const fittingDraftLocalEditRef = useRef(0);
+  const fittingDraftPublishEditsRef = useRef(new Map());
+  const appliedFittingDraftEventRef = useRef(null);
+  const promptThrottleTimerRef = useRef(null);
+  const pendingPromptDraftRef = useRef(null);
+  const lastPromptPublishAtRef = useRef(0);
   const completedDropItemIdsRef = useRef(new Set());
   const processedItemRemovalEventIdsRef = useRef(new Set());
   const activeDragRef = useRef(null);
@@ -273,6 +280,7 @@ function TierMakerRoomPage() {
   const hideRoomCursor = roomEvents.hideCursor;
   const applyRoomStatus = roomEvents.applyRoomStatus;
   const requestRoomSync = roomEvents.requestSync;
+  const updateFittingDraft = roomEvents.updateFittingDraft;
   const roomStatusQuery = useQuery({
     queryKey: ["roomStatus", roomSession?.roomCode],
     queryFn: () =>
@@ -460,6 +468,151 @@ function TierMakerRoomPage() {
   const cursorStructureKey = `${tiers
     .map((tier) => `${tier.id}:${tier.itemIds.join(",")}`)
     .join("|")}::${waitingClothes.map((item) => item.id).join(",")}`;
+  const createFittingDraftSnapshot = useCallback(
+    ({
+      nextSelectedSizeNames = selectedSizeNames,
+      nextWearOptions = wearOptions,
+      nextPrompt = tryOnPrompt,
+    } = {}) => ({
+      sizeSelections: candidates
+        .filter((item) => nextSelectedSizeNames[item.id])
+        .map((item) => ({
+          roomItemId: item.roomItemId,
+          sizeName: nextSelectedSizeNames[item.id],
+        })),
+      wearOptions: {
+        topTuck: nextWearOptions.topTuck ?? null,
+        outerClosure: nextWearOptions.outerClosure ?? null,
+        sleeves: nextWearOptions.sleeves ?? null,
+      },
+      prompt: nextPrompt,
+    }),
+    [candidates, selectedSizeNames, tryOnPrompt, wearOptions],
+  );
+  const publishFittingDraft = useCallback(
+    (draft, localEdit) => {
+      const clientEventId = updateFittingDraft(draft);
+
+      if (!clientEventId) return null;
+
+      fittingDraftPublishEditsRef.current.set(clientEventId, localEdit);
+
+      if (fittingDraftPublishEditsRef.current.size > 20) {
+        const oldestClientEventId = fittingDraftPublishEditsRef.current
+          .keys()
+          .next().value;
+        fittingDraftPublishEditsRef.current.delete(oldestClientEventId);
+      }
+
+      return clientEventId;
+    },
+    [updateFittingDraft],
+  );
+  const publishFittingDraftImmediately = useCallback(
+    (draft, localEdit) => {
+      if (promptThrottleTimerRef.current !== null) {
+        window.clearTimeout(promptThrottleTimerRef.current);
+        promptThrottleTimerRef.current = null;
+      }
+
+      pendingPromptDraftRef.current = null;
+      lastPromptPublishAtRef.current = Date.now();
+      return publishFittingDraft(draft, localEdit);
+    },
+    [publishFittingDraft],
+  );
+  const publishThrottledPromptDraft = useCallback(
+    (draft, localEdit) => {
+      pendingPromptDraftRef.current = { draft, localEdit };
+      const elapsed = Date.now() - lastPromptPublishAtRef.current;
+
+      if (elapsed >= FITTING_PROMPT_THROTTLE_MS) {
+        pendingPromptDraftRef.current = null;
+        lastPromptPublishAtRef.current = Date.now();
+        publishFittingDraft(draft, localEdit);
+        return;
+      }
+
+      if (promptThrottleTimerRef.current !== null) return;
+
+      promptThrottleTimerRef.current = window.setTimeout(() => {
+        promptThrottleTimerRef.current = null;
+        const pendingDraft = pendingPromptDraftRef.current;
+        pendingPromptDraftRef.current = null;
+
+        if (!pendingDraft) return;
+
+        lastPromptPublishAtRef.current = Date.now();
+        publishFittingDraft(pendingDraft.draft, pendingDraft.localEdit);
+      }, FITTING_PROMPT_THROTTLE_MS - elapsed);
+    },
+    [publishFittingDraft],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (promptThrottleTimerRef.current !== null) {
+        window.clearTimeout(promptThrottleTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const draft = roomEvents.fittingDraft;
+
+    if (!draft) return;
+
+    const eventKey =
+      draft.eventId ??
+      `${draft.draftRevision}:${draft.clientEventId ?? "snapshot"}`;
+
+    if (appliedFittingDraftEventRef.current === eventKey) return;
+
+    appliedFittingDraftEventRef.current = eventKey;
+    const publishedLocalEdit = draft.clientEventId
+      ? fittingDraftPublishEditsRef.current.get(draft.clientEventId)
+      : null;
+
+    if (draft.clientEventId) {
+      fittingDraftPublishEditsRef.current.delete(draft.clientEventId);
+    }
+
+    const isOwnEvent =
+      draft.senderParticipantId != null &&
+      String(draft.senderParticipantId) ===
+        String(roomSession?.participantId);
+
+    if (
+      isOwnEvent &&
+      publishedLocalEdit != null &&
+      publishedLocalEdit < fittingDraftLocalEditRef.current
+    ) {
+      return;
+    }
+
+    const nextSelectedSizeNames = Object.fromEntries(
+      (Array.isArray(draft.sizeSelections) ? draft.sizeSelections : [])
+        .filter(
+          (selection) =>
+            selection?.roomItemId != null && selection?.sizeName,
+        )
+        .map((selection) => [
+          String(selection.roomItemId),
+          selection.sizeName,
+        ]),
+    );
+
+    setSelectedSizeNames(nextSelectedSizeNames);
+    setWearOptions({
+      topTuck: draft.wearOptions?.topTuck ?? null,
+      outerClosure: draft.wearOptions?.outerClosure ?? null,
+      sleeves: draft.wearOptions?.sleeves ?? null,
+    });
+
+    if (!isOwnEvent) {
+      setTryOnPrompt(String(draft.prompt ?? ""));
+    }
+  }, [roomEvents.fittingDraft, roomSession?.participantId]);
 
   useLayoutEffect(() => {
     const board = sharedBoardRef.current;
@@ -973,32 +1126,52 @@ function TierMakerRoomPage() {
   };
 
   const handleCandidateSizeChange = (itemId, sizeName) => {
-    setSelectedSizeNames((currentSizeNames) => {
-      const nextSizeNames = { ...currentSizeNames };
+    const nextSizeNames = { ...selectedSizeNames };
 
-      if (sizeName) {
-        nextSizeNames[itemId] = sizeName;
-      } else {
-        delete nextSizeNames[itemId];
-      }
+    if (sizeName) {
+      nextSizeNames[itemId] = sizeName;
+    } else {
+      delete nextSizeNames[itemId];
+    }
 
-      return nextSizeNames;
-    });
+    setSelectedSizeNames(nextSizeNames);
+    const localEdit = fittingDraftLocalEditRef.current + 1;
+    fittingDraftLocalEditRef.current = localEdit;
+    publishFittingDraftImmediately(
+      createFittingDraftSnapshot({
+        nextSelectedSizeNames: nextSizeNames,
+      }),
+      localEdit,
+    );
   };
 
   const handleWearOptionChange = (optionName, value) => {
     if (!isHost) return;
 
-    setWearOptions((currentOptions) => ({
-      ...currentOptions,
+    const nextOptions = {
+      ...wearOptions,
       [optionName]: value || null,
-    }));
+    };
+
+    setWearOptions(nextOptions);
+    const localEdit = fittingDraftLocalEditRef.current + 1;
+    fittingDraftLocalEditRef.current = localEdit;
+    publishFittingDraftImmediately(
+      createFittingDraftSnapshot({ nextWearOptions: nextOptions }),
+      localEdit,
+    );
   };
 
   const handleTryOnPromptChange = (value) => {
     if (!isHost) return;
 
     setTryOnPrompt(value);
+    const localEdit = fittingDraftLocalEditRef.current + 1;
+    fittingDraftLocalEditRef.current = localEdit;
+    publishThrottledPromptDraft(
+      createFittingDraftSnapshot({ nextPrompt: value }),
+      localEdit,
+    );
   };
 
   const handleRenameTier = (tierId, name) => {

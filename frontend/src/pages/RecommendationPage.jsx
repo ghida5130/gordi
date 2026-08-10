@@ -391,7 +391,7 @@ function RecommendationPage() {
         <header className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-[28px] font-bold tracking-[-0.035em]">
-              {step === "form" ? "의상 추천받기" : "AI 분석 결과"}
+              {step === "form" ? "의상 추천받기" : "추천 조건 확인"}
             </h1>
             <p className="mt-2 text-sm font-medium text-[#848A84]">
               {step === "form"
@@ -565,7 +565,9 @@ function RecommendationForm({
         />
         <p className="mt-6 text-sm font-semibold text-[#444A45]">
           선호 무드
-          <span className="ml-2 text-xs font-medium text-[#A0A59F]">(최대 2개 선택 가능)</span>
+          <span className="ml-2 text-xs font-medium text-[#A0A59F]">
+            (최대 2개 선택 가능)
+          </span>
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {moods.map((mood) => (
@@ -624,8 +626,7 @@ function AnalysisCard({ fallbackConditions, onRetry, onResults }) {
       <div className="rounded-[24px] border border-[#E0E2DD] bg-white p-6 shadow-[0_16px_42px_rgba(31,35,32,0.06)]">
         <div className="flex items-center justify-between border-b border-[#ECEDE9] pb-4">
           <div>
-            <p className="text-base font-bold text-[#2B302C]">추천 조건 확인</p>
-            <p className="mt-1 text-xs font-medium text-[#929791]">
+            <p className="text-base font-bold text-[#2B302C]">
               이 조건으로 AI 추천을 시작합니다.
             </p>
           </div>

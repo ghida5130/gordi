@@ -83,7 +83,7 @@ function ParticipantDock({
           >
             <img src={arrowImage} alt="" aria-hidden="true" className="size-2.5 object-contain opacity-45 transition-transform duration-200 hover:translate-y-0.5" />
           </button>
-      <div className="flex min-w-0 items-center gap-3 overflow-x-auto py-1">
+      <div className="flex min-w-0 items-center gap-3 overflow-x-auto py-1 pl-1">
         <div className="mr-1 shrink-0 border-r border-slate-200 pr-4">
           <p className="text-xs font-bold text-slate-800">참여자</p>
           <p className="mt-1 text-[11px] text-slate-400">
