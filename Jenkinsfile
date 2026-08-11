@@ -5,6 +5,7 @@ pipeline {
         booleanParam(name: 'FORCE_BACK',  defaultValue: false, description: '변경 없어도 Backend 강제 배포')
         booleanParam(name: 'FORCE_FRONT', defaultValue: false, description: '변경 없어도 Frontend 강제 배포')
         booleanParam(name: 'FORCE_AI',    defaultValue: false, description: '변경 없어도 AI 강제 배포')
+        booleanParam(name: 'FORCE_LIVEKIT', defaultValue: false, description: 'LiveKit 강제 배포 (통화 끊김 주의)')
     }
 
     environment {
@@ -31,6 +32,7 @@ pipeline {
                     env.BUILD_FRONT = (!valid || params.FORCE_FRONT || changed.any { it.startsWith('frontend/') }) ? 'true' : 'false'
                     env.BUILD_BACK  = (!valid || params.FORCE_BACK  || changed.any { it.startsWith('backend/') })  ? 'true' : 'false'
                     env.BUILD_AI    = (!valid || params.FORCE_AI || changed.any { it.startsWith('ai/') })       ? 'true' : 'false'
+                    env.BUILD_LIVEKIT = (!valid || params.FORCE_LIVEKIT || changed.any { it in ['docker-compose.prod.yml'] }) ? 'true' : 'false'
 
                     // 공통 파일 변경 시 전체 재배포
                     if (changed.any { it in ['docker-compose.prod.yml', 'Jenkinsfile'] }) {
@@ -78,13 +80,13 @@ pipeline {
             when { expression { env.BUILD_BACK == 'true' } }
             steps {
                 sh '''
-                    $COMPOSE up -d --build backend
+                    bash scripts/deploy-backend-bluegreen.sh
                 '''
             }
         }
 
         stage('Livekit 배포') {
-            when { expression { env.BUILD_BACK == 'true' } }
+            when { expression { env.BUILD_LIVEKIT == 'true' } }
             steps {
                 sh '''
                     export DOCKER_BUILDKIT=0
@@ -118,7 +120,7 @@ pipeline {
     }
 
     post {
-        success { echo "배포 완료 (back=${env.BUILD_BACK} front=${env.BUILD_FRONT} ai=${env.BUILD_AI})" }
+        success { echo "배포 완료 (back=${env.BUILD_BACK} front=${env.BUILD_FRONT} ai=${env.BUILD_AI} livekit=${env.BUILD_LIVEKIT})" }
         failure { echo '🚨 배포 실패' }
     }
 }
