@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'FORCE_BACK',  defaultValue: false, description: '변경 없어도 Backend 강제 배포')
+        booleanParam(name: 'FORCE_FRONT', defaultValue: false, description: '변경 없어도 Frontend 강제 배포')
+        booleanParam(name: 'FORCE_AI',    defaultValue: false, description: '변경 없어도 AI 강제 배포')
+    }
+
     environment {
         COMPOSE = 'docker compose -f docker-compose.prod.yml'
     }
@@ -22,9 +28,9 @@ pipeline {
 
                     echo "변경 파일:\n${changed.join('\n')}"
 
-                    env.BUILD_FRONT = (!valid || changed.any { it.startsWith('frontend/') }) ? 'true' : 'false'
-                    env.BUILD_BACK  = (!valid || changed.any { it.startsWith('backend/') })  ? 'true' : 'false'
-                    env.BUILD_AI    = (!valid || changed.any { it.startsWith('ai/') })       ? 'true' : 'false'
+                    env.BUILD_FRONT = (!valid || params.FORCE_FRONT || changed.any { it.startsWith('frontend/') }) ? 'true' : 'false'
+                    env.BUILD_BACK  = (!valid || params.FORCE_BACK  || changed.any { it.startsWith('backend/') })  ? 'true' : 'false'
+                    env.BUILD_AI    = (!valid || params.FORCE_AI || changed.any { it.startsWith('ai/') })       ? 'true' : 'false'
 
                     // 공통 파일 변경 시 전체 재배포
                     if (changed.any { it in ['docker-compose.prod.yml', 'Jenkinsfile'] }) {
