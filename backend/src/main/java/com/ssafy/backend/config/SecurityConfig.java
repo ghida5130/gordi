@@ -117,6 +117,7 @@ public class SecurityConfig {
                                 "/api/v3/api-docs/**",
                                 "/api/v3/api-docs.yaml"
                         ).permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated());
 
         // 예외 처리 (401 Unauthorized)

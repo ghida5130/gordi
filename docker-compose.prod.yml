@@ -1,23 +1,35 @@
 name: ${COMPOSE_PROJECT_NAME:-gordi}-app
 
+
+x-backend-base: &backend-base
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    - SPRING_PROFILES_ACTIVE=prod
+    - MYSQL_HOST=gordi-mysql
+    - REDIS_HOST=gordi-redis
+  command:
+    - --springdoc.api-docs.enabled=false
+    - --springdoc.swagger-ui.enabled=false
+  networks:
+    app-network:
+      # 활성 색이 무엇이든 이 이름으로 도달할 수 있어야 한다
+      aliases:
+        - gordi-backend
+
+
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: gordi-backend
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - MYSQL_HOST=gordi-mysql
-      - REDIS_HOST=gordi-redis
-    command:
-      - --springdoc.api-docs.enabled=false
-      - --springdoc.swagger-ui.enabled=false
-    networks:
-      - app-network
+  backend-blue:
+    <<: *backend-base
+    container_name: gordi-backend-blue
+
+  backend-green:
+    <<: *backend-base
+    container_name: gordi-backend-green
 
       
   frontend:
