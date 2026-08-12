@@ -7,13 +7,17 @@ import com.ssafy.backend.dto.auth.JWTResponseDTO;
 import com.ssafy.backend.repository.RefreshRepository;
 import com.ssafy.backend.util.CookieUtil;
 import com.ssafy.backend.util.JWTUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class JwtService {
 
@@ -27,8 +31,11 @@ public class JwtService {
         this.cookieUtil = cookieUtil;
     }
 
+    @Value("${auth.refresh.reuse-grace-ms}")
+    private long reuseGraceMs;
+
     // Refresh 토큰으로 Access/Refresh 토큰 재발급 (Refresh Token Rotation - RTR)
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public JWTResponseDTO refreshRotate(HttpServletRequest request, HttpServletResponse response) {
 
         String refreshToken = CookieUtil.extractRefreshToken(request);
@@ -41,20 +48,50 @@ public class JwtService {
             throw tokenException(refreshToken);
         }
 
-        // 2. DB 존재 여부 확인 (이미 사용되거나 폐기된 토큰 방지)
-        if (!existsRefresh(refreshToken)) {
-            throw invalidToken("이미 사용된 refreshToken입니다.");
-        }
-
         // 3. 기존 토큰 정보 추출 및 신규 토큰 생성
         String email = jwtUtil.getEmail(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
 
+        LocalDateTime now = LocalDateTime.now();
+        int rotated = refreshRepository.markRotated(refreshToken, now);
+
+        if (rotated == 0) {
+            return handleRotationConflict(refreshToken, email, role, now, response);
+        }
+
+        return issueTokens(email, role, response);
+    }
+
+    private JWTResponseDTO handleRotationConflict(
+            String refreshToken, String email, String role,
+            LocalDateTime now, HttpServletResponse response
+    ) {
+        RefreshToken existing = refreshRepository.findByRefresh(refreshToken).orElse(null);
+
+        // 행 자체가 없음: 로그아웃·만료 정리로 폐기된 토큰 — 탈취 여부 판단 불가, 거부만 한다
+        if (existing == null) {
+            throw invalidToken("이미 사용된 refreshToken입니다.");
+        }
+
+        long elapsedMs = Duration.between(existing.getRotatedAt(), now).toMillis();
+
+        // 회전 직후의 재제시는 멀티탭·네트워크 재시도일 가능성이 높다 — 정상 회전과 동일하게 응답
+        if (elapsedMs <= reuseGraceMs) {
+            return issueTokens(email, role, response);
+        }
+
+        // 회전된 지 오래된 토큰의 재제시 = 같은 토큰을 가진 주체가 둘 = 탈취 신호.
+        // 공격자가 이미 회전받은 후속 토큰까지 무력화하기 위해 이 사용자의 토큰을 전량 폐기한다
+        log.warn("[SECURITY] refresh token reuse detected: loginId={}, rotatedBefore={}ms, revoking all sessions",
+                email, elapsedMs);
+        refreshRepository.deleteByLoginId(email);
+        throw invalidToken("이미 사용된 refreshToken입니다.");
+    }
+
+    private JWTResponseDTO issueTokens(String email, String role, HttpServletResponse response) {
         String newAccessToken = jwtUtil.createJWT(email, role, true);
         String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
-        // 4. 기존 Refresh 토큰 삭제 및 신규 Refresh 토큰 DB 저장
-        removeRefresh(refreshToken);
         refreshRepository.save(
                 RefreshToken.builder()
                         .loginId(email)
@@ -63,9 +100,9 @@ public class JwtService {
         );
 
         response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(newRefreshToken));
-
         return new JWTResponseDTO(newAccessToken);
     }
+
 
     // JWT Refresh 토큰 저장
     @Transactional

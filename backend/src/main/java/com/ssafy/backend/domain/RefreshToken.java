@@ -39,4 +39,8 @@ public class RefreshToken {
     @CreationTimestamp
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
+
+    // 재사용 감지: 이 값이 찍힌 토큰이 다시 제시되면 탈취 신호로 판정하는 근거가 된다
+    @Column(name = "rotated_at")
+    private LocalDateTime rotatedAt;
 }
