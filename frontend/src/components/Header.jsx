@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 
-import { logout } from "@/api/auth";
 import { getMyAvatar } from "@/api/users";
 import bodyIcon from "@/assets/images/header/body.svg";
 import logoImage from "@/assets/images/header/logo-image.webp";
@@ -10,9 +9,7 @@ import logoText from "@/assets/images/header/logo-text.webp";
 import shirtIcon from "@/assets/images/header/shirt.svg";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
-import { removeBodyInformation } from "@/utils/bodyInformationStorage";
-import { removeRoomSession } from "@/utils/roomSessionStorage";
-import { getAccessToken, removeAccessToken } from "@/utils/tokenStorage";
+import { getAccessToken } from "@/utils/tokenStorage";
 
 const CONTENT_DISPLAY_DELAY_MS = 160;
 const DESCRIPTION_DISPLAY_DELAY_MS = 100;
@@ -21,7 +18,7 @@ const TEXT_STAGGER_DELAY_MS = 90;
 export default function Header({ isHidden = false }) {
     const navigate = useNavigate();
     const toast = useToast();
-    const { isLogin, clearUser } = useUserStore();
+    const isLogin = useUserStore((state) => state.isLogin);
     const [hoveredMenu, setHoveredMenu] = useState(null);
     const [displayedMenu, setDisplayedMenu] = useState(null);
     const [showMenuActions, setShowMenuActions] = useState(false);
@@ -45,18 +42,6 @@ export default function Header({ isHidden = false }) {
         },
         [],
     );
-
-    const logoutMutation = useMutation({
-        mutationFn: logout,
-        onSettled: () => {
-            removeAccessToken();
-            removeBodyInformation();
-            removeRoomSession();
-            clearUser();
-            toast.success("로그아웃되었습니다.");
-            navigate("/login", { replace: true });
-        },
-    });
 
     const clearContentTimers = () => {
         window.clearTimeout(contentDisplayTimerRef.current);
@@ -221,36 +206,26 @@ export default function Header({ isHidden = false }) {
 
                         <div className="flex items-center gap-3" onMouseEnter={closeMenu}>
                             {isLoggedIn ? (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => logoutMutation.mutate()}
-                                        disabled={logoutMutation.isPending}
-                                        className="rounded-full px-3 py-2 text-base font-semibold text-gray-500 transition-colors duration-300 hover:bg-gray-100 hover:text-black disabled:opacity-50"
+                                <Link
+                                    to="/mypage"
+                                    aria-label="마이페이지"
+                                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-gray-500 transition-all duration-300 hover:border-black hover:bg-black hover:text-white hover:shadow-md"
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
                                     >
-                                        {logoutMutation.isPending ? "로그아웃 중..." : "로그아웃"}
-                                    </button>
-                                    <Link
-                                        to="/mypage"
-                                        aria-label="마이페이지"
-                                        className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-gray-500 transition-all duration-300 hover:border-black hover:bg-black hover:text-white hover:shadow-md"
-                                    >
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            aria-hidden="true"
-                                        >
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                    </Link>
-                                </>
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                    </svg>
+                                </Link>
                             ) : (
                                 <>
                                     <Link to="/signup/email" className="rounded-full px-4 py-2.5 text-base font-semibold text-gray-500 transition-colors duration-300 hover:bg-gray-100 hover:text-black">

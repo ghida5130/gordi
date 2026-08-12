@@ -1,4 +1,4 @@
-import { authApi, publicApi } from "@/api/request";
+import { authApi, publicApi, withRoomToken } from "@/api/request";
 import { getAccessToken } from "@/utils/tokenStorage";
 
 export function createRoom(roomInformation, idempotencyKey) {
@@ -11,38 +11,26 @@ export function createRoom(roomInformation, idempotencyKey) {
 
 export function joinRoom({ roomCode, nickname }) {
   const accessToken = getAccessToken();
-  const config = accessToken
-    ? {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    : {};
+  const api = accessToken ? authApi : publicApi;
 
-  return publicApi.post(
+  return api.post(
     `v1/rooms/${encodeURIComponent(roomCode)}/join`,
     { nickname },
-    config,
   );
 }
 
 export function getRoomStatus({ roomCode, roomToken }) {
-  return publicApi.get(`v1/rooms/${encodeURIComponent(roomCode)}`, {
-    headers: {
-      Authorization: `Bearer ${roomToken}`,
-    },
-  });
+  return publicApi.get(
+    `v1/rooms/${encodeURIComponent(roomCode)}`,
+    withRoomToken(roomToken),
+  );
 }
 
 export function getRoomResult({ roomCode, roomToken }) {
   const path = `v1/rooms/${encodeURIComponent(roomCode)}/result`;
 
   if (roomToken) {
-    return publicApi.get(path, {
-      headers: {
-        Authorization: `Bearer ${roomToken}`,
-      },
-    });
+    return publicApi.get(path, withRoomToken(roomToken));
   }
 
   return authApi.get(path);
@@ -52,10 +40,6 @@ export function finishRoom({ roomCode, roomToken, expectedVersion }) {
   return publicApi.post(
     `v1/rooms/${encodeURIComponent(roomCode)}/finish`,
     { expectedVersion },
-    {
-      headers: {
-        Authorization: `Bearer ${roomToken}`,
-      },
-    },
+    withRoomToken(roomToken),
   );
 }

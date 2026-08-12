@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { motion } from "motion/react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import OrganicTierCollaborationScene from "@/components/main/OrganicTierCollaborationScene";
-import { useUserStore } from "@/stores/useUserStore";
-import { getAccessToken } from "@/utils/tokenStorage";
 
 const easeOut = [0.16, 1, 0.3, 1];
 
@@ -95,11 +92,6 @@ const steps = [
 ];
 
 const MainPage = () => {
-  const navigate = useNavigate();
-  const { isLogin } = useUserStore();
-  const isLoggedIn = isLogin || !!getAccessToken();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   return (
     <div className="min-h-screen min-w-[1180px] overflow-x-hidden bg-[#F3F3EF] font-sans text-[#1F2320]">
       {/* 1. Hero Section */}
@@ -319,46 +311,6 @@ const MainPage = () => {
         </motion.div>
       </section>
 
-      {/* 4. Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm">
-          <div
-            className="absolute inset-0"
-            onClick={() => setIsModalOpen(false)}
-          ></div>
-
-          <div className="relative bg-white rounded-3xl p-10 w-full max-w-sm flex flex-col items-center text-center shadow-2xl z-10">
-            <div className="w-12 h-12 bg-black text-white rounded-xl flex justify-center items-center mb-6">
-              👥
-            </div>
-            <h3 className="text-2xl font-bold mb-2">티어메이커 시작하기</h3>
-            <p className="text-gray-500 text-sm mb-8">
-              친구들과 함께 의상을 골라보세요.
-              <br />
-              투표로 최고의 아이템을 확정하세요.
-            </p>
-
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                navigate(isLoggedIn ? "/rooms/create" : "/login");
-              }}
-              className="w-full bg-[#1a1a1a] text-white py-4 rounded-xl font-medium mb-3 hover:bg-black transition-colors"
-            >
-              새 방 만들기 →
-            </button>
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                navigate("/rooms");
-              }}
-              className="w-full bg-gray-100 text-gray-800 py-4 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-            >
-              초대 코드로 입장
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

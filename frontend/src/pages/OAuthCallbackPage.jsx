@@ -4,28 +4,32 @@ import { useNavigate } from "react-router-dom";
 
 import { reissueToken } from "@/api/auth";
 import { getMyInfo } from "@/api/users";
+import { queryClient } from "@/lib/queryClient";
 import { useUserStore } from "@/stores/useUserStore";
-import {
-  removeAccessToken,
-  setAccessToken,
-} from "@/utils/tokenStorage";
+import { clearSession } from "@/utils/clearSession";
+import { setAccessToken } from "@/utils/tokenStorage";
 
 let callbackPromise;
 
 function completeKakaoLogin() {
   if (!callbackPromise) {
-    callbackPromise = reissueToken().then(async (response) => {
-      const accessToken = response.data?.accessToken || response.accessToken;
+    callbackPromise = reissueToken()
+      .then(async (response) => {
+        const accessToken = response.data?.accessToken || response.accessToken;
 
-      if (!accessToken) {
-        throw new Error("Access token is missing.");
-      }
+        if (!accessToken) {
+          throw new Error("Access token is missing.");
+        }
 
-      setAccessToken(accessToken);
+        queryClient.removeQueries();
+        setAccessToken(accessToken);
 
-      const myInfoResponse = await getMyInfo();
-      return myInfoResponse.data;
-    });
+        const myInfoResponse = await getMyInfo();
+        return myInfoResponse.data;
+      })
+      .finally(() => {
+        callbackPromise = undefined;
+      });
   }
 
   return callbackPromise;
@@ -45,9 +49,7 @@ export default function OAuthCallbackPage() {
         }
 
         setUser({
-          email: user.email,
           nickname: user.nickname,
-          profileImageUrl: user.avatar?.imageUrl,
         });
         navigate("/", { replace: true });
       })
@@ -56,8 +58,8 @@ export default function OAuthCallbackPage() {
           return;
         }
 
-        removeAccessToken();
-        navigate("/login", { replace: true });
+        clearSession();
+        navigate("/login?error=oauth", { replace: true });
       });
 
     return () => {

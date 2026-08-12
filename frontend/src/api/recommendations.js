@@ -12,10 +12,6 @@ export function createRecommendation({ recommendation, idempotencyKey }) {
   });
 }
 
-export function getRecommendation(recommendationId) {
-  return authApi.get(`v1/recommendations/${encodeURIComponent(recommendationId)}`);
-}
-
 export function replaceRecommendationItems({
   recommendationId,
   baseVersion,

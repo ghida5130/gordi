@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { getAvatarTemplates } from "@/api/avatar";
 import { getMyAvatar, updateMyAvatar } from "@/api/users";
 import { useToast } from "@/hooks/useToast";
-import { useUserStore } from "@/stores/useUserStore";
 import { getApiErrorMessage } from "@/utils/apiError";
 
 const BODY_TYPE_LABELS = {
@@ -104,7 +103,6 @@ export default function AvatarSetupPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToast();
-    const updateUser = useUserStore((state) => state.updateUser);
     const hasInitializedInformationRef = useRef(false);
     const [step, setStep] = useState("information");
     const [gender, setGender] = useState("");
@@ -140,11 +138,7 @@ export default function AvatarSetupPage() {
 
     const avatarMutation = useMutation({
         mutationFn: updateMyAvatar,
-        onSuccess: (_response, { avatarId, avatar: requestedAvatar }) => {
-            const savedAvatar = requestedAvatar ?? avatars.find((avatar) => String(getAvatarId(avatar)) === String(avatarId));
-
-            updateUser({ profileImageUrl: savedAvatar?.imageUrl ?? null });
-
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["myAvatar"] });
             queryClient.invalidateQueries({ queryKey: ["myInfo"] });
             toast.success("아바타가 설정되었습니다.");

@@ -1,33 +1,33 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
+import { logout } from "@/api/auth";
 import { updateNickname } from "@/api/users";
 import SurfaceCard from "@/components/common/SurfaceCard";
 import AvatarTab from "@/components/mypage/AvatarTab";
 import MyPageIcon from "@/components/mypage/MyPageIcon";
 import { useToast } from "@/hooks/useToast";
 import { useUserStore } from "@/stores/useUserStore";
+import { clearSession } from "@/utils/clearSession";
 
 const NICKNAME_REGEX = /^[a-zA-Z가-힣0-9]{2,20}$/;
 
 export default function ProfileHome({ nickname }) {
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToast();
-    const storeUser = useUserStore((state) => state);
-    const setUser = useUserStore((state) => state.setUser);
+    const updateUser = useUserStore((state) => state.updateUser);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editNickname, setEditNickname] = useState(nickname);
 
     const { mutate: updateName, isPending } = useMutation({
         mutationFn: updateNickname,
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             toast.success("닉네임이 성공적으로 변경되었습니다.");
             queryClient.invalidateQueries({ queryKey: ["myInfo"] });
-            setUser({
-                ...storeUser,
-                nickname: editNickname,
-            });
+            updateUser({ nickname: variables.nickname });
             setIsEditing(false);
         },
         onError: (error) => {
@@ -38,6 +38,14 @@ export default function ProfileHome({ nickname }) {
             } else {
                 toast.error("닉네임 변경에 실패했습니다. 잠시 후 다시 시도해 주세요.");
             }
+        },
+    });
+    const logoutMutation = useMutation({
+        mutationFn: logout,
+        onSettled: () => {
+            clearSession();
+            toast.success("로그아웃되었습니다.");
+            navigate("/login", { replace: true });
         },
     });
 
@@ -106,6 +114,14 @@ export default function ProfileHome({ nickname }) {
                     )}
                     <p className="mt-2 text-sm text-slate-500">내 프로필과 아바타 정보를 관리해 보세요.</p>
                 </div>
+                <button
+                    type="button"
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending}
+                    className="h-10 shrink-0 rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50"
+                >
+                    {logoutMutation.isPending ? "로그아웃 중..." : "로그아웃"}
+                </button>
             </SurfaceCard>
 
             <div className="mt-7">

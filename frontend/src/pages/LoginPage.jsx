@@ -6,6 +6,7 @@ import { getMyInfo } from "@/api/users";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
 import { useToast } from "@/hooks/useToast";
+import { queryClient } from "@/lib/queryClient";
 // 💡 토큰 저장 함수 불러오기
 import { setAccessToken } from "@/utils/tokenStorage";
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
     // ⭐️ 최신 로그인 API 명세서 반영
     const { mutate, isPending } = useMutation({
         mutationFn: login,
-        onSuccess: (response, variables) => {
+        onSuccess: (response) => {
             // 1. 응답 데이터에서 Access Token 추출
             const accessToken = response.data?.data?.accessToken || response.data?.accessToken || response.accessToken;
 
@@ -44,11 +45,10 @@ export default function LoginPage() {
                 return;
             }
 
+            queryClient.removeQueries();
             setAccessToken(accessToken);
             setUser({
-                email: variables.email,
                 nickname: null,
-                profileImageUrl: null,
             });
 
             toast.success("로그인에 성공했습니다.");
@@ -60,9 +60,7 @@ export default function LoginPage() {
               .then((myInfoResponse) => {
                 const user = myInfoResponse.data;
                 setUser({
-                    email: user.email,
                     nickname: user.nickname,
-                    profileImageUrl: user.avatar?.imageUrl,
                 });
               })
               .catch((error) => {

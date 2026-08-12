@@ -4,9 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useNavigate, Link } from "react-router-dom";
 import { signup } from "@/api/auth";
 import { useToast } from "@/hooks/useToast";
-import { useUserStore } from "@/stores/useUserStore";
 import { getApiErrorMessage } from "@/utils/apiError";
-import { setAccessToken } from "@/utils/tokenStorage";
 
 // 약관 및 정책 텍스트 정의
 const TERMS_TEXT = `제1조 (목적)
@@ -30,17 +28,9 @@ const PRIVACY_TEXT = `1. 수집하는 개인정보 항목
 3. 개인정보의 보유 및 이용 기간
 - 원칙적으로 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다.`;
 
-const MARKETING_TEXT = `1. 마케팅 및 광고에의 활용
-- 신규 서비스(제품) 개발 및 맞춤 서비스 제공
-- 이벤트 및 참여 기회 제공, 광고성 정보 제공
-
-2. 수신 동의 거부
-- 회원은 언제든지 마케팅 정보 수신 동의를 거부할 수 있으며, 거부 시에도 기본 서비스 이용에는 제한이 없습니다.`;
-
 export default function SignupPage() {
     const navigate = useNavigate();
     const toast = useToast();
-    const setUser = useUserStore((state) => state.setUser);
 
     // 폼 상태 관리
     const [email, setEmail] = useState("");
@@ -52,7 +42,6 @@ export default function SignupPage() {
     const [agreements, setAgreements] = useState({
         terms: false,
         privacy: false,
-        marketing: false,
     });
 
     // 팝업창(모달) 상태 관리
@@ -69,18 +58,7 @@ export default function SignupPage() {
     // ⭐️ 수정됨: React-Query 회원가입 요청 (최신 API 명세서 반영)
     const { mutate, isPending } = useMutation({
         mutationFn: signup,
-        onSuccess: (response, variables) => {
-            const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
-
-            if (accessToken) {
-                setAccessToken(accessToken);
-                setUser({
-                    email: variables.email,
-                    nickname: variables.nickname,
-                    profileImageUrl: null,
-                });
-            }
-
+        onSuccess: () => {
             navigate("/signup/complete", { replace: true });
         },
         onError: (error) => {
@@ -94,7 +72,6 @@ export default function SignupPage() {
         setAgreements({
             terms: isChecked,
             privacy: isChecked,
-            marketing: isChecked,
         });
     };
 
@@ -133,7 +110,7 @@ export default function SignupPage() {
         });
     };
 
-    const isAllChecked = agreements.terms && agreements.privacy && agreements.marketing;
+    const isAllChecked = agreements.terms && agreements.privacy;
 
     return (
         <div className="relative flex min-h-[calc(100vh-6rem)] min-w-[1180px] items-center justify-center overflow-hidden px-12 py-14">
@@ -224,7 +201,6 @@ export default function SignupPage() {
                             <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
                                 <input type="checkbox" checked={isAllChecked} onChange={handleAllCheck} className="h-4 w-4 accent-[#253129]" />
                                 <span className="text-sm font-bold text-slate-800">전체 동의</span>
-                                <span className="ml-auto text-[10px] text-slate-400">선택 항목 포함</span>
                             </label>
 
                             <div className="mt-2 divide-y divide-slate-100 px-2">
@@ -244,13 +220,6 @@ export default function SignupPage() {
                                     <button type="button" onClick={() => openModal("개인정보 처리방침", PRIVACY_TEXT)} className="font-semibold text-slate-400 transition-colors hover:text-slate-700">보기</button>
                                 </div>
 
-                                <div className="flex items-center justify-between py-2.5 text-xs">
-                                    <label className="flex cursor-pointer items-center gap-3">
-                                        <input type="checkbox" name="marketing" checked={agreements.marketing} onChange={handleSingleCheck} className="h-4 w-4 accent-[#253129]" />
-                                        <span className="text-slate-600">[선택] 마케팅 정보 수신 동의</span>
-                                    </label>
-                                    <button type="button" onClick={() => openModal("마케팅 정보 수신 동의", MARKETING_TEXT)} className="font-semibold text-slate-400 transition-colors hover:text-slate-700">보기</button>
-                                </div>
                             </div>
                         </div>
 

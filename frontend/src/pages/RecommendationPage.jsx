@@ -760,24 +760,6 @@ function RecommendationResults({
   const [isSelectionGuideDismissed, setIsSelectionGuideDismissed] =
     useState(false);
 
-  if (isPending && items.length > 0) {
-    return (
-      <RecommendationLoading
-        title="사용자 맞춤형 의상을 선별 중입니다"
-        description="AI가 입력하신 조건을 분석하고 있습니다. 잠시만 기다려 주세요."
-      />
-    );
-  }
-
-  if (isReplacing && replacingProductIds.length === 0) {
-    return (
-      <RecommendationLoading
-        title="선택한 의상을 다시 추천하는 중입니다"
-        description="더 잘 어울리는 의상을 찾는 동안 잠시만 기다려 주세요."
-      />
-    );
-  }
-
   if (isCreatingRoom) {
     return (
       <RecommendationLoading

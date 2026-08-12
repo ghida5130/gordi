@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useReducer,
+    useRef,
+    useState,
+} from "react";
 import { Client } from "@stomp/stompjs";
 
 const ROOM_TOPIC_PREFIX = "/topic/v1/rooms";
@@ -473,7 +480,7 @@ function roomEventReducer(state, event) {
 
 // - 인자: roomId와 roomToken 등을 포함한 방 세션
 // - 동작: 방 이벤트·커서 구독, 상태 동기화, 공동 편집 명령 전송 관리
-export function useRoomEvents(roomSession) {
+export function useRoomEvents(roomSession, onFittingDraft) {
     const roomId = roomSession?.roomId;
     const clientRef = useRef(null);
     const processedEventIdsRef = useRef(new Set());
@@ -488,9 +495,27 @@ export function useRoomEvents(roomSession) {
     const cursorPublishTimerRef = useRef(null);
     const [roomState, dispatch] = useReducer(roomEventReducer, roomSession, createInitialState);
     const [cursors, setCursors] = useState({});
-    const [sharedDemoPlacements, setSharedDemoPlacements] = useState(null);
     const [connectionState, setConnectionState] = useState(() => (roomSession?.roomToken && roomSession?.roomId ? "CONNECTING" : "DISCONNECTED"));
     const [connectionError, setConnectionError] = useState("");
+    const notifyFittingDraft = useEffectEvent((event) => {
+        const fittingDraftData = event.eventType === "BOARD_SNAPSHOT"
+            ? event.data?.fittingDraft ?? (event.data?.draftRevision != null ? event.data : null)
+            : event.eventType === "FITTING_DRAFT_UPDATED"
+                ? event.data
+                : null;
+
+        if (!fittingDraftData) return;
+
+        const draft = normalizeFittingDraft(fittingDraftData, event);
+
+        if (draft.draftRevision < draftRevisionRef.current) return;
+
+        draftRevisionRef.current = Math.max(
+            draftRevisionRef.current,
+            draft.draftRevision,
+        );
+        onFittingDraft?.(draft);
+    });
 
     const requestSync = useCallback(() => {
         if (activeSyncRequestRef.current) {
@@ -563,6 +588,7 @@ export function useRoomEvents(roomSession) {
 
         const applyEvent = (event) => {
             dispatch(event);
+            notifyFittingDraft(event);
 
             const eventVersion = Number(event.version);
 
@@ -714,20 +740,6 @@ export function useRoomEvents(roomSession) {
             }
         };
 
-        const handleDemoPlacementsMessage = (message) => {
-            try {
-                const payload = JSON.parse(message.body);
-
-                if (String(payload.senderParticipantId) === String(roomSession.participantId) || !Array.isArray(payload.placements)) {
-                    return;
-                }
-
-                setSharedDemoPlacements(payload.placements);
-            } catch {
-                setConnectionError("샘플 배치를 해석하지 못했습니다.");
-            }
-        };
-
         // - 방 이벤트와 커서, 개인 동기화 응답 구독 관리
         const client = new Client({
             brokerURL: createWebSocketUrl(roomSession.webSocketUrl ?? "/ws/v1"),
@@ -741,7 +753,6 @@ export function useRoomEvents(roomSession) {
                 setConnectionState("CONNECTED");
                 setConnectionError("");
                 setCursors({});
-                setSharedDemoPlacements(null);
 
                 client.subscribe(`${ROOM_TOPIC_PREFIX}/${roomSession.roomId}/participants`, handleMessage, {
                     id: "sub-room-events",
@@ -757,10 +768,6 @@ export function useRoomEvents(roomSession) {
                 });
                 client.subscribe(`${ROOM_TOPIC_PREFIX}/${roomSession.roomId}/cursors`, handleCursorMessage, {
                     id: "sub-room-cursors",
-                    ack: "auto",
-                });
-                client.subscribe(`${ROOM_TOPIC_PREFIX}/${roomSession.roomId}/demo-placements`, handleDemoPlacementsMessage, {
-                    id: "sub-room-demo-placements",
                     ack: "auto",
                 });
             },
@@ -1074,36 +1081,9 @@ export function useRoomEvents(roomSession) {
         });
     }, [roomSession?.participantId]);
 
-    const shareDemoPlacements = useCallback(
-        (placements) => {
-            const client = clientRef.current;
-
-            if (!Array.isArray(placements)) {
-                return false;
-            }
-
-            setSharedDemoPlacements(placements);
-
-            if (!client?.connected) {
-                return false;
-            }
-
-            client.publish({
-                destination: `${ROOM_TOPIC_PREFIX}/${roomId}/demo-placements`,
-                body: JSON.stringify({
-                    senderParticipantId: roomSession?.participantId,
-                    placements,
-                }),
-            });
-            return true;
-        },
-        [roomId, roomSession?.participantId],
-    );
-
     return {
         ...roomState,
         cursors,
-        sharedDemoPlacements,
         connectionState,
         connectionError,
         startRoom,
@@ -1117,6 +1097,5 @@ export function useRoomEvents(roomSession) {
         applyRoomStatus,
         moveCursor,
         hideCursor,
-        shareDemoPlacements,
     };
 }

@@ -42,123 +42,6 @@ import {
   tierMakerCategoryDetails,
 } from "@/utils/tierMakerClothing";
 
-const demoClothes = [
-  {
-    id: "demo-shirt",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 옥스퍼드 셔츠",
-    imageUrl: "",
-    slot: "TOP",
-    isDemo: true,
-    ...tierMakerCategoryDetails.TOP,
-    artwork: "shirt",
-  },
-  {
-    id: "demo-knit",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 케이블 니트",
-    imageUrl: "",
-    slot: "TOP",
-    isDemo: true,
-    ...tierMakerCategoryDetails.TOP,
-    artwork: "knit",
-    color: "text-violet-300",
-    surface: "bg-violet-50",
-  },
-  {
-    id: "demo-jacket",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 데님 재킷",
-    imageUrl: "",
-    slot: "OUTER",
-    isDemo: true,
-    ...tierMakerCategoryDetails.OUTER,
-    artwork: "jacket",
-    color: "text-blue-700",
-    surface: "bg-blue-50",
-  },
-  {
-    id: "demo-cardigan",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 브라운 가디건",
-    imageUrl: "",
-    slot: "OUTER",
-    isDemo: true,
-    ...tierMakerCategoryDetails.OUTER,
-    artwork: "cardigan",
-    color: "text-amber-700",
-    surface: "bg-amber-50",
-  },
-  {
-    id: "demo-pants",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 와이드 팬츠",
-    imageUrl: "",
-    slot: "BOTTOM",
-    isDemo: true,
-    ...tierMakerCategoryDetails.BOTTOM,
-    artwork: "pants",
-  },
-  {
-    id: "demo-sneakers",
-    roomItemId: null,
-    productId: null,
-    name: "샘플 화이트 스니커즈",
-    imageUrl: "",
-    slot: "SHOES",
-    isDemo: true,
-    ...tierMakerCategoryDetails.SHOES,
-    artwork: "sneakers",
-  },
-];
-
-const initialDemoPlacements = demoClothes.map((item, index) => ({
-  roomItemId: item.id,
-  tierId: null,
-  position: (index + 1) * 10_000,
-}));
-const demoItemIds = new Set(demoClothes.map((item) => item.id));
-
-function getMovedDemoPlacements(
-  currentPlacements,
-  itemId,
-  targetTierId,
-  requestedIndex,
-) {
-  const targetPlacements = currentPlacements
-    .filter(
-      (placement) =>
-        placement.roomItemId !== itemId && placement.tierId === targetTierId,
-    )
-    .sort((left, right) => left.position - right.position);
-  const nextIndex = Math.max(
-    0,
-    Math.min(requestedIndex, targetPlacements.length),
-  );
-
-  targetPlacements.splice(nextIndex, 0, {
-    roomItemId: itemId,
-    tierId: targetTierId,
-    position: 0,
-  });
-
-  return [
-    ...currentPlacements.filter(
-      (placement) =>
-        placement.roomItemId !== itemId && placement.tierId !== targetTierId,
-    ),
-    ...targetPlacements.map((placement, index) => ({
-      ...placement,
-      position: (index + 1) * 10_000,
-    })),
-  ];
-}
-
 const emptyTryOn = {
   status: "IDLE",
   jobId: null,
@@ -236,6 +119,62 @@ function TierMakerRoomPage() {
   }, []);
   const isCurrentRoom =
     roomSession && String(roomSession.roomId) === String(roomId);
+  const participantId = roomSession?.participantId;
+  const handleFittingDraft = useCallback(
+    (draft) => {
+      const eventKey =
+        draft.eventId ??
+        `${draft.draftRevision}:${draft.clientEventId ?? "snapshot"}`;
+
+      if (appliedFittingDraftEventRef.current === eventKey) return;
+
+      appliedFittingDraftEventRef.current = eventKey;
+      const publishedLocalEdit = draft.clientEventId
+        ? fittingDraftPublishEditsRef.current.get(draft.clientEventId)
+        : null;
+
+      if (draft.clientEventId) {
+        fittingDraftPublishEditsRef.current.delete(draft.clientEventId);
+      }
+
+      const isOwnEvent =
+        draft.senderParticipantId != null &&
+        String(draft.senderParticipantId) ===
+          String(participantId);
+
+      if (
+        isOwnEvent &&
+        publishedLocalEdit != null &&
+        publishedLocalEdit < fittingDraftLocalEditRef.current
+      ) {
+        return;
+      }
+
+      const nextSelectedSizeNames = Object.fromEntries(
+        (Array.isArray(draft.sizeSelections) ? draft.sizeSelections : [])
+          .filter(
+            (selection) =>
+              selection?.roomItemId != null && selection?.sizeName,
+          )
+          .map((selection) => [
+            String(selection.roomItemId),
+            selection.sizeName,
+          ]),
+      );
+
+      setSelectedSizeNames(nextSelectedSizeNames);
+      setWearOptions({
+        topTuck: draft.wearOptions?.topTuck ?? null,
+        outerClosure: draft.wearOptions?.outerClosure ?? null,
+        sleeves: draft.wearOptions?.sleeves ?? null,
+      });
+
+      if (!isOwnEvent) {
+        setTryOnPrompt(String(draft.prompt ?? ""));
+      }
+    },
+    [participantId],
+  );
   const handleCopyRoomCode = async () => {
     const roomCode = String(roomSession?.roomCode ?? "").trim();
 
@@ -275,7 +214,10 @@ function TierMakerRoomPage() {
       toast.error("방 링크를 복사하지 못했습니다.");
     }
   };
-  const roomEvents = useRoomEvents(isCurrentRoom ? roomSession : null);
+  const roomEvents = useRoomEvents(
+    isCurrentRoom ? roomSession : null,
+    handleFittingDraft,
+  );
   const moveRoomCursor = roomEvents.moveCursor;
   const hideRoomCursor = roomEvents.hideCursor;
   const applyRoomStatus = roomEvents.applyRoomStatus;
@@ -371,22 +313,12 @@ function TierMakerRoomPage() {
       .map((query, index) => [productIds[index], query.data?.data])
       .filter(([, product]) => product),
   );
-  const isDemoMode = false;
   const clothes = roomItemRecords.map((roomItem) =>
     createTierMakerClothing(roomItem, productsById[roomItem.productId]),
   );
   const clothesById = Object.fromEntries(
     clothes.map((item) => [item.id, item]),
   );
-  const receivedDemoPlacements = Array.isArray(roomEvents.sharedDemoPlacements)
-    ? roomEvents.sharedDemoPlacements.filter((placement) =>
-        demoItemIds.has(String(placement.roomItemId)),
-      )
-    : [];
-  const demoPlacements =
-    receivedDemoPlacements.length === demoClothes.length
-      ? receivedDemoPlacements
-      : initialDemoPlacements;
   const candidatePlacements = roomItemRecords.map((item) => ({
     roomItemId: item.roomItemId,
     tierId: item.tierId,
@@ -556,63 +488,6 @@ function TierMakerRoomPage() {
       }
     };
   }, []);
-
-  useEffect(() => {
-    const draft = roomEvents.fittingDraft;
-
-    if (!draft) return;
-
-    const eventKey =
-      draft.eventId ??
-      `${draft.draftRevision}:${draft.clientEventId ?? "snapshot"}`;
-
-    if (appliedFittingDraftEventRef.current === eventKey) return;
-
-    appliedFittingDraftEventRef.current = eventKey;
-    const publishedLocalEdit = draft.clientEventId
-      ? fittingDraftPublishEditsRef.current.get(draft.clientEventId)
-      : null;
-
-    if (draft.clientEventId) {
-      fittingDraftPublishEditsRef.current.delete(draft.clientEventId);
-    }
-
-    const isOwnEvent =
-      draft.senderParticipantId != null &&
-      String(draft.senderParticipantId) ===
-        String(roomSession?.participantId);
-
-    if (
-      isOwnEvent &&
-      publishedLocalEdit != null &&
-      publishedLocalEdit < fittingDraftLocalEditRef.current
-    ) {
-      return;
-    }
-
-    const nextSelectedSizeNames = Object.fromEntries(
-      (Array.isArray(draft.sizeSelections) ? draft.sizeSelections : [])
-        .filter(
-          (selection) =>
-            selection?.roomItemId != null && selection?.sizeName,
-        )
-        .map((selection) => [
-          String(selection.roomItemId),
-          selection.sizeName,
-        ]),
-    );
-
-    setSelectedSizeNames(nextSelectedSizeNames);
-    setWearOptions({
-      topTuck: draft.wearOptions?.topTuck ?? null,
-      outerClosure: draft.wearOptions?.outerClosure ?? null,
-      sleeves: draft.wearOptions?.sleeves ?? null,
-    });
-
-    if (!isOwnEvent) {
-      setTryOnPrompt(String(draft.prompt ?? ""));
-    }
-  }, [roomEvents.fittingDraft, roomSession?.participantId]);
 
   useLayoutEffect(() => {
     const board = sharedBoardRef.current;
@@ -936,7 +811,7 @@ function TierMakerRoomPage() {
       return;
     }
 
-    if (!item.isDemo && !roomEvents.lockItem(item.roomItemId)) {
+    if (!roomEvents.lockItem(item.roomItemId)) {
       event.preventDefault();
       return;
     }
@@ -972,20 +847,9 @@ function TierMakerRoomPage() {
       return;
     }
 
-    if (item && !item.isDemo) {
+    if (item) {
       roomEvents.unlockItem(item.roomItemId, "CANCELLED");
     }
-  };
-
-  const moveDemoItem = (itemId, targetTierId, requestedIndex) => {
-    const nextPlacements = getMovedDemoPlacements(
-      demoPlacements,
-      itemId,
-      targetTierId,
-      requestedIndex,
-    );
-
-    roomEvents.shareDemoPlacements(nextPlacements);
   };
 
   const handleDropTier = (itemId, targetTierId, requestedIndex) => {
@@ -1017,11 +881,6 @@ function TierMakerRoomPage() {
       adjustedRequestedIndex == null
         ? targetItemIds.length
         : Math.min(adjustedRequestedIndex, targetItemIds.length);
-
-    if (item.isDemo) {
-      moveDemoItem(itemId, targetTier.tierId, nextIndex);
-      return;
-    }
 
     const lock = roomEvents.itemLocks[itemId];
     const isLockedByOther =
@@ -1055,11 +914,6 @@ function TierMakerRoomPage() {
       (placement) =>
         placement.tierId == null && String(placement.roomItemId) !== itemId,
     ).length;
-
-    if (item.isDemo) {
-      moveDemoItem(itemId, null, nextIndex);
-      return;
-    }
 
     const lock = roomEvents.itemLocks[itemId];
     const isLockedByOther =
@@ -1608,12 +1462,6 @@ function TierMakerRoomPage() {
           </section>
         ) : (
           <>
-            {isDemoMode && (
-              <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                방 의상이 없어 프론트 테스트용 샘플을 표시하고 있습니다. 샘플
-                배치는 같은 방에 실시간 공유되지만 저장되지는 않습니다.
-              </p>
-            )}
             <div ref={boardViewportRef} className="w-full pb-2">
               <motion.div
                 className="mx-auto"
@@ -1688,17 +1536,14 @@ function TierMakerRoomPage() {
                       onDragEnd={handleDragEnd}
                       onGenerate={() => tryOnMutation.mutate()}
                       canGenerate={
-                        !isDemoMode &&
                         isHost &&
                         Boolean(roomSession.roomCode) &&
                         roomEvents.connectionState === "CONNECTED"
                       }
                       generateDisabledMessage={
-                        isDemoMode
-                          ? "샘플 의상은 가상 피팅을 생성할 수 없어요"
-                          : isHost
-                            ? "방 연결 후 생성할 수 있어요"
-                            : "방장만 생성할 수 있어요"
+                        isHost
+                          ? "방 연결 후 생성할 수 있어요"
+                          : "방장만 생성할 수 있어요"
                       }
                       isSubmitting={tryOnMutation.isPending}
                       tryOn={visibleTryOn}

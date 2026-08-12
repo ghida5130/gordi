@@ -34,3 +34,13 @@ export const publicApi = createRestClient(httpClient);
 
 // 인증 API 요청에 사용 (accessToken 포함)
 export const authApi = createRestClient(authHttpClient);
+
+export function withRoomToken(roomToken, config = {}) {
+  return {
+    ...config,
+    headers: {
+      ...config.headers,
+      Authorization: `Bearer ${roomToken}`,
+    },
+  };
+}
