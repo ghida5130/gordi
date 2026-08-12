@@ -76,10 +76,6 @@ export const router = createBrowserRouter([
             element: <CreateRoomPage />,
           },
           {
-            path: "rooms/create-test",
-            element: <CreateRoomPage />,
-          },
-          {
             path: "recommendation",
             element: <RecommendationPage />,
           },
