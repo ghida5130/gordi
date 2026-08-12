@@ -43,4 +43,8 @@ public class RefreshToken {
     // 재사용 감지: 이 값이 찍힌 토큰이 다시 제시되면 탈취 신호로 판정하는 근거가 된다
     @Column(name = "rotated_at")
     private LocalDateTime rotatedAt;
+
+    // grace 이내 재제시 시 새로 발급하지 않고 이 값을 재반환해(멱등) 회전 체인을 1자로 유지한다
+    @Column(name = "successor", length = 1000)
+    private String successor;
 }

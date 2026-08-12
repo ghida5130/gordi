@@ -59,7 +59,7 @@ public class JwtService {
             return handleRotationConflict(refreshToken, email, role, now, response);
         }
 
-        return issueTokens(email, role, response);
+        return issueTokens(email, role, refreshToken, response);
     }
 
     private JWTResponseDTO handleRotationConflict(
@@ -77,7 +77,13 @@ public class JwtService {
 
         // 회전 직후의 재제시는 멀티탭·네트워크 재시도일 가능성이 높다 — 정상 회전과 동일하게 응답
         if (elapsedMs <= reuseGraceMs) {
-            return issueTokens(email, role, response);
+            if (existing.getSuccessor() != null) {
+                String newAccessToken = jwtUtil.createJWT(email, role, true);
+                response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(existing.getSuccessor()));
+                return new JWTResponseDTO(newAccessToken);
+            }
+            // successor 기록이 없는 배포 이전 데이터 호환용 폴백
+            return issueTokens(email, role, refreshToken, response);
         }
 
         // 회전된 지 오래된 토큰의 재제시 = 같은 토큰을 가진 주체가 둘 = 탈취 신호.
@@ -88,7 +94,7 @@ public class JwtService {
         throw invalidToken("이미 사용된 refreshToken입니다.");
     }
 
-    private JWTResponseDTO issueTokens(String email, String role, HttpServletResponse response) {
+    private JWTResponseDTO issueTokens(String email, String role, String rotatedFrom, HttpServletResponse response) {
         String newAccessToken = jwtUtil.createJWT(email, role, true);
         String newRefreshToken = jwtUtil.createJWT(email, role, false);
 
@@ -98,6 +104,10 @@ public class JwtService {
                         .refresh(newRefreshToken)
                         .build()
         );
+
+        if (rotatedFrom != null) {
+            refreshRepository.updateSuccessor(rotatedFrom, newRefreshToken);
+        }
 
         response.addHeader("Set-Cookie", cookieUtil.createRefreshCookie(newRefreshToken));
         return new JWTResponseDTO(newAccessToken);

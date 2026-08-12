@@ -23,4 +23,8 @@ public interface RefreshRepository extends JpaRepository<RefreshToken, Long> {
     @Query("UPDATE RefreshToken r SET r.rotatedAt = :now WHERE r.refresh = :refresh AND r.rotatedAt IS NULL")
     int markRotated(@Param("refresh") String refresh, @Param("now") LocalDateTime now);
 
+    @Modifying
+    @Query("UPDATE RefreshToken r SET r.successor = :successor WHERE r.refresh = :refresh")
+    int updateSuccessor(@Param("refresh") String refresh, @Param("successor") String successor);
+
 }

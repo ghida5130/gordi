@@ -74,6 +74,19 @@ class JwtServiceReuseDetectionTest {
                 .toList();
     }
 
+    private MockHttpServletResponse rotateWithResponse(String refreshToken) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie(CookieUtil.REFRESH_COOKIE_NAME, refreshToken));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        jwtService.refreshRotate(request, response);
+        return response;
+    }
+
+    private String extractRefreshCookie(MockHttpServletResponse response) {
+        String setCookie = response.getHeader("Set-Cookie");
+        return setCookie.substring(setCookie.indexOf('=') + 1, setCookie.indexOf(';'));
+    }
+
     @Test
     @DisplayName("정상 회전: 기존 토큰에 rotated_at이 찍히고 새 토큰이 저장된다")
     void rotate_marksOldAndSavesNew() {
@@ -89,17 +102,20 @@ class JwtServiceReuseDetectionTest {
     }
 
     @Test
-    @DisplayName("grace 이내 재제시(멀티탭/재시도): 오탐하지 않고 정상 발급한다")
+    @DisplayName("grace 이내 재제시: 새 토큰을 만들지 않고 최초 회전 결과를 그대로 재반환한다(멱등)")
     void reuseWithinGrace_isTolerated() {
         String oldToken = issueAndStore();
-        rotate(oldToken);
 
-        // 회전 직후(= grace 30초 이내) 같은 토큰 재제시
-        JWTResponseDTO result = rotate(oldToken);
+        String firstIssued = extractRefreshCookie(rotateWithResponse(oldToken));
+        String secondReuse = extractRefreshCookie(rotateWithResponse(oldToken));
+        String thirdReuse = extractRefreshCookie(rotateWithResponse(oldToken));
 
-        assertThat(result.accessToken()).isNotBlank();
-        // 세션이 폐기되지 않았다: 유효(rotated_at null) 토큰이 남아 있다
-        assertThat(userTokens().stream().filter(t -> t.getRotatedAt() == null)).isNotEmpty();
+        // 몇 번을 재제시해도 항상 최초 회전 때 발급한 그 토큰이 돌아온다
+        assertThat(secondReuse).isEqualTo(firstIssued);
+        assertThat(thirdReuse).isEqualTo(firstIssued);
+
+        // 행이 증식하지 않는다: old(회전됨) + 후속 토큰, 딱 2개
+        assertThat(userTokens()).hasSize(2);
     }
 
     @Test
